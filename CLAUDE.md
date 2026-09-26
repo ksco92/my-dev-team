@@ -8,18 +8,25 @@ See the root README for what this repo is.
 - `plugins/dev-team/.claude-plugin/`, the plugin manifest.
 - `plugins/dev-team/skills/`, the TPM, PM, and three review-gate skills.
 - `plugins/dev-team/agents/`, the implementer and reviewer agent definitions.
-- `plugins/dev-team/context/`, the stack guides and TPM procedure references.
-- `plugins/dev-team/hooks/`, the merge-gate and attribution-guard Bash hooks and `hooks.json`.
-- `plugins/dev-team/bin/`, the gate-ledger binary.
+- `plugins/dev-team/context/`, the stack guides, TPM procedure references, harness policy,
+  `DEV_PROCESS.md` contract, and built-in default process.
+- `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, and session-context Bash hooks and
+  `hooks.json`.
+- `plugins/dev-team/bin/`, the gate-ledger and dev-process scripts.
+- `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
+- `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
 - `plugins/dev-team/README.md`, the plugin's README.
 - `.github/workflows/ci.yml`, the validation CI workflow.
+- `docs/examples/`, example `DEV_PROCESS.md` files; the plugin never reads them.
+- `DEV_PROCESS.md`, this repository's own development process.
 
 ## Local checks
 
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
-shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/*
+shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh
+bash plugins/dev-team/tests/dev-process.test.sh
 ```
 
 ## Conventions
