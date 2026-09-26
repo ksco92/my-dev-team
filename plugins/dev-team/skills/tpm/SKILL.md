@@ -127,7 +127,7 @@ of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium
 (`backend`/`frontend`) take the same shape. See the model policy in
 `${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is never a subagent).
 
-Brief a subagent like a smart colleague who just walked in: the issue text or link, the branch
+Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch
 name (the process file's Branch name operation), repo path, workspace instructions, the PR body
 template, what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace
 (Create workspace operation), and the process file's Primary checkout rule applies; a cross-repo
