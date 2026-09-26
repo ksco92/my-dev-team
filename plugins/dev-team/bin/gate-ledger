@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# gate-ledger — per-PR record of review-gate verdicts, consumed by the merge-gate hook.
+#
+# The tpm orchestrator records each gate's verdict here as it lands. The PreToolUse hook
+# (${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh) refuses `gh pr merge` / `git merge` unless the ledger shows
+# every required gate PASS with zero findings at the PR's CURRENT head. The ledger is the
+# mechanism that makes the merge gate deterministic instead of a model's recollection.
+#
+# Usage:
+#   gate-ledger record <repo> <id> <gate> <verdict> <findings> <head-sha> <model>
+#   gate-ledger check  <repo> <id> <head-sha>          # exit 0 = mergeable, 1 = not
+#   gate-ledger show   <repo> <id>
+#   gate-ledger reset  <repo> <id>
+#
+#   <repo>   owner/name for GitHub repos, or the absolute repo path for no-remote repos
+#   <id>     PR number, or the branch name for a local branch→main merge
+#   <gate>   one of: pr-reviewer code-health oss-reviewer security-review readme-writer
+#   <verdict> PASS | FAIL | BLOCKED
+#   <model>  alias the gate ran on (sonnet | opus | fable), or the local model name under Pi;
+#            recorded so the reviewer-tier rule is auditable after the fact
+#
+# A record at a different head than the ledger's current head resets the other gates: gates
+# always re-run on a new head, so verdicts from an older head must never count.
+set -euo pipefail
+
+LEDGER_ROOT="${GATE_LEDGER_ROOT:-$HOME/.claude/gate-ledger}"
+REQUIRED_GATES=(pr-reviewer code-health oss-reviewer security-review readme-writer)
+
+usage() { sed -n '2,22p' "$0"; exit 2; }
+
+ledger_path() {
+  # slugify repo + id into a stable path
+  local repo="$1" id="$2"
+  local slug; slug="$(printf '%s' "$repo" | sed -e 's#^/##' -e 's#[/:]#__#g')"
+  printf '%s/%s/%s.json' "$LEDGER_ROOT" "$slug" "$id"
+}
+
+cmd_record() {
+  [[ $# -eq 7 ]] || usage
+  local repo="$1" id="$2" gate="$3" verdict="$4" findings="$5" head="$6" model="$7"
+  [[ "$model" =~ ^[A-Za-z0-9._:-]+$ ]] || { echo "gate-ledger: model must be a bare alias or model name" >&2; exit 2; }
+  case " ${REQUIRED_GATES[*]} " in *" $gate "*) ;; *) echo "gate-ledger: unknown gate '$gate'" >&2; exit 2 ;; esac
+  case "$verdict" in PASS|FAIL|BLOCKED) ;; *) echo "gate-ledger: verdict must be PASS|FAIL|BLOCKED" >&2; exit 2 ;; esac
+  [[ "$findings" =~ ^[0-9]+$ ]] || { echo "gate-ledger: findings must be an integer" >&2; exit 2; }
+  local path; path="$(ledger_path "$repo" "$id")"
+  mkdir -p "$(dirname "$path")"
+  local now; now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  if [[ -f "$path" ]] && [[ "$(jq -r .head "$path")" == "$head" ]]; then
+    jq --arg g "$gate" --arg v "$verdict" --argjson f "$findings" --arg t "$now" --arg m "$model" \
+      '.gates[$g] = {verdict: $v, findings: $f, model: $m, at: $t}' "$path" > "$path.tmp"
+  else
+    # new PR or new head: start a fresh ledger for this head
+    jq -n --arg repo "$repo" --arg id "$id" --arg head "$head" --arg g "$gate" --arg v "$verdict" \
+      --argjson f "$findings" --arg t "$now" --arg m "$model" \
+      '{repo: $repo, id: $id, head: $head, gates: {($g): {verdict: $v, findings: $f, model: $m, at: $t}}}' > "$path.tmp"
+  fi
+  mv "$path.tmp" "$path"
+  echo "recorded $gate=$verdict ($findings findings, $model) for $repo#$id @ ${head:0:12}"
+}
+
+cmd_check() {
+  [[ $# -eq 3 ]] || usage
+  local repo="$1" id="$2" head="$3"
+  local path; path="$(ledger_path "$repo" "$id")"
+  if [[ ! -f "$path" ]]; then
+    echo "no ledger for $repo#$id (expected $path)"; return 1
+  fi
+  local ledger_head; ledger_head="$(jq -r .head "$path")"
+  if [[ "$ledger_head" != "$head" ]]; then
+    echo "ledger head ${ledger_head:0:12} != current head ${head:0:12} — gates must re-run on the new head"; return 1
+  fi
+  local rc=0 g v f
+  for g in "${REQUIRED_GATES[@]}"; do
+    v="$(jq -r --arg g "$g" '.gates[$g].verdict // "MISSING"' "$path")"
+    f="$(jq -r --arg g "$g" '.gates[$g].findings // -1' "$path")"
+    if [[ "$v" != "PASS" || "$f" != "0" ]]; then
+      echo "gate $g: $v (findings=$f)"; rc=1
+    fi
+  done
+  (( rc == 0 )) && echo "all gates PASS with zero findings at ${head:0:12} ($(jq -r '[.gates | to_entries[] | "\(.key)=\(.value.model // "?")"] | join(", ")' "$path"))"
+  return $rc
+}
+
+cmd_show() {
+  [[ $# -eq 2 ]] || usage
+  local path; path="$(ledger_path "$1" "$2")"
+  if [[ -f "$path" ]]; then cat "$path"; else echo "no ledger at $path"; exit 1; fi
+}
+
+cmd_reset() {
+  [[ $# -eq 2 ]] || usage
+  local path; path="$(ledger_path "$1" "$2")"
+  rm -f "$path" && echo "reset $path"
+}
+
+[[ $# -ge 1 ]] || usage
+cmd="$1"; shift
+case "$cmd" in
+  record) cmd_record "$@" ;;
+  check)  cmd_check "$@" ;;
+  show)   cmd_show "$@" ;;
+  reset)  cmd_reset "$@" ;;
+  -h|--help) usage ;;
+  *) echo "gate-ledger: unknown command '$cmd'" >&2; usage ;;
+esac
