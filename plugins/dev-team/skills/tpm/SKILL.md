@@ -91,10 +91,9 @@ may re-tag.
 Create one ticket per approved slice (the process file's Create ticket operation), from the ticket
 body template in its Tracker section, with the component. Record its difficulty and priority
 (`p0`–`p2`) with the Set difficulty / priority operation and its blockers with the Link
-dependencies operation. Whatever the tracker, the ticket body carries Context, Requirements
-(testable, binary), Acceptance Criteria (lint passing and coverage on new code at or above the
-project standard among them), Implementation Plan, Dependencies (a heading or the tracker's native
-links), and Out of Scope, or their native equivalents; amend a ticket lacking them before dispatch.
+dependencies operation. The ticket carries every heading its template requires (the contract's
+minimum), or the tracker's native equivalent; amend a ticket lacking one before dispatch (Amend
+ticket operation).
 
 Specification depth follows the tier because the implementer's capability does. `low`: a
 near-complete recipe — exact files, function names and signatures, ordered steps, the specific
@@ -219,21 +218,21 @@ the last attempt. Do not merge.
 
 ### 5.3 Merge
 
-The merge is deterministic, not a verdict: for the forms it guards (`gh pr merge`, a `gh api` call
-to a PR's merge endpoint, `git merge` into main), the hook at
+The merge is deterministic, not a verdict: in the forms it guards, the hook at
 `${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh` refuses the merge unless the ledger shows all five gates
-PASS with zero findings at the PR's current head and CI is terminal-green (CI status operation).
-Required checks are the project's, stated in the process file (default: lint · tests · coverage ≥
-standard · build · package dry-run where applicable); a repo with no CI runs its own lint/test/build
-locally and you record them in the PR before merging. When the hook denies, its reason names what is
-missing — run that, don't work around it.
+PASS with zero findings at the PR's current head; what it checks per form is stated in
+`${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`. Required checks are the project's, stated
+in the process file (default: lint · tests · coverage ≥ standard · build · package dry-run where
+applicable); a repo with no CI runs its own lint/test/build locally and you record them in the PR
+before merging. When the hook denies, its reason names what is missing — run that, don't work around
+it.
 
 Merge with the process file's Merge operation, using the merge method in the project's own
-`CLAUDE.md` when it names one and the process file's `merge_method` otherwise. A Merge command
-outside the forms the hook guards runs only after the Check ledger operation passes and the CI
-status operation reports terminal-green. Afterwards run the After merge operation, confirm the
-ticket closed (Link to a change and close operation), and report the merged PR. If the request or
-the project's `CLAUDE.md` says no auto-merge, stop at a green ledger and hand back the URL.
+`CLAUDE.md` when it names one and the process file's `merge_method` otherwise. Before any Merge the
+hook does not check for CI, confirm the CI status operation reports terminal-green. Afterwards run
+the After merge operation, confirm the ticket closed (Link to a change and close operation), and
+report the merged PR. If the request or the project's `CLAUDE.md` says no auto-merge, stop at a
+green ledger and hand back the URL.
 
 ## Risk
 

@@ -28,9 +28,7 @@ Place this file at a repository root or at ~/.claude/DEV_PROCESS.md. -->
 Ticket body template:
 
 ```markdown
-<the body every ticket carries: Context, Requirements (testable, binary), Acceptance Criteria
-(lint passing and coverage on new code at or above the project standard among them),
-Implementation Plan, Dependencies (omit with native dependency links), Out of Scope>
+<the body every ticket carries; at least the headings in the contract's Create ticket row>
 ```
 
 ## Code host: <name>

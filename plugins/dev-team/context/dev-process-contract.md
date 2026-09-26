@@ -79,9 +79,10 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Repo description | readme-reviewer, tpm | text | the command that reads and sets the one-line description, or "Not applicable" |
 | Experiment mode | tpm, Phase 1 | none | whether it is allowed and what it skips |
 
-The merge hook gates `gh pr merge`, a `gh api` call to a PR's merge endpoint, and `git merge`
-into `main` or `master`. A Merge command outside those forms is not gated by the hook, so the
-file states that `gate-ledger check` passes before it runs.
+The merge hook checks `gh pr merge` and a `gh api` call to a PR's merge endpoint against the
+ledger at the head and terminal-green checks, and `git merge` into `main` or `master` against the
+ledger only. Before any Merge command it does not check for CI, the file states that `gate-ledger
+check` passes and the CI status operation reports terminal-green.
 
 ## Workspace
 
