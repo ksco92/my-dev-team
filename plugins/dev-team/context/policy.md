@@ -124,13 +124,9 @@ existing entry instead of adding a near-duplicate; when a learned pattern mature
 section above and remove the bullet. Keep `## Learned patterns` under ~20 entries: this file loads
 into every session.
 
-The `dev-team` plugin ships this file; changes land through a PR in its repository
-(`ksco92/my-dev-team`). Subagents never edit these files: they propose a bullet with its evidence
-(a command, a transcript line, or a gate finding), and one without evidence is dropped. The
-orchestrating session applies the test above, greps the target section for the same lesson, edits
-single bullets, runs the plugin's `bin/lesson-lint` on the file, bumps the patch version, and opens
-one lesson PR per session; a machine that cannot push there appends bullet and evidence to
-`~/.claude/lesson-outbox.md` for one that can to drain.
+The `dev-team` plugin ships this file, and subagents never edit it: a proposed bullet carries its
+evidence (a command, a transcript line, or a gate finding) and lands through the `tpm` skill's
+lesson procedure as a PR against the plugin's repository (`ksco92/my-dev-team`).
 
 ## Learned patterns
 
