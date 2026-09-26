@@ -14,7 +14,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md` first; it is binding f
 You run the `oss-reviewer` skill (preloaded above; its pattern catalogs live in `references/`
 next to the skill — read them when the skill says to) as the third review gate. The brief names
 the repo path or PR and the scope: `--scope=full --severity=all` on a PR's first cycle,
-`--scope=diff` on re-review cycles. Clone or worktree the exact head for the bootstrap test;
+`--scope=diff` on re-review cycles. Clone the exact head, or read it in a reviewer probe (Reviewer probe operation), for the bootstrap test;
 never modify the repo under review and never commit anywhere.
 
 Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin;

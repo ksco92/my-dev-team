@@ -18,14 +18,15 @@ brief (5.2).
 - Headless `claude -p`: `--allowedTools` is variadic and swallows a trailing prompt, so pass the
   prompt on stdin; a PreToolUse hook parsing a number out of a compound line takes the first match
   before stripping whitespace.
-- Every cross-repo implementer brief opens with explicit worktree creation in the target repo and
-  forbids editing the target's primary checkout. A repo that gitignores `.claude/*` gets an overlay
-  rather than a worktree: verify `.git` resolves before any git op and keep runner scripts and logs
-  inside the worktree, not the reapable scratchpad.
-- Reviewer briefs name a private scratch copy or uniquely named worktree per round, never the
-  scratchpad root and never the live checkout; never detach, move, or remove a reviewer's worktree
-  while it may be running. After removing any worktree, full-line `ps` scan for its path and kill
-  what remains.
+- Every cross-repo implementer brief opens with explicit workspace creation in the target repo
+  (Create workspace operation) and states the process file's Primary checkout rule for the target.
+  A repo that gitignores `.claude/*` follows the Gitignored `.claude` operation: verify `.git`
+  resolves before any git op and keep runner scripts and logs inside the workspace, not the
+  reapable scratchpad.
+- Reviewer briefs name a uniquely named reviewer probe per round (Reviewer probe operation), never
+  the scratchpad root and never the live checkout; a reviewer removes only what it created, and no
+  one else detaches, moves, or removes a reviewer's probe while it may be running. After removing
+  any workspace or probe, full-line `ps` scan for its path and kill what remains.
 - When a required gate command outlasts a subagent's foreground cap, brief the hand-back up front
   (return pid and log path; the orchestrator watches and resumes with fast-ops-only instructions)
   instead of demanding a foreground run that cannot happen.
@@ -36,7 +37,7 @@ brief (5.2).
 - Never write `\b` into an acceptance grep; specify substrings with plain `grep -rniE` and have the
   reviewer re-run the command as written.
 - When the permission classifier denies a subagent the same benign edit three times, hand the step
-  to a fresh implementer in the same worktree; never let the blocked agent route around the denial.
+  to a fresh implementer in the same workspace; never let the blocked agent route around the denial.
 - Fix-loop validation scales to the delta: each round re-runs the fast suite plus mutants on touched
   files; the full mutation run, the largest parity case, and memory measurements run once on the
   merging head. Never hold a push for pending verdicts; reviewers verify the final head once. No

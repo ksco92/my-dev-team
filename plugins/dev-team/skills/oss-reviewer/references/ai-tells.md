@@ -257,7 +257,7 @@ Added by: oss-reviewer self-mutation on 2026-05-30 after observing
 
 ### 4.16 GitHub fragment URL pointing at a non-existent comment / review / commit ID (CRITICAL)
 
-READMEs that link to a specific GitHub artifact via fragment (`#issuecomment-NNN`, `#pullrequestreview-NNN`, `#discussion_r-NNN`, `#commit-SHA`) will silently soft-fail when the fragment ID is wrong: GitHub returns HTTP 200 for the parent issue / PR page, the fragment scrolls nowhere, and the reader lands at the top of an unrelated long thread instead of the artifact the prose just promised. `curl -I` cannot catch this — the parent URL is always 200. The check has to hit the GitHub API and confirm the artifact exists.
+GitHub host: READMEs that link to a specific GitHub artifact via fragment (`#issuecomment-NNN`, `#pullrequestreview-NNN`, `#discussion_r-NNN`, `#commit-SHA`) will silently soft-fail when the fragment ID is wrong: GitHub returns HTTP 200 for the parent issue / PR page, the fragment scrolls nowhere, and the reader lands at the top of an unrelated long thread instead of the artifact the prose just promised. `curl -I` cannot catch this — the parent URL is always 200. The check has to hit the GitHub API and confirm the artifact exists.
 
 ```
 https?://github\.com/[^/\s)]+/[^/\s)]+/(issues|pull)/\d+#(issuecomment|pullrequestreview|discussion_r)-\d+
@@ -2893,7 +2893,7 @@ reference combining an issue/PR-shaped token with deferral language:
 ```
 
 For each match, extract the repo (if named) and issue number, then check that issue/PR's
-actual current state (`gh issue view N --repo <owner>/<repo> --json state,closedAt` or the
+actual current state (GitHub host: `gh issue view N --repo <owner>/<repo> --json state,closedAt` or the
 linked closing PR's `mergedAt`). If the state is CLOSED/merged, the caveat is stale now,
 regardless of whether it was true when written — flag it. Also spot-check the claimed
 downstream effect still holds (e.g. does the dependent file the caveat describes now actually
@@ -3698,7 +3698,7 @@ two lines above in the same commit.
 
 A README embedded verbatim into a package's registry-facing metadata (PyPI wheel `METADATA`/sdist `PKG-INFO`, npm tarball README, crates.io `readme`) is fixed to use absolute `https://github.com/<owner>/<repo>/...` links instead of repo-relative ones — the correct fix for relative links having no base outside the repo (§4.37). But the fix's correctness depends on the target repo being reachable: if `<owner>/<repo>` is still private, every link 404s for non-collaborators. Pre-publish this is inert; the moment the package is published while the repo stays private, the links go live and broken simultaneously.
 
-Detection: for each absolute repo link in a README that a manifest embeds into publishable metadata, extract `(owner, repo)` and check `gh api repos/<owner>/<repo> --jq .visibility`; cross-check against the package's actual registry publish state (§4.18/§4.33).
+Detection: for each absolute repo link in a README that a manifest embeds into publishable metadata, extract `(owner, repo)` and check (GitHub host:) `gh api repos/<owner>/<repo> --jq .visibility`; cross-check against the package's actual registry publish state (§4.18/§4.33).
 
 ```
 https?://github\.com/([^/\s)]+)/([^/\s)]+)/(blob|tree|issues|pull)/
@@ -4189,7 +4189,7 @@ untracked.
 \b(issue|issues)\s+#\d+\s+items?\s+[\d,\s]+
 ```
 
-Detection: fetch the cited issue's body (`gh issue view <n> --json body`) and count its entries
+Detection: fetch the cited issue's body (Read ticket operation; GitHub host: `gh issue view <n> --json body`) and count its entries
 under the continuous and per-section schemes; the ordinal must exist under at least one. Exclude a
 numbered list the body actually carries at that ordinal, and a tracked roadmap's own numbering.
 Fix: drop the ordinal and keep `(issue #<n>)`, or describe the requirement in words.

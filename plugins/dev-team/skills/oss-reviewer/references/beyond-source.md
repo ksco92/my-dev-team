@@ -237,27 +237,21 @@ Policy: any repository set to **public** MUST have branch protection on `main` t
 direct pushes — changes land only through merged pull requests. This gate is enforced here, not
 left to human discipline.
 
-Determine the repo from the clone's `origin` remote, then check visibility and protection:
-
-```
-owner_repo=$(git remote get-url origin | sed -E 's#.*github.com[:/]([^/]+/[^/.]+)(\.git)?#\1#')
-gh api "repos/$owner_repo" --jq .visibility
-gh api "repos/$owner_repo/branches/main/protection" 2>/dev/null
-gh api "repos/$owner_repo/rules/branches/main" --jq '[.[].type]' 2>/dev/null
-```
+Check visibility and trunk protection with the process file's Protection check operation. When
+it says "Not applicable", record INFO naming the reason it gives.
 
 Evaluate:
 
-- **`visibility == "public"` and `main` is not protected** — the classic protection endpoint
-  returns 404 AND no ruleset of type `pull_request` covers `main` (so direct pushes are allowed,
-  or PR review is not required) → **BLOCKER**. Direct pushes to `main` on a public repo defeat the
-  PR + review gate the project relies on. A `pull_request` ruleset (newer GitHub model) or classic
-  protection with `required_pull_request_reviews` set satisfies the requirement.
-- **`visibility == "private"`** — record as **INFO** with the note "set branch protection on `main`
-  before going public." It is a pre-public requirement, not yet a blocker.
+- **public and `main` is not protected** (direct pushes are allowed, or change review is not
+  required) → **BLOCKER**. Direct pushes to `main` on a public repo defeat the PR + review gate the
+  project relies on. GitHub host: the classic protection endpoint returning 404 with no ruleset of
+  type `pull_request` covering `main` is the unprotected case, and a `pull_request` ruleset or
+  classic protection with `required_pull_request_reviews` set satisfies the requirement.
+- **private** — record as **INFO** with the note "set branch protection on `main` before going
+  public." It is a pre-public requirement, not yet a blocker.
 
-If `gh` is unauthenticated or the API call fails, report INFO ("could not verify branch protection;
-confirm manually") rather than passing silently.
+If the Protection check command fails (unauthenticated, API error), report INFO ("could not verify
+branch protection; confirm manually") rather than passing silently.
 
 Exclude: nothing for public repos — this is a hard gate.
 
@@ -459,7 +453,7 @@ contributor rerunning the suite a few times sees what looks like a real regressi
 
 ### 5.19 Hedged closing keyword in a PR body still triggers GitHub's unconditional auto-close (CRITICAL)
 
-A PR body uses a GitHub closing keyword (`closes`/`fixes`/`resolves` + `#N`) inside a
+GitHub host: a PR body uses a GitHub closing keyword (`closes`/`fixes`/`resolves` + `#N`) inside a
 sentence that hedges the closure on a human condition — "Closes #N **if** review agrees
 the evidence is sufficient; otherwise leave #N open" — intending the issue to stay open
 pending a judgment call. GitHub's issue-linking parser has no concept of a conditional: it

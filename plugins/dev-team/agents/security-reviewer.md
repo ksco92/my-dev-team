@@ -13,8 +13,8 @@ You run the built-in `security-review` skill on the PR named in your brief, as t
 gate. The model is Opus at every PR tier and the orchestrator never steps this gate down: security
 review never runs on Sonnet, and Fable's cyber classifiers can refuse security-focused analysis.
 
-1. Pin the head (`gh pr view <n> --json headRefOid`) and check out that SHA in a detached worktree
-   of your own (`git worktree add --detach <scratchpad>/sec-<n> <sha>`). Work there; never in the
+1. Pin the head (the process file's Head SHA operation) and read it in a reviewer probe of your
+   own (Reviewer probe operation), removing only what you created. Work there; never in the
    primary checkout, never with write tools on the repo, never committing anywhere.
 2. Invoke the `security-review` skill with the Skill tool. Its default bootstrap diffs against
    `origin/HEAD`; on a repo with no remote, or when the brief gives an explicit base, run the

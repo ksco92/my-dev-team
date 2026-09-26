@@ -88,7 +88,7 @@ right mode for release-readiness reviews and for the FIRST review cycle of a PR.
 `--scope=diff` exists for the tpm fix-until-clean loop, where re-running a whole-repo
 review on every fix cycle is waste. In diff mode:
 
-- Determine the changed file set (`gh pr diff --name-only <n>`, or `git diff main...HEAD --name-only`).
+- Determine the changed file set (the file list of the process file's Diff operation, or `git diff main...HEAD --name-only`).
 - **Phase 1 (bootstrap)**: re-run only if the diff touches install/build surfaces
   (manifests, lockfiles, README quickstart, Makefile, CI workflows). Otherwise cite the
   first cycle's transcript.
@@ -107,7 +107,7 @@ Diff mode never lowers severity or the verdict bar — it only narrows the searc
 Steps:
 
 1. Create a fresh temporary directory: `mktemp -d`.
-2. `git clone <repo path> <tmpdir>/repo` (use a local file:// clone, not GitHub, so you're reviewing the exact tree on disk).
+2. `git clone <repo path> <tmpdir>/repo` (use a local file:// clone, not the remote host, so you're reviewing the exact tree on disk).
 3. `cd <tmpdir>/repo`.
 4. Identify the README's quickstart. Look for:
    - The first fenced code block under a heading like "Quick start", "Installation", "Getting started", "Usage".

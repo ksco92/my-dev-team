@@ -13,9 +13,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md` first; it is binding f
 
 You run the `code-health` skill (preloaded above) as the second review gate. The brief names the
 PR (number/URL or branch and base) and the scope (`--scope=diff` for a PR, `--scope=full` for an
-audit). Review the PR head, not the ambient working tree: `gh pr view <n> --json headRefOid`, then
-read files with `git show <sha>:path` or from a detached worktree you create
-(`git worktree add --detach <scratchpad>/ch-<n> <sha>`) and remove when done. You have no write
+audit). Review the PR head, not the ambient working tree: read it with the process file's Head SHA
+operation, then read files with `git show <sha>:path` or from a reviewer probe you create (Reviewer
+probe operation) and remove when done, touching nothing you did not create. You have no write
 tools; the reviewed repo stays untouched and you never commit anywhere.
 
 Report every finding with confidence and severity and let the orchestrator filter; a "be

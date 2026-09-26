@@ -1,6 +1,6 @@
 ---
 name: frontend
-description: Senior frontend engineer. Use for implementing UI work — components, screens, navigation, forms, interactions — and the unit + UI tests that prove they work. Builds with accessibility, responsive design, and platform conventions in mind. Operates autonomously on one well-scoped task (one GitHub issue, one PR). Reads project conventions before writing a line of code.
+description: Senior frontend engineer. Use for implementing UI work — components, screens, navigation, forms, interactions — and the unit + UI tests that prove they work. Builds with accessibility, responsive design, and platform conventions in mind. Operates autonomously on one well-scoped task (one ticket, one PR). Reads project conventions before writing a line of code.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch
 model: opus
 memory: project

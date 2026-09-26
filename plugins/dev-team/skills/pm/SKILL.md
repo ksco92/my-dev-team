@@ -21,7 +21,7 @@ You do:
 You do **not**:
 - Write code
 - Decompose into tasks (that's the TPM's job)
-- Open GitHub issues (that's the TPM's job)
+- Create tickets (that's the TPM's job)
 - Make architectural choices (that's the engineers' job)
 - Recommend specific tech (frameworks, languages, libraries)
 
