@@ -35,12 +35,15 @@ jobs:
       - name: Shellcheck plugin scripts
         run: |
           shopt -s nullglob
-          scripts=(plugins/dev-team/hooks/*.sh plugins/dev-team/bin/*)
+          scripts=(plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh)
           if [ "${#scripts[@]}" -eq 0 ]; then
             echo "No hooks/bin scripts yet, skipping shellcheck"
           else
             shellcheck "${scripts[@]}"
           fi
+
+      - name: Test dev-process resolver and session hook
+        run: bash plugins/dev-team/tests/dev-process.test.sh
 
       - name: Check plugin version bump
         if: github.event_name == 'pull_request'

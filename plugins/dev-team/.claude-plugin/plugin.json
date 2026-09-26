@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "dev-team",
-  "version": "0.2.0",
-  "description": "Claude Code development harness, designed to provide TPM orchestration, tiered implementers, five review gates, and stack guides, and to read tracker, host, and workspace commands from DEV_PROCESS.md",
+  "version": "0.3.0",
+  "description": "Claude Code development harness: TPM orchestration, tiered implementers, five review gates, and stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md",
   "author": {
     "name": "Rodrigo"
   },
