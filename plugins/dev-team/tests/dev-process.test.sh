@@ -61,8 +61,10 @@ out="$(HOME="$empty_home" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$link
 check "the hook neither prints nor names a symlinked repo file" "$(grep -c -e secret-target -e "$linked" -e outside.md <<<"$out")" "0"
 
 # Arguments: each misuse exits 1 with the usage lines.
-usage_text="$(sed -n '4,6s/^#   //p' "$DP")"
-for argv in "path --repo $TMP/missing" "path --repo=$repo" "path --bogus" "path extra" "show tracker extra" "get tracker host" "get" "" "bogus"; do
+usage_text="dev-process path [--repo <dir>]              the resolved file
+dev-process show [<section>] [--repo <dir>]  the file, or one \`## \` section by its first word
+dev-process get <key> [--repo <dir>]         one frontmatter value"
+for argv in "path --repo $TMP/missing" "path --repo=$repo" "path --bogus" "show --bogus" "get --bogus" "path extra" "show tracker extra" "get tracker host" "get" "" "bogus"; do
   read -ra words <<<"$argv"
   err="$(HOME="$empty_home" "$DP" "${words[@]+"${words[@]}"}" 2>&1 >/dev/null)"
   check "'dev-process $argv' exits 1" "$?" "1"
@@ -125,6 +127,10 @@ out="$(CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$big" "$HOOK" process </
 check "oversized process file is replaced by a pointer" "$(grep -c '^Not inlined: .* Read it with `.*/bin/dev-process show' <<<"$out")" "1"
 check "the pointer fits the limit" "$(( ${#out} <= 10000 ))" "1"
 check "the pointer quotes the repo path" "$(grep -cF -- "--repo $(printf '%q' "$big")\`" <<<"$out")" "1"
+spaced_root="$TMP/plugin root"
+ln -s "$PLUGIN" "$spaced_root"
+out="$(CLAUDE_PLUGIN_ROOT="$spaced_root" CLAUDE_PROJECT_DIR="$big" "$HOOK" process </dev/null)"
+check "the pointer quotes the plugin root" "$(grep -cF -- "$(printf '%q' "$spaced_root")/bin/dev-process show" <<<"$out")" "1"
 broken="$TMP/broken"
 mkdir -p "$broken/bin"
 printf '#!/bin/sh\necho boom >&2\nexit 1\n' >"$broken/bin/dev-process"
@@ -143,14 +149,17 @@ forbidden_keywords=(onto "force or delete" "anyone but" "commenting on" approvin
 for keyword in "${forbidden_keywords[@]}"; do
   check "the contract's Forbidden row names '$keyword'" "$(grep '^| Forbidden actions |' "$PLUGIN/context/dev-process-contract.md" | grep -c "$keyword")" "1"
 done
-for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
+for file in "$DEFAULT" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
   mkdir -p "$TMP/conf" && cp "$file" "$TMP/conf/DEV_PROCESS.md"
-  check "${file#"$REPO_ROOT"/} is inlined by the hook" \
-    "$(CLAUDE_PLUGIN_ROOT="$long_root" CLAUDE_PROJECT_DIR="$TMP/conf" "$HOOK" process </dev/null | grep -c '^Not inlined')" "0"
   forbidden="$("$DP" show forbidden --repo "$TMP/conf")"
   for keyword in "${forbidden_keywords[@]}"; do
     check "${file#"$REPO_ROOT"/} forbids '$keyword'" "$(grep -c "$keyword" <<<"$forbidden" | grep -c '^[1-9]')" "1"
   done
+done
+for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
+  mkdir -p "$TMP/conf" && cp "$file" "$TMP/conf/DEV_PROCESS.md"
+  check "${file#"$REPO_ROOT"/} is inlined by the hook" \
+    "$(CLAUDE_PLUGIN_ROOT="$long_root" CLAUDE_PROJECT_DIR="$TMP/conf" "$HOOK" process </dev/null | grep -c '^Not inlined')" "0"
   for word in Tracker Code Workspace; do
     body="$("$DP" show "$word" --repo "$TMP/conf")"
     while IFS= read -r op; do

@@ -12,7 +12,7 @@ set -euo pipefail
 DEFAULT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/context/dev-process.default.md"
 
 die() { echo "dev-process: $1" >&2; exit 1; }
-usage() { sed -n '4,6s/^#   //p' "$0" >&2; exit 1; }
+usage() { sed -n 's/^#   \(dev-process .*\)/\1/p' "$0" >&2; exit 1; }
 
 repo=""
 args=()
