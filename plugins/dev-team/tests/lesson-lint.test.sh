@@ -46,7 +46,25 @@ expect_clean "an alias is not a versioned id" "Run the gate on opus, never sonne
 expect_clean "a PR body is not an incident tail" "Describe shortcuts in a PR body."
 expect_clean "a gate name after in PR is not an incident tail" "Run the check in pr-reviewer."
 expect_clean "a starting backtick" '`gh pr checks` is the CI status.'
+expect_clean "a question and an answer" "Is it pinned? Pin it."
+expect_clean "the projects directory without a slash" 'Session logs live in `~/.claude/projects`.'
+expect_clean "an allowed path ending a sentence" "Session logs live in ~/.claude/projects."
+expect_clean "a model alias before a word" "Run opus first, then sonnet reviews."
 expect_rule "three sentences" "One. Two. Three." sentences
+expect_rule "an unterminated third sentence" "One. Two. Three" sentences
+expect_rule "question and exclamation marks end sentences" "Is it pinned? Yes! Pin it." sentences
+expect_rule "a slashed date" "Rebase first, seen on 2026/9/2." date
+expect_rule "a date with one-digit parts" "Rebase first, seen on 2026-9-2." date
+expect_rule "a pull URL" "Rebase first, see github.com/o/r/pull/12 for why." ticket
+expect_rule "an issues URL" "Rebase first, see github.com/o/r/issues/3 for why." ticket
+expect_rule "a hyphenated PR id" "Rebase first as PR-12 did." ticket
+expect_rule "a PR id without a space" "Rebase first as PR12 did." ticket
+expect_rule "a claude id with a bare number" "Run claude-3 for gates." model-id
+expect_rule "a spaced opus version" "Run Opus 4 for gates." model-id
+expect_rule "a versioned haiku id" "Run haiku-4 for gates." model-id
+expect_rule "a spaced fable version" "Run Fable 5 for gates." model-id
+expect_rule "an upper-case sonnet id" "Run SONNET-4 for gates." model-id
+expect_rule "an allowed prefix extended" 'Read `~/.claude/gate-ledger-evil/x` first.' claude-path
 expect_rule "an ISO date" "Rebase first, seen on 2026-09-02." date
 expect_rule "a month and year" "Rebase first since March 2026." date
 expect_rule "a month, day, and year" "Rebase first since Sep 2, 2026." date
@@ -100,6 +118,23 @@ check "scope: exit 1" "$?" "1"
 check "scope: duplicates after whitespace normalization, a wrapped bullet, nothing outside" "$out" \
   "$(printf 'scope.md:7: duplicate: Keep the rule short.\nscope.md:9: duplicate: Keep the rule short.\nscope.md:10: sentences: A rule wrapped. Over two lines. Is three sentences.')"
 
+# Only an exact Learned patterns heading opens the section; `*` and indented bullets are bullets.
+cat >"$TMP/heading.md" <<'MD'
+# Guide
+
+## Learned patterns (retired)
+
+- retired rule.
+
+## Learned patterns
+
+* star rule.
+- Parent rule.
+  - nested rule.
+MD
+check "exact heading, star and nested bullets" "$(cd "$TMP" && "$LINT" heading.md 2>&1)" \
+  "$(printf 'heading.md:9: lowercase: star rule.\nheading.md:11: lowercase: nested rule.')"
+
 # A context/tpm file is linted in full, without a Learned patterns heading.
 mkdir -p "$TMP/context/tpm"
 printf '# tpm rules\n\nIntro. Prose. Here. Too.\n\n- rule one.\n' >"$TMP/context/tpm/x.md"
@@ -150,6 +185,10 @@ out="$(cd "$repo" && "$LINT" --added main a.md 2>&1)"
 check "--added: no additions, exit 0" "$?" "0"
 check "--added: no additions, no output" "$out" ""
 check "--added: works from another directory" "$("$LINT" --added main "$repo/a.md" 2>&1)" ""
+
+printf '# U\n\n## Learned patterns\n\n- untracked rule.\n' >"$repo/untracked.md"
+check "--added: an untracked file lints every bullet" "$(cd "$repo" && "$LINT" --added main untracked.md 2>&1)" \
+  "untracked.md:5: lowercase: untracked rule."
 
 # Usage errors exit 2.
 for argv in "" "--added" "--added main" "--bogus x.md" "$TMP/missing.md"; do
