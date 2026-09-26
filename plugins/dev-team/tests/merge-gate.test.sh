@@ -8,6 +8,12 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 export GATE_LEDGER_ROOT="$TMP/ledger"
 LEDGER="$PLUGIN/bin/gate-ledger"
+on_main="$TMP/on-main"
+on_feature="$TMP/on-feature"
+# An empty fixture path would point `git -C ""` at the caller's repository.
+for fixture in PLUGIN TMP on_main on_feature; do
+  [[ -n "${!fixture}" && "${!fixture}" == /* ]] || { echo "fixture path $fixture is empty or relative" >&2; exit 1; }
+done
 STUB_HEAD=0123456789abcdef0123456789abcdef01234567
 
 pass=0
@@ -44,8 +50,6 @@ run() {
 gate() { run merge-gate.sh "$@"; }
 
 git_t() { git -C "$1" -c user.name=t -c user.email=t@t "${@:2}"; }
-on_main="$TMP/on-main"
-on_feature="$TMP/on-feature"
 for repo in "$on_main" "$on_feature"; do
   mkdir -p "$repo"
   git -C "$repo" init -q -b main
@@ -110,6 +114,9 @@ for prefix in git "${option_forms[@]}"; do
   check "'$prefix merge feature/x' on main without a ledger is denied" "${out%% *}" "2"
   check "'$prefix merge feature/x' denial names the unproven gates" "$(grep -c 'review gates not proven for feature/x' <<<"$out")" "1"
 done
+out="$(gate 'git merge -' "$on_main")"
+check "'git merge -' on main without a ledger is denied" "${out%% *}" "2"
+check "'git merge -' is gated on the previous branch" "$(grep -c 'review gates not proven for feature/x' <<<"$out")" "1"
 repo_key="$(git -C "$on_main" rev-parse --show-toplevel)"
 branch_head="$(git -C "$on_main" rev-parse feature/x)"
 for g in pr-reviewer code-health oss-reviewer security-review readme-writer; do
@@ -118,14 +125,25 @@ done
 for prefix in git "${option_forms[@]}"; do
   check "'$prefix merge feature/x' on main with five PASS at the head is allowed" "$(gate "$prefix merge feature/x" "$on_main")" "0 "
 done
-for cmd in "git merge --no-ff feature/x -F $TMP/msg" 'git merge -m "Merge feature/x" feature/x' 'git merge -X theirs feature/x' \
+for cmd in 'git merge -' "git merge --no-ff feature/x -F $TMP/msg" 'git merge -m "Merge feature/x" feature/x' 'git merge -X theirs feature/x' \
   "git merge --no-ff feature/x -F \"\$(git rev-parse --git-common-dir)/changes/feature/x.md\""; do
   check "'$cmd' on main with five PASS at the head is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done
 
-several="merge-gate: merge one branch per command, as git merge [options] <branch>; a command with several merges, or a merge of several branches, is not accepted."
-check "a merge of two branches is denied" "$(gate 'git merge feature/x other' "$on_main")" "2 $several"
-check "two merges in one command are denied" "$(gate 'git merge other; git merge feature/x' "$on_main")" "2 $several"
+check "a merge of two branches is denied" "$(gate 'git merge feature/x other' "$on_main")" \
+  "2 merge-gate: merge one branch per command, as git merge [options] <branch>; a merge of several branches is not accepted."
+segments="2 merge-gate: run one git merge, pull, or push per command; a command with several of them is not accepted."
+for cmd in 'git merge other; git merge feature/x' 'git merge other;git merge feature/x' 'git merge;git merge feature/x' 'git pull . x; git pull' \
+  'git pull origin x && git pull origin main' 'git pull . x | git pull' 'git push origin evil:main; git push origin x' 'git push origin "evil:main" && git push' \
+  'git pull origin main && git merge feature/x' 'git pull . x
+git pull'; do
+  check "'$cmd' has several gated segments and is denied" "$(gate "$cmd" "$on_main")" "$segments"
+done
+for cmd in 'git merge evil; git merge-base --fork-point feature/x' 'git merge evil; git merge-base --help'; do
+  check "'$cmd' is denied on the merge's own operand" "$(gate "$cmd" "$on_main")" "2 merge-gate: unknown branch 'evil'."
+done
+check "a merge beside merge-base, merge-tree, merge-file, and push-x is one segment" \
+  "$(gate 'git merge-base main feature/x; git merge-tree main feature/x; git merge-file a b c; git push-x; git merge feature/x' "$on_main")" "0 "
 for cmd in 'git merge -m feature/x other' 'git merge -s ours other'; do
   out="$(gate "$cmd" "$on_main")"
   check "'$cmd' is denied" "${out%% *}" "2"
@@ -144,8 +162,11 @@ upstream origin/main
 check "a bare merge with a remote-trunk upstream is allowed" "$(gate 'git merge&&true' "$on_main")" "0 "
 
 pull_denied="2 merge-gate: on main, pull only its remote trunk (git pull with a remote-trunk upstream, or git pull <remote> main); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
-for cmd in 'git pull' 'git pull --ff-only' 'git pull --rebase' 'git pull --no-rebase' 'git pull origin main' 'git pull -X theirs origin main'; do
-  check "'$cmd' with a remote-trunk upstream is allowed" "$(gate "$cmd" "$on_main")" "0 "
+for cmd in 'git pull' 'git pull --ff-only' 'git pull --rebase' 'git pull --no-rebase' 'git pull -X theirs'; do
+  check "bare '$cmd' with a remote-trunk upstream is allowed" "$(gate "$cmd" "$on_main")" "0 "
+done
+for cmd in 'git pull origin main' 'git pull origin refs/heads/main' 'git pull --ff-only origin main' 'git pull -X theirs origin main'; do
+  check "explicit remote trunk '$cmd' is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done
 for cmd in 'git pull origin feature/x' 'git pull . feature/x' "git pull $on_feature" 'git pull https://example.com/r.git main' 'git pull --squash'; do
   check "'$cmd' on main is denied" "$(gate "$cmd" "$on_main")" "$pull_denied"
@@ -175,6 +196,18 @@ check "a mirror push is denied" "$(gate 'git push --mirror' "$on_feature")" \
 check "a force push of a feature branch is allowed" "$(gate 'git push -f origin feature/x' "$on_feature")" "0 "
 check "a bare force push on a feature branch is allowed" "$(gate 'git push -f' "$on_feature")" "0 "
 check "a push of main onto main is allowed" "$(gate 'git push origin main' "$on_main")" "0 "
+check "a push of a feature branch is allowed" "$(gate 'git push origin feature/x' "$on_feature")" "0 "
+for cmd in 'git push -uf origin' 'git push -fu origin' 'git push +HEAD'; do
+  check "'$cmd' on main is a bare force and is denied" "$(gate "$cmd" "$on_main")" "$bare_force"
+done
+for cmd in 'git push -f origin HEAD' 'git push origin +HEAD' 'git push -f origin @'; do
+  check "'$cmd' on main resolves to main and is denied" "$(gate "$cmd" "$on_main")" \
+    "2 merge-gate: force or delete push to main is refused; main is only ever advanced by a gated merge."
+done
+check "a forced --all is denied from a feature branch" "$(gate 'git push --all -f origin' "$on_feature")" \
+  "2 merge-gate: a forced push --all includes main; name the branch to push."
+check "a push onto heads/main is denied" "$(gate 'git push origin evil:heads/main' "$on_feature")" \
+  "2 merge-gate: pushing 'evil' onto heads/main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."

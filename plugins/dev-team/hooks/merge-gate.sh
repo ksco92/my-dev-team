@@ -12,16 +12,17 @@
 #     a switch to main, -, @{-N}, rebase onto      the command runs, so it cannot gate these
 #     main, a -C/--git-dir/--work-tree/GIT_DIR/
 #     env -C redirect, or in a subshell
-#   two merges, a merge of two branches, or a      always denied
-#     merge from a cwd that is no repository
-#   git push <src>:main, :main, --mirror, a        denied unless <src> is main itself
-#     force push of main or a bare force on main
+#   two merge/pull/push segments, a merge of two   always denied
+#     branches, a merge from a cwd that is no repo
+#   git push ... <src>:main                        denied unless <src> is main itself
+#   git push --mirror, :main, a force or delete    always denied
+#     of main, a forced --all, a bare force on main
 #
 # Exit 2 blocks the tool call and every error path fails closed. The match is textual, so a command
 # that merely quotes a guarded phrase is refused; write such text with a file tool instead.
-# Not gated: any form the matcher does not parse as its own git command or named redirect (an escaped,
-# quoted, aliased, `eval`, or `bash -c` git; a branch in a variable; `symbolic-ref`), and a trunk update
-# with no merge or push (`reset --hard`, `update-ref`); the tpm's Check ledger and CI step is the backstop.
+# Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
+# variables, `eval`, `bash -c`, backticks, aliases, git config, split strings), and a trunk update with
+# no merge or push (`reset --hard`, `update-ref`); the tpm's Check ledger and CI step is the backstop.
 #
 # Owner-only bypass: create $GATE_LEDGER_ROOT/.bypass, default ~/.claude/gate-ledger/.bypass
 # (delete it afterwards). The model has no reason to touch that file; if it does, that is itself
@@ -34,6 +35,7 @@ BYPASS="$GATE_LEDGER_ROOT/.bypass"
 W='(^|[;&|([:space:]])'
 END='([[:space:];&|)]|$)'
 MAIN='(refs/heads/)?(main|master)'
+PUSH_MAIN='((refs/)?heads/)?(main|master)'
 QUOTED='"[^"]*"|'"'"'[^'"'"']*'"'"''
 # One shell word: quoted strings, $(...) substitutions, escaped and plain characters.
 WORD="(${QUOTED}|\\\$\\([^)]*\\)|\\\\.|[^][:space:]\"';&|()\\\\])+"
@@ -76,13 +78,20 @@ if (( is_redirected )) || { (( is_git_merge || is_git_pull )) && {
   deny "merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
 fi
 
-# Words of the last `git <sub>` segment, quotes and escapes removed, up to the next separator.
+spaced="$(sed -E 's/[;&|()]/& /g' <<<"$flat")"
+if (( $(grep -oE "${GIT}(merge|pull|push)${END}" <<<"$spaced" | wc -l) > 1 )); then
+  deny "merge-gate: run one git merge, pull, or push per command; a command with several of them is not accepted."
+fi
+
+# Words of the `git <sub>` segment, quotes and escapes removed, up to the next separator.
 words() {
-  local tok
+  local tok n rest
+  [[ "$flat" =~ ${GIT}$1${END}(.*) ]] || return 0
+  n=${#BASH_REMATCH[@]}; rest="${BASH_REMATCH[n-2]}${BASH_REMATCH[n-1]}"
   while IFS= read -r tok; do
     [[ "$tok" == [\;\&\|\(\)] ]] && break
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
-  done < <(sed -E "s/.*${GIT}$1//" <<<"$flat" | grep -oE "$TOK")
+  done < <(grep -oE "$TOK" <<<"$rest")
 }
 current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" || current=""
 on_trunk=0; [[ "$current" == "main" || "$current" == "master" ]] && on_trunk=1
@@ -94,16 +103,18 @@ if (( is_git_merge )); then
   merge_ops=() skip=0
   while IFS= read -r w; do
     if (( skip )); then skip=0
-    elif [[ "$w" == -* ]]; then [[ " -m --message -F --file $STRATEGY_OPTS --into-name " == *" $w "* ]] && skip=1
+    elif [[ "$w" == -?* ]]; then [[ " -m --message -F --file $STRATEGY_OPTS --into-name " == *" $w "* ]] && skip=1
     else merge_ops+=("$w"); fi
   done < <(words merge)
-  if (( $(grep -oE "${GIT}merge${END}" <<<"$flat" | wc -l) > 1 || ${#merge_ops[@]} > 1 )); then
-    deny "merge-gate: merge one branch per command, as git merge [options] <branch>; a command with several merges, or a merge of several branches, is not accepted."
-  fi
+  (( ${#merge_ops[@]} <= 1 )) \
+    || deny "merge-gate: merge one branch per command, as git merge [options] <branch>; a merge of several branches is not accepted."
   [[ -n "$current" ]] \
     || deny "merge-gate: the working directory '$cwd' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
   if (( on_trunk )); then
     branch="${merge_ops[0]:-}"
+    if [[ "$branch" == - ]]; then
+      branch="$(git -C "$cwd" rev-parse --abbrev-ref '@{-1}' 2>/dev/null)" || deny "merge-gate: no previous branch for 'git merge -'."
+    fi
     if [[ -z "$branch" ]]; then
       upstream_is_remote_trunk || deny "merge-gate: could not determine the branch being merged into $current."
     else
@@ -133,26 +144,34 @@ if (( is_git_pull && on_trunk )); then
 fi
 
 if (( is_git_push )); then
-  force=0 push_ops=()
+  force=0 all=0 skip=0 push_ops=()
   while IFS= read -r w; do
+    if (( skip )); then skip=0; continue; fi
     case "$w" in
       --mirror) deny "merge-gate: git push --mirror rewrites main; push branches and merge through the gated path." ;;
-      -f | --force | --force-with-lease* | --force-if-includes | -d | --delete) force=1 ;;
+      --all) all=1 ;;
+      --force | --force-with-lease* | --force-if-includes | --delete) force=1 ;;
+      -o | --push-option | --repo | --receive-pack | --exec) skip=1 ;;
+      --*) ;;
+      -*[fd]*) force=1 ;;
       -*) ;;
+      +*) force=1; push_ops+=("$w") ;;
       *) push_ops+=("$w") ;;
     esac
   done < <(words push)
+  (( force && all )) && deny "merge-gate: a forced push --all includes main; name the branch to push."
   (( force && on_trunk && ${#push_ops[@]} <= 1 )) \
     && deny "merge-gate: a force push without a refspec from $current pushes main; name the branch to push."
-  for tok in "${push_ops[@]:1}"; do
-    [[ "$tok" == +* ]] && { force=1; tok="${tok#+}"; }
-    if grep -Eqx "$MAIN" <<<"$tok"; then
+  for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
+    tok="${tok#+}"
+    [[ "$tok" == HEAD || "$tok" == @ ]] && tok="$current"
+    if grep -Eqx "$PUSH_MAIN" <<<"$tok"; then
       (( force )) && deny "merge-gate: force or delete push to $tok is refused; main is only ever advanced by a gated merge."
-    elif grep -Eqx "[^:]*:${MAIN}" <<<"$tok"; then
+    elif grep -Eqx "[^:]*:${PUSH_MAIN}" <<<"$tok"; then
       src="${tok%%:*}"
       [[ -n "$src" ]] || deny "merge-gate: pushing an empty source onto ${tok#*:} deletes it; main is only ever advanced by a gated merge."
       (( force )) && deny "merge-gate: force push of '$src' onto ${tok#*:} is refused."
-      if [[ "$src" == "HEAD" ]]; then
+      if [[ "$src" == HEAD || "$src" == @ ]]; then
         src="$current"; [[ -n "$src" ]] || deny "merge-gate: cannot resolve HEAD in $cwd for '$tok'."
       fi
       [[ "$src" == "main" || "$src" == "master" ]] \
