@@ -1,7 +1,5 @@
 # dev-team
 
-Claude Code plugin carrying Rodrigo's personal dev harness: a TPM orchestration skill, tiered
-implementer agents, review-gate agents, stack guides, and hooks.
+Claude Code plugin providing TPM orchestration, tiered implementer agents, five review gates, and stack guides.
 
-This version is a skeleton only. The skills, agents, context guides, hooks, and eval fixtures land
-in later releases of this plugin.
+Reads the tracker, code host, and workspace commands from `DEV_PROCESS.md` at the repository root, falling back to `~/.claude/DEV_PROCESS.md`.

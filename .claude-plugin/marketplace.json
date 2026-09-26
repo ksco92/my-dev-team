@@ -3,7 +3,7 @@
   "owner": {
     "name": "Rodrigo"
   },
-  "description": "Marketplace for Rodrigo's personal Claude Code plugins.",
+  "description": "Claude Code plugin marketplace: TPM orchestration, tiered implementers, five review gates, stack guides; tracker, host and workspace read from DEV_PROCESS.md",
   "plugins": [
     {
       "name": "dev-team",
