@@ -167,6 +167,11 @@ for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCES
     done < <(operations "$word")
   done
 done
+for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
+  merge_row="$(grep '^| Merge |' "$file")"
+  check "${file#"$REPO_ROOT"/} Merge row requires gate-ledger check and CI status" \
+    "$(grep -F 'gate-ledger check' <<<"$merge_row" | grep -cF 'CI status')" "1"
+done
 
 echo "$pass passed, $fail failed"
 (( fail == 0 ))

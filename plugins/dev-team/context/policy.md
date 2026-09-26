@@ -69,11 +69,11 @@ tracker-less.
 
 - The `tpm` orchestrator alone merges; implementers and reviewers never do.
 - The merge gate is a mechanism, not a verdict: `${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh`
-  (PreToolUse, wired in the plugin's `hooks/hooks.json`) refuses `gh pr merge` and a `gh api`
-  call to a PR's merge endpoint — and `git merge` into `main` in a no-remote repo — unless
+  (PreToolUse, wired in the plugin's `hooks/hooks.json`) refuses the guarded merge forms unless
   `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger` shows all five gates (`pr-reviewer`, `code-health`,
-  `oss-reviewer`, `security-review`, `readme-writer`) PASS with zero findings at the PR's current head and
-  `gh pr checks` is terminal-green; each record names the model the gate ran on. It also refuses a
+  `oss-reviewer`, `security-review`, `readme-writer`) PASS with zero findings at the PR's current
+  head; what it checks per form is stated in `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`.
+  Each record names the model the gate ran on. It also refuses a
   `git push` of any non-main ref onto `main`, and any force or delete push of `main`. Nits block.
   A reviewer PASS is necessary, never sufficient. Owner-only bypass:
   `~/.claude/gate-ledger/.bypass`.
