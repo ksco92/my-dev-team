@@ -81,15 +81,19 @@ and replaces a longer file with a pointer to `dev-process show`.
 
 The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
 passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
-reports no checks as passing. It refuses `git merge` into `main` or `master` unless the ledger
-passes, and always refuses a GraphQL `mergePullRequest`, a `git merge` from a working directory
-that is not a repository, and a `git merge` in the same command as a `cd`, `pushd`,
-`git worktree add`, or checkout or switch to `main`, `master`, or `-`, or redirected with `-C`,
-`--git-dir`, or `--work-tree`. A merge the matcher cannot see as its own git command (`bash -c`, an
-absolute git path, a backtick substitution) and a branch switch through `symbolic-ref` are not gated.
-The hook checks CI for some forms only and passes a PR with no reported checks or with skipped
-checks, so the tpm runs the Check ledger and CI status operations before every Merge, including any
-form outside those, and the file's Merge row states that its command runs only after both.
+reports no checks as passing. It refuses `git merge` into `main` or `master`, and a `git pull` into
+them from a local path or of a branch other than the trunk, unless the ledger passes for the merged
+branch. It always refuses a GraphQL `mergePullRequest`, a `git merge` from a working directory that
+is not a repository, a command with two merges or a merge of two branches, and a `git merge` in the
+same command as a `cd`, `pushd`, `git worktree add`, or checkout or switch to `main`, `master`, `-`,
+or `@{-N}`, or redirected with `-C`, `--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or
+`env -C`, or run in a subshell or `$(...)`. Not gated: `bash -c`/`sh -c`, an absolute git path,
+backticks, an escaped or quoted `git`, a branch in a shell variable, a `symbolic-ref` switch, or a
+`main` update without a merge (`reset --hard`, `branch -f`, `update-ref`, a fetch into main,
+`checkout -B main <ref>`). The hook checks CI for some forms only and passes a PR with no reported
+checks or with skipped checks, so the tpm runs the Check ledger and CI status operations before
+every Merge, including any form outside those, and the file's Merge row states that its command runs
+only after both.
 
 ## Workspace
 

@@ -7,9 +7,13 @@
 #   gh api ... repos/<o>/<r>/pulls/<n>/merge       the same check, PR and repo parsed from the path
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
-#   git merge after cd/pushd/worktree add or with  always denied; the hook reads the branch before
-#     a checkout/switch to main or -, or through   the command runs, so it cannot gate these
-#     -C, --git-dir, --work-tree
+#   git pull <path|remote> <branch> on main       the same ledger check; a remote's trunk passes
+#   git merge after cd/pushd/worktree add, with a  always denied; the hook reads the branch before
+#     checkout/switch to main, -, or @{-N}, or     the command runs, so it cannot gate these
+#     through -C, --git-dir, --work-tree,
+#     GIT_DIR=, GIT_WORK_TREE=, env -C, or in
+#     a subshell or $(...) substitution
+#   two merges, or a merge of two branches         always denied
 #   git merge from a cwd that is no repository     always denied
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --force / +ref / --delete ... main    always denied
@@ -17,9 +21,11 @@
 # Exit 2 blocks the tool call (any other exit lets it through), so every unexpected error path
 # here fails CLOSED: a hook that cannot prove the gate is green refuses the merge. The match is
 # textual, so a command that merely quotes one of the guarded phrases is also refused; write such
-# text with a file tool instead. A merge the matcher cannot see as its own git command (`bash -c`,
-# an absolute git path, a backtick substitution) and a branch switch through `symbolic-ref` are not
-# gated, which is why the tpm runs its Check ledger and CI status step before every Merge.
+# text with a file tool instead.
+# Not gated: `bash -c`/`sh -c`, an absolute git path, a backtick substitution, an escaped or quoted
+# `git`, a branch in a shell variable, a `symbolic-ref` switch, or a main update without a merge (`reset
+# --hard`, `branch -f`, `update-ref`, a fetch into main, `checkout -B main <ref>`); hence the tpm's own
+# Check ledger and CI status step before every Merge.
 #
 # Owner-only bypass: create $GATE_LEDGER_ROOT/.bypass, default ~/.claude/gate-ledger/.bypass
 # (delete it afterwards). The model has no reason to touch that file; if it does, that is itself
@@ -33,7 +39,10 @@ W='(^|[;&|([:space:]])'
 MAIN='(refs/heads/)?(main|master)'
 # `git`, its global options (a value may be quoted), and the space before the subcommand.
 VAL='("[^"]*"|'"'"'[^'"'"']*'"'"'|[^;&|()[:space:]]+)'
-GIT="${W}git([[:space:]]+(-[cC][[:space:]]*${VAL}|--(git-dir|work-tree|namespace|exec-path|config-env)([[:space:]]+|=)${VAL}|-[-A-Za-z]+))*[[:space:]]+"
+GIT_BODY="git([[:space:]]+(-[cC][[:space:]]*${VAL}|--(git-dir|work-tree|namespace|exec-path|config-env)([[:space:]]+|=)${VAL}|-[-A-Za-z]+))*[[:space:]]+"
+GIT="${W}${GIT_BODY}"
+# One shell word (quotes kept) or one separator.
+TOK='("[^"]*"|'"'"'[^'"'"']*'"'"'|[^][:space:]"'"'"';&|()]+)+|[;&|()]'
 
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"
@@ -50,17 +59,50 @@ has() { grep -Eq "$1" <<<"$flat"; }
 has "${W}gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)" && is_gh_merge=1 || is_gh_merge=0
 has "${W}gh[[:space:]]+api([[:space:]]|$)" && is_gh_api=1 || is_gh_api=0
 has "${GIT}merge([[:space:]]|$)" && is_git_merge=1 || is_git_merge=0
-has "${W}git[[:space:]]+push([[:space:]]|$)" && is_git_push=1 || is_git_push=0
+has "${GIT}push([[:space:]]|$)" && is_git_push=1 || is_git_push=0
+has "${GIT}pull([[:space:]]|$)" && is_git_pull=1 || is_git_pull=0
 has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]]merge([[:space:]]|$)" && is_redirected_merge=1 || is_redirected_merge=0
-(( is_gh_merge || is_gh_api || is_git_merge || is_git_push || is_redirected_merge )) || exit 0
+(( is_gh_merge || is_gh_api || is_git_merge || is_git_push || is_git_pull || is_redirected_merge )) || exit 0
 
 [[ -f "$BYPASS" ]] && { echo "merge-gate: bypass file present, allowing" >&2; exit 0; }
 
 if (( is_redirected_merge )) || { (( is_git_merge )) && {
   has "${W}(cd|pushd)([[:space:]]|$).*${GIT}merge([[:space:]]|$)" \
     || has "${GIT}worktree[[:space:]]+add([[:space:]]|$).*${GIT}merge([[:space:]]|$)" \
-    || has "${GIT}(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+([\"']?${MAIN}[\"']?|-)([;&|)[:space:]]|$)"; }; }; then
-  deny "merge-gate: run the merge as its own command, from a session whose working directory is the repository, on the already checked-out trunk; a merge in the same command as a cd, pushd, worktree add, checkout, or switch, or one redirected with -C, --git-dir, or --work-tree, is not accepted."
+    || has "${W}(export[[:space:]]+)?GIT_(DIR|WORK_TREE)=" \
+    || has "${W}env[[:space:]]([^;&|]*[[:space:]])?(-C|--chdir)" \
+    || has "\([[:space:]]*${GIT_BODY}merge([[:space:]]|$)" \
+    || has "${GIT}(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+[\"']?(${MAIN}|-|@\{-[0-9]+\})[\"']?([;&|)[:space:]]|$)"; }; }; then
+  deny "merge-gate: run the merge as its own command, from a session whose working directory is the repository, on the already checked-out trunk; a merge in the same command as a cd, pushd, worktree add, checkout, or switch, or one redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+fi
+
+# Non-option operands of the last `git <sub>` segment, quotes stripped; $2 lists options that take a value.
+operands() {
+  local tok skip=0
+  while IFS= read -r tok; do
+    [[ "$tok" == [\;\&\|\(\)] ]] && break
+    if (( skip )); then skip=0; continue; fi
+    if [[ "$tok" == -* ]]; then [[ " $2 " == *" $tok "* ]] && skip=1; continue; fi
+    tok="${tok//\"/}"; printf '%s\n' "${tok//\'/}"
+  done < <(sed -E "s/.*${GIT}$1//" <<<"$flat" | grep -oE "$TOK")
+}
+
+# Ledger proof for merging a local branch into the checked-out trunk.
+gate_branch() {
+  local branch="$1" repo head ledger_out
+  repo="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)"
+  head="$(git -C "$cwd" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
+  ledger_out="$("$LEDGER" check "$repo" "$branch" "$head" 2>&1)" \
+    || deny "merge-gate: review gates not proven for $branch at ${head:0:12}: $ledger_out. A local branch→main merge is a PR for gate purposes — run all gates and record them."
+}
+
+if (( is_git_merge )); then
+  merge_ops=()
+  while IFS= read -r op; do merge_ops+=("$op"); done \
+    < <(operands merge "-m --message -F --file -s --strategy -X --strategy-option --into-name")
+  if (( $(grep -oE "${GIT}merge([[:space:]]|$)" <<<"$flat" | wc -l) > 1 || ${#merge_ops[@]} > 1 )); then
+    deny "merge-gate: merge one branch per command, as git merge [options] <branch>; a command with several merges, or a merge of several branches, is not accepted."
+  fi
 fi
 
 # Ledger + CI proof for one GitHub PR. Any failure to read state denies.
@@ -113,7 +155,7 @@ fi
 
 if (( is_git_push )); then
   # Only the push's own arguments: strip everything before `git push` and after the next separator.
-  push_args="$(sed -E 's/.*git[[:space:]]+push//; s/[;&|].*//' <<<"$command")"
+  push_args="$(sed -E "s/.*${GIT}push//; s/[;&|].*//" <<<"$flat")"
   force=0
   grep -Eq -- '(^|[[:space:]])(-f|--force|--force-with-lease(=[^[:space:]]*)?|-d|--delete)([[:space:]]|$)' <<<"$push_args" && force=1
   for tok in $push_args; do
@@ -139,12 +181,28 @@ if (( is_git_merge )); then
   current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" \
     || deny "merge-gate: the working directory '$cwd' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
   if [[ "$current" == "main" || "$current" == "master" ]]; then
-    branch="$(sed -E "s/.*${GIT}merge//" <<<"$flat" | tr ' ' '\n' | grep -vE '^(-|$)' | head -1)"
-    [[ -n "$branch" ]] || deny "merge-gate: could not determine the branch being merged into $current."
-    repo="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)"
-    head="$(git -C "$cwd" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
-    ledger_out="$("$LEDGER" check "$repo" "$branch" "$head" 2>&1)" \
-      || deny "merge-gate: review gates not proven for $branch at ${head:0:12}: $ledger_out. A local branch→main merge is a PR for gate purposes — run all gates and record them."
+    [[ -n "${merge_ops[0]:-}" ]] || deny "merge-gate: could not determine the branch being merged into $current."
+    gate_branch "${merge_ops[0]}"
+  fi
+fi
+
+if (( is_git_pull )); then
+  # A pull into the trunk is a merge unless it takes the trunk from a configured remote.
+  current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" || current=""
+  if [[ "$current" == "main" || "$current" == "master" ]]; then
+    pull_ops=()
+    while IFS= read -r op; do pull_ops+=("$op"); done \
+      < <(operands pull "-s --strategy -X --strategy-option -o --server-option --depth --deepen --shallow-since --shallow-exclude --negotiation-tip")
+    if (( ${#pull_ops[@]} > 0 )); then
+      (( ${#pull_ops[@]} <= 2 )) || deny "merge-gate: pull one branch per command; a pull of several branches into $current is not accepted."
+      src="${pull_ops[1]:-}"; src="${src#+}"; src="${src%%:*}"
+      if git -C "$cwd" remote | grep -qxF -- "${pull_ops[0]}"; then
+        [[ -z "$src" || "$src" == "main" || "$src" == "master" ]] || gate_branch "$src"
+      else
+        [[ -n "$src" ]] || deny "merge-gate: could not determine the branch pulled from '${pull_ops[0]}' into $current."
+        gate_branch "$src"
+      fi
+    fi
   fi
 fi
 exit 0
