@@ -23,7 +23,7 @@ case "${1:-}" in
     if path="$("$root/bin/dev-process" path ${repo:+--repo "$repo"} 2>&1)" \
       && process="$("$root/bin/dev-process" show ${repo:+--repo "$repo"} 2>&1)"; then
       header="# Development process (resolved from $path)"
-      source="\`$root/bin/dev-process show [<section>]${repo:+ --repo $repo}\`"
+      source="\`$(printf '%q' "$root/bin/dev-process") show [<section>]${repo:+ --repo $(printf '%q' "$repo")}\`"
       out="$(block "$header" <<<"$process")"
     else
       out="# Development process: resolution failed (${process:-$path}); ask the user which process applies."

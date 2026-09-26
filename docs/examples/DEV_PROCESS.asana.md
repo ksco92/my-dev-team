@@ -14,7 +14,8 @@ at `~/.claude/DEV_PROCESS.md`.
 Asana is reached through its official MCP server (OAuth), added once per machine:
 
 ```
-claude mcp add --transport http --client-id <client_id> --client-secret --callback-port 8080 asana https://mcp.asana.com/v2/mcp
+claude mcp add --transport http --client-id <client_id> --client-secret --callback-port 8080 \
+  asana https://mcp.asana.com/v2/mcp
 ```
 
 MCP tokens do not work against the REST API. The bash fallback in the tables needs a separate
@@ -22,7 +23,10 @@ personal access token in `ASANA_ACCESS_TOKEN` and this helper, which takes the A
 request bodies are wrapped in `{"data":{...}}`:
 
 ```bash
-asana_api() { curl -sS --fail-with-body --max-time 30 -H "Authorization: Bearer $ASANA_ACCESS_TOKEN" -H "Content-Type: application/json" "https://app.asana.com/api/1.0$1" "${@:2}"; }
+asana_api() {
+  curl -sS --fail-with-body --max-time 30 -H "Authorization: Bearer $ASANA_ACCESS_TOKEN" \
+    -H "Content-Type: application/json" "https://app.asana.com/api/1.0$1" "${@:2}"
+}
 ```
 
 ## Tracker: Asana

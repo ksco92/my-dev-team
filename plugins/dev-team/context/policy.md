@@ -75,8 +75,8 @@ tracker-less.
   `oss-reviewer`, `security-review`, `readme-writer`) PASS with zero findings at the PR's current head and
   `gh pr checks` is terminal-green; each record names the model the gate ran on. It also refuses a
   `git push` of any non-main ref onto `main`, and any force or delete push of `main`. Nits block.
-  A reviewer PASS is necessary, never sufficient. The ledger lives under `~/.claude/gate-ledger`;
-  owner-only bypass: `~/.claude/gate-ledger/.bypass`.
+  A reviewer PASS is necessary, never sufficient. Owner-only bypass:
+  `~/.claude/gate-ledger/.bypass`.
 - Every finding from every gate is fixed, never waived. Tier-escalation first; the user only when
   a finding survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.
 - A repo's own `CLAUDE.md` may disable auto-merge, change the merge method, or tighten the checks.

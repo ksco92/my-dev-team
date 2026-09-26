@@ -127,10 +127,10 @@ patch) and is made once, in the final rebase before the merge.
 
 ## Forbidden
 
-Committing directly on `main` or advancing it by anything but the gated `git merge`; force or
-delete pushes of `main` where a remote exists; merging by anyone but the orchestrator; changing,
-closing, or approving a change from a reviewer; editing the gate ledger, the hooks, or CI
-configuration inside a slice; deleting outside the workspace under work.
+Moving any other ref onto `main` except by the gated `git merge`, a direct commit on `main`
+included; force or delete pushes of `main` where a remote exists; merging by anyone but the
+orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
+ledger, the hooks, or CI configuration inside a slice; deleting outside the workspace under work.
 
 ## Repository-specific constraints
 

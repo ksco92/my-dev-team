@@ -7,7 +7,8 @@ slice, or what a gate checks: that is `${CLAUDE_PLUGIN_ROOT}/context/policy.md`.
 
 ## Resolution
 
-The first match wins, and the winning file is used whole; sections never merge across tiers.
+The first match wins, and the winning file is used whole; sections never merge across tiers. A
+symlinked `DEV_PROCESS.md` at the repository root is ignored.
 
 1. An instruction given in the session.
 2. `DEV_PROCESS.md` at the repository root.

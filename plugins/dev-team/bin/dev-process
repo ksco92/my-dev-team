@@ -12,12 +12,14 @@ set -euo pipefail
 DEFAULT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/context/dev-process.default.md"
 
 die() { echo "dev-process: $1" >&2; exit 1; }
+usage() { sed -n '4,6s/^#   //p' "$0" >&2; exit 1; }
 
 repo=""
 args=()
 while (( $# )); do
   case "$1" in
-    --repo) [[ $# -ge 2 ]] || die "--repo needs a directory"; repo="$2"; shift 2 ;;
+    --repo) [[ $# -ge 2 && -d "$2" ]] || usage; repo="$2"; shift 2 ;;
+    -*) usage ;;
     *) args+=("$1"); shift ;;
   esac
 done
@@ -26,17 +28,20 @@ set -- "${args[@]+"${args[@]}"}"
 resolve() {
   local dir="${repo:-${CLAUDE_PROJECT_DIR:-}}" f
   [[ -n "$dir" ]] || dir="$(git rev-parse --show-toplevel 2>/dev/null)" || dir="$PWD"
-  for f in "$dir/DEV_PROCESS.md" "$HOME/.claude/DEV_PROCESS.md" "$DEFAULT"; do
+  # A cloned repository could point a symlink anywhere, so the repo tier refuses one.
+  [[ -f "$dir/DEV_PROCESS.md" && ! -L "$dir/DEV_PROCESS.md" ]] && { printf '%s\n' "$dir/DEV_PROCESS.md"; return; }
+  for f in "$HOME/.claude/DEV_PROCESS.md" "$DEFAULT"; do
     [[ -f "$f" ]] && { printf '%s\n' "$f"; return; }
   done
   die "no DEV_PROCESS.md found and the plugin default is missing at $DEFAULT"
 }
 
-usage="usage: dev-process path|show [<section>]|get <key> [--repo <dir>]"
 case "${1:-}" in
   path)
+    (( $# == 1 )) || usage
     resolve ;;
   show)
+    (( $# <= 2 )) || usage
     file="$(resolve)"
     [[ -n "${2:-}" ]] || { cat "$file"; exit 0; }
     # A `## ` line inside a fenced block (a ticket template) is not a section heading.
@@ -47,14 +52,14 @@ case "${1:-}" in
       END { exit !found }
     ' "$file" || die "no section '$2' in $file" ;;
   get)
-    [[ -n "${2:-}" ]] || die "$usage"
+    (( $# == 2 )) || usage
     file="$(resolve)"
     awk -v key="$2" '
       NR == 1 && $0 == "---" { fm = 1; next }
-      fm && $0 == "---" { exit }
+      $0 == "---" { exit }
       fm && index($0, key ":") == 1 { v = substr($0, length(key) + 2); gsub(/^[ \t]+|[ \t]+$/, "", v); print v; found = 1; exit }
       END { exit !found }
     ' "$file" || die "no frontmatter key '$2' in $file" ;;
   *)
-    die "$usage" ;;
+    usage ;;
 esac

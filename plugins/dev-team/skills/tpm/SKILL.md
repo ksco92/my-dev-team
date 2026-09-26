@@ -33,7 +33,8 @@ read or ask.
 skill — it wins), `./docs/product/` (the Product Brief from the `pm` skill: target user, MVP
 scope, explicit non-goals), and any `./TODO.md`, `./docs/decisions/`, `./specs/`. Where the
 project contradicts this skill's defaults, the project wins.
-Also load the resolved development process, `${CLAUDE_PLUGIN_ROOT}/bin/dev-process show` (already in context from session start; re-read with `--repo <dir>` after changing repositories).
+Also load the resolved development process, `${CLAUDE_PLUGIN_ROOT}/bin/dev-process show`
+(already in context from session start; re-read with `--repo <dir>` after changing repositories).
 
 ## Phase 1 — Requirements
 

@@ -90,7 +90,7 @@ Change body template:
 
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
-| Forbidden actions | | actions no role takes; see the contract's minimum list |
+| Forbidden actions | | at least: any other ref onto the trunk, force or delete pushes, a merge by anyone but the orchestrator, a reviewer commenting on or approving, editing the ledger, hooks, or CI in a slice, deleting outside the workspace |
 
 ## Repository-specific constraints
 

@@ -7,15 +7,8 @@ merge_method: squash
 
 # Development process
 
-Machine-level default. A `DEV_PROCESS.md` at a repository's root overrides this file for that
-repository; a user instruction in the session overrides both. This file says *how* tickets,
-branches, changes, and merges are done on this machine. It says nothing about how work is
-decomposed, which model implements a slice, or what the review gates check: those live in the
-harness and do not vary by tracker or host.
-
-Every section below names an operation the harness calls and the exact command that performs it
-here. A skill or agent that needs one of these operations reads it from this file and never
-carries a tracker- or host-specific command of its own.
+Example for a machine whose tickets and code live on GitHub and whose slices run in git
+worktrees. Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
 
 ## Tracker: GitHub Issues
 
