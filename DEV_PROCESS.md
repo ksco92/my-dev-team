@@ -105,7 +105,7 @@ Change request body template:
 | Reviewer probe | Each reviewer round gets its own detached worktree at the head: `git worktree add --detach <scratchpad>/<gate>-<pr>-<suffix> <sha>`; a reviewer removes only the worktree it created |
 | Parallelism | Independent slices run in parallel, each in its own workspace |
 | Remove workspace | After the merge: `git -C ~/projects/my-dev-team worktree remove ~/worktrees/my-dev-team/<branch>`, then a full-line `ps` scan for the path and kill what still runs from it |
-| Gitignored `.claude` | Not applicable; this repository tracks `.claude/rules/` |
+| Gitignored `.claude` | Not applicable; this repository does not ignore it |
 
 ## Gates and ledger
 
