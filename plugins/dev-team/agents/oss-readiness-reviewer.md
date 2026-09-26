@@ -17,7 +17,8 @@ the repo path or PR and the scope: `--scope=full --severity=all` on a PR's first
 `--scope=diff` on re-review cycles. Clone or worktree the exact head for the bootstrap test;
 never modify the repo under review and never commit anywhere.
 
-Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin; the orchestrating session lands changes through a PR in its repository).
+Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin;
+the orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`)).
 List each proposed pattern in the report's "Skill self-mutation" section in the catalog's own
 format so the orchestrator can land it.
 

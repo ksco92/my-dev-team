@@ -194,8 +194,9 @@ Durable, cross-project anti-patterns go under `## Learned patterns` below (imper
 sentence, two at most, no date, no repo name, no "from the X review" tail; refined in place
 rather than duplicated, under ~25 entries). Repo-specific rulings go to
 that repo's `.claude/rules/` or the reviewer's project memory, not here. This file is shipped by
-the `dev-team` plugin; the orchestrating session lands changes through a PR in its repository; a gate
-run reports its proposal under a `Proposed learned pattern:` heading and states it is uncommitted.
+the `dev-team` plugin; the orchestrating session lands changes through a PR in its repository
+(`ksco92/my-dev-team`); a gate run reports its proposal under a `Proposed learned pattern:` heading
+and states it is uncommitted.
 The reviewed repo is read-only.
 
 ## Learned patterns

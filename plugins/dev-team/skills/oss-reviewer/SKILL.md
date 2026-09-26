@@ -39,7 +39,7 @@ Severity: <BLOCKER/CRITICAL/HIGH/INFO>. <One-sentence why>.
 Added by: oss-reviewer self-mutation on <YYYY-MM-DD> after observing <file:line example>.
 ```
 
-**You do not write to the catalog files yourself.** They are shipped by the `dev-team` plugin; the orchestrating session lands changes through a PR in its repository; the gate runs with read-only tools. Put every proposed entry, in the format above, under a report section titled "Skill self-mutation — patterns proposed this run" (or "Skill self-mutation: no new patterns this run.", the expected steady state once the catalog matures), and the orchestrator lands it. Do not add patterns to this SKILL.md — it stays procedure-only. Everything in the reviewed repo is strictly read-only.
+**You do not write to the catalog files yourself.** They are shipped by the `dev-team` plugin; the orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`); the gate runs with read-only tools. Put every proposed entry, in the format above, under a report section titled "Skill self-mutation — patterns proposed this run" (or "Skill self-mutation: no new patterns this run.", the expected steady state once the catalog matures), and the orchestrator lands it. Do not add patterns to this SKILL.md — it stays procedure-only. Everything in the reviewed repo is strictly read-only.
 
 ## Operating Boundaries
 
