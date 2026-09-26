@@ -51,7 +51,7 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Operation | Called by | Inputs | The file states |
 | --- | --- | --- | --- |
 | ID format | every role citing a ticket | ticket | the ID's shape, its permalink, and how code and docs cite it |
-| Create ticket | tpm, Phase 3 | title, difficulty, component, priority, body | the command; it yields the new ID |
+| Create ticket | tpm, Phase 3 | title, difficulty, component, priority, body | the command; it yields the new ID; the ticket body template's minimum headings, or their native equivalents: Context, Requirements (testable, binary), Acceptance Criteria (lint passing and coverage on new code at or above the project standard among them), Implementation Plan, Dependencies (a tracker with native dependency links may omit it), Out of Scope |
 | Read ticket | implementer and pr-reviewer before work; tpm | ID | the command printing title, body, state, difficulty |
 | Set difficulty / priority | tpm, Phase 3 and on tier escalation | ID, `low\|medium\|high`, `p0`-`p2` | where each is stored and the command that changes it |
 | Link dependencies | tpm, Phase 3 | ID, blocking and blocked IDs | how "blocked by" and "blocks" are recorded |
@@ -79,9 +79,13 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Repo description | readme-reviewer, tpm | text | the command that reads and sets the one-line description, or "Not applicable" |
 | Experiment mode | tpm, Phase 1 | none | whether it is allowed and what it skips |
 
-The merge hook gates `gh pr merge`, a `gh api` call to a PR's merge endpoint, and `git merge`
-into `main` or `master`. A Merge command outside those forms is not gated by the hook, so the
-file states that `gate-ledger check` passes before it runs.
+The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
+passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
+reports no checks as passing. It refuses `git merge` into `main` or `master` unless the ledger
+passes, and always refuses a GraphQL `mergePullRequest`. The hook checks CI for some forms only and
+passes a PR with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI
+status operations before every Merge, including any form outside those, and the file's Merge row
+states that its command runs only after both.
 
 ## Workspace
 

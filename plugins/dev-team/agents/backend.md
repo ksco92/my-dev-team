@@ -1,6 +1,6 @@
 ---
 name: backend
-description: Senior backend engineer. Use for implementing server-side functionality — APIs, data models, business logic, migrations, background jobs, integrations — and writing the unit + integration tests that go with them. Operates autonomously on a single well-scoped task (one GitHub issue, one PR). Reads project conventions before writing a line of code.
+description: Senior backend engineer. Use for implementing server-side functionality — APIs, data models, business logic, migrations, background jobs, integrations — and writing the unit + integration tests that go with them. Operates autonomously on a single well-scoped task (one ticket, one PR). Reads project conventions before writing a line of code.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch
 model: opus
 memory: project

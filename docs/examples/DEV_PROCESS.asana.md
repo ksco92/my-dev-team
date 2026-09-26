@@ -77,7 +77,7 @@ Out of Scope
 | --- | --- |
 | Repo key | `<owner>/<repo>` from `gh repo view --json nameWithOwner -q .nameWithOwner`; this is the ledger's repo key, and the change id is the PR number |
 | Trunk | `main`, protected: status checks required, no approving review required, no direct pushes |
-| Protection check | `gh api repos/<owner>/<repo> --jq .visibility` and `gh api repos/<owner>/<repo>/branches/main/protection`; a public repo without protection is a blocker |
+| Protection check | `gh api repos/<owner>/<repo> --jq .visibility`, then `gh api repos/<owner>/<repo>/branches/main/protection` and `gh api repos/<owner>/<repo>/rules/branches/main --jq '[.[].type]'`; a public repo without either is a blocker |
 | Open change | `git push -u origin <branch>` then `gh pr create --base main --title "<title>" --body-file <file>`; returns the PR URL |
 | Read change | `gh pr view <n> --json title,body`; the linked task is the permalink under Issues Closed |
 | Head SHA | `gh pr view <n> --json headRefOid -q .headRefOid` |
@@ -85,7 +85,7 @@ Out of Scope
 | Merge state | `gh pr view <n> --json mergeStateStatus -q .mergeStateStatus`; `CONFLICTING` means rebase, not retrigger |
 | CI status | `gh pr checks <n>`; required checks are the repo's; pin them to the head with `gh api repos/<owner>/<repo>/commits/<sha>/check-suites`; wait with one `gh pr checks <n> --watch` waiter; a repo with no CI runs lint/tests/build locally and records the output in the PR body |
 | Rebase | Rebase onto `origin/main` before opening and before the final push; push with `--force-with-lease` after checking the remote tip is the last SHA pushed; the version bump happens in the final rebase |
-| Merge | Orchestrator only: `gh pr merge <n> --squash --delete-branch`; a hook refuses it unless the gate ledger shows every gate PASS at the current head and checks are terminal-green |
+| Merge | Orchestrator only: `gh pr merge <n> --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; the hook also refuses it unless the ledger check passes and `gh pr checks` reports every check passed or skipped |
 | After merge | Complete the task (Tracker above); remove the workspace (below) |
 | Repo description | `gh repo view --json description -q .description`; set with `gh repo edit --description "<text>"` |
 | Experiment mode | Only when the user says so: one branch, direct commits, no PR and no gates; never merged to `main` outside the normal path |

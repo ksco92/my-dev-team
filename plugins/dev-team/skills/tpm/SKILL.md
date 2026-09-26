@@ -1,6 +1,6 @@
 ---
 name: tpm
-description: Principal-level Technical Program Manager and review orchestrator. Use when the user has a feature request, brain dump, or vague initiative that needs to be clarified, decomposed into PR-sized vertical slices, and driven through implementation, review, and merge. Gathers requirements, opens GitHub issues tagged low/medium/high difficulty, delegates each slice to the difficulty-matched model (low/medium → Sonnet, high → Opus), runs all five review gates on every PR, drives a fix-until-clean loop with tier escalation, and merges only when the deterministic gate (ledger + CI, enforced by a hook) is green. Never writes application code.
+description: Principal-level Technical Program Manager and review orchestrator. Use when the user has a feature request, brain dump, or vague initiative that needs to be clarified, decomposed into PR-sized vertical slices, and driven through implementation, review, and merge. Gathers requirements, creates one ticket per slice tagged low/medium/high difficulty through the resolved DEV_PROCESS.md, delegates each slice to the difficulty-matched model (low/medium → Sonnet, high → Opus), runs all five review gates on every PR, drives a fix-until-clean loop with tier escalation, and merges only when the deterministic gate (ledger + CI, enforced by a hook) is green. Never writes application code.
 user-invocable: true
 argument-hint: "<feature description, brain dump, or path to a spec file>"
 ---
@@ -86,34 +86,14 @@ auth, money, or data integrity is never `low`.
 Present the numbered slice list with dependencies (`#3 blocks #5`) and tags for approval; the user
 may re-tag.
 
-## Phase 3 — Issues
+## Phase 3 — Tickets
 
-One GitHub issue per approved slice, labels `tpm-managed`, `difficulty:<tag>`, component,
-priority (`p0`–`p2`):
-
-```markdown
-**Difficulty:** low | medium | high
-
-## Context
-[1-2 sentences: why this exists, what need it serves]
-
-## Requirements
-- [ ] Concrete requirement (testable, binary)
-
-## Acceptance Criteria
-- [ ] All requirements verifiable from code/tests
-- [ ] Lint passes · coverage on new code ≥ project standard (default 95%)
-- [ ] [Specific behavioral criterion] · [Specific edge case]
-
-## Implementation Plan
-[Depth scaled to difficulty — see below]
-
-## Dependencies
-- Blocked by: #XX · Blocks: #YY
-
-## Out of Scope
-[What this issue does not cover]
-```
+Create one ticket per approved slice (the process file's Create ticket operation), from the ticket
+body template in its Tracker section, with the component. Record its difficulty and priority
+(`p0`–`p2`) with the Set difficulty / priority operation and its blockers with the Link dependencies
+operation. The ticket carries every heading in the contract's Create ticket row
+(`${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`), or the tracker's native equivalent; amend
+a ticket lacking one before dispatch (Amend ticket operation).
 
 Specification depth follows the tier because the implementer's capability does. `low`: a
 near-complete recipe — exact files, function names and signatures, ordered steps, the specific
@@ -123,7 +103,7 @@ implementer's. `high`: objective, boundaries, trade-offs to weigh, what must be 
 the path left open, because over-specifying wastes the reasoning you routed it there for.
 
 Plan documents you write under a repo's `docs/` are untracked scratch until committed through a
-PR; never link them from issues or shipped docs as if readers can reach them.
+PR; never link them from tickets or shipped docs as if readers can reach them.
 
 ## Phase 4 — Delegation
 
@@ -145,21 +125,21 @@ below).
 Models are named by alias only (`sonnet`, `opus`); an alias resolves to the newest model in its
 line, so no brief, agent file, or skill ever carries a versioned id. The agent files carry the top
 of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium`. Specialists
-(`backend`/`frontend`) take the same shape. See the model policy in `~/.claude/CLAUDE.md` (Fable is
-never a subagent).
+(`backend`/`frontend`) take the same shape. See the model policy in
+`${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is never a subagent).
 
-Brief a subagent like a smart colleague who just walked in: the issue text or link, branch name,
-repo path, worktree instructions, the PR body template, what to return (PR URL + a ≤2k-token
-summary). Every slice, parallel or not, works in its own worktree and the primary checkout stays
-on `main`: pass `isolation: "worktree"`, or for a cross-repo brief open with explicit creation in
-the target repo (`git -C <target> worktree add ~/worktrees/<repo>/<branch> -b <branch> origin/main`)
-since `isolation: "worktree"` only clones the *session's* cwd repo. Run independent slices in
-parallel, multiple Agent calls in one message. After each merge, remove the worktree
-(`git worktree remove`) and kill any process still running from its path.
+Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch
+name (the process file's Branch name operation), repo path, workspace instructions, the PR body
+template, what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace
+(Create workspace operation), and the process file's Primary checkout rule applies; a cross-repo
+brief opens with that command run explicitly in the target repo. Run independent slices in
+parallel as far as the Parallelism operation allows, multiple Agent calls in one message. After
+each merge, remove the workspace and kill any process still running from it (Remove workspace
+operation).
 
 **Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer,
-and orchestrator in one process. Run the phases sequentially: implement one slice in its worktree
-and open the PR; then, for each of the five gates, re-read the PR diff cold (`gh pr diff <n>`),
+and orchestrator in one process. Run the phases sequentially: implement one slice in its workspace
+and open the PR; then, for each of the five gates, re-read the PR diff cold (Diff operation),
 apply that gate's skill or agent checklist as written, and record the verdict with `gate-ledger`.
 The merge-gate extension refuses the merge until all five are PASS at the head. Say in the PR body
 that the gates ran in-process on one model; the reviewer-above-implementer rule cannot hold here.
@@ -188,10 +168,12 @@ tier always. `D` is the slice's difficulty tag.
 | correctness | `Agent(subagent_type="pr-reviewer", …)` | Sonnet for `D`∈{low,medium} (`model="sonnet"`); Opus for `high` or for any PR whose implementer ran on Opus (`model="opus"`) |
 | code economy | `Agent(subagent_type="code-health-reviewer", …)` | Sonnet |
 | OSS readiness | `Agent(subagent_type="oss-readiness-reviewer", …)` | Sonnet |
-| security | `Agent(subagent_type="security-reviewer", …)` or headless `claude -p --model opus` running the `security-review` skill from a scratch worktree | Opus at every tier (never Sonnet, never Fable) |
+| security | `Agent(subagent_type="security-reviewer", …)` or headless `claude -p --model opus` running the `security-review` skill in its own reviewer probe (Reviewer probe operation) | Opus at every tier (never Sonnet, never Fable) |
 | README | `Agent(subagent_type="readme-reviewer", …)` | Sonnet |
 
-Every brief states: the PR (number/URL or branch + base), the head SHA you expect, the issue, the
+Every brief states: the PR (number/URL or branch + base), the head SHA you expect (Head SHA
+operation), the ticket, the reviewer probe the gate reads the head in (Reviewer probe operation),
+the
 scope (`full` on the first cycle for oss-reviewer, `diff` on re-review), no writes to the repo
 and no commits anywhere, and the `GATE / VERDICT / HEAD / FINDINGS` header the agent files
 already require. Read the evidence, not just the header: gates hallucinate concrete file states,
@@ -201,17 +183,17 @@ verdict is void.
 Record each verdict as it lands — this is what the merge hook reads:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <owner/name | repo path> <pr | branch> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>
+${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <repo-key> <change-id> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>
 ```
 
-Gate names: `pr-reviewer code-health oss-reviewer security-review readme-writer`. `<model>` is the
-alias the gate ran on (`sonnet`/`opus`; under Pi the session's model), so the reviewer-tier rule
-is auditable from the ledger. A record at a new head resets the others; gates always re-run on a
-new head.
+`<repo-key>` and `<change-id>` are what the process file's Repo key operation names. Gate names:
+`pr-reviewer code-health oss-reviewer security-review readme-writer`. `<model>` is the alias the
+gate ran on (`sonnet`/`opus`; under Pi the session's model), so the reviewer-tier rule is auditable
+from the ledger. A record at a new head resets the others; gates always re-run on a new head.
 
 Gate a PR on its own diff. Repo-level findings a full-scope pass surfaces in files the PR never
-touched become a tracked issue with their own fix PR — otherwise nothing merges until the whole
-repo is pristine and the nits-block policy deadlocks against itself.
+touched become a follow-up ticket (File a follow-up operation) with their own fix PR — otherwise
+nothing merges until the whole repo is pristine and the nits-block policy deadlocks against itself.
 
 ### 5.2 Fix until clean
 
@@ -236,19 +218,22 @@ the last attempt. Do not merge.
 
 ### 5.3 Merge
 
-The merge is deterministic, not a verdict: the hook at `${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh` refuses
-`gh pr merge` (and `git merge` on main) unless the ledger shows all five gates PASS with zero
-findings at the PR's current head and `gh pr checks` is terminal-green. Required checks are the
-project's (default: lint · tests · coverage ≥ standard · build · package dry-run where applicable);
-a repo with no CI runs its own lint/test/build locally and you record them in the PR before
-merging. When the hook denies, its reason names what is missing — run that, don't work around it.
+The merge is deterministic, not a verdict: in the forms it guards, the hook at
+`${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh` refuses the merge unless the ledger shows all five gates
+PASS with zero findings at the PR's current head; what it checks per form is stated in
+`${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`. Required checks are the project's, stated
+in the process file (default: lint · tests · coverage ≥ standard · build · package dry-run where
+applicable); a repo with no CI runs its own lint/test/build locally and you record them in the PR
+before merging. When the hook denies, its reason names what is missing — run that, don't work around
+it.
 
-```
-gh pr merge <n> --squash --delete-branch     # or --merge per the project's CLAUDE.md
-```
-
-Afterwards confirm the issue closed and report the merged PR URL. If the request or the project's
-`CLAUDE.md` says no auto-merge, stop at a green ledger and hand back the URL.
+Before every Merge, whatever its form, run the Check ledger operation and require it to pass. Then
+confirm the CI status operation reports terminal-green, or in a repo with no CI that every recorded
+local check passed. Merge with the process file's Merge operation, using the merge method in the
+project's own `CLAUDE.md` when it names one and the process file's `merge_method` otherwise.
+Afterwards run the After merge operation, confirm the ticket closed (Link to a change and close
+operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
+auto-merge, stop at a green ledger and hand back the URL.
 
 ## Risk
 
@@ -258,8 +243,8 @@ reversible option; when two approaches are equally good, present both.
 
 ## Git conventions
 
-Branches `<type>/<issue-number>-<short-desc>` (`feature|fix|chore|refactor|docs`); implementers
-open PRs with `gh pr create`; PR body template as in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`; no
+Branches follow the process file's Branch name operation; implementers open PRs with its Open
+change operation; the PR body template is the process file's Code host change body template; no
 attribution strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy,
 give every brief one rule — at every rebase onto main set the version to (main's current minor +
 1).0 and regenerate the lockfile in the same commit — and merge serially. A branch cut before a

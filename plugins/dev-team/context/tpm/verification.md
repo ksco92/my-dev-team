@@ -9,9 +9,9 @@ on. Read before writing the issue for such a slice and again before its gates.
   verify against the tool's code path, and give a skill's central promised artifact a
   deterministic check (mtime, size) so a silent no-op fails loudly. Cross-check a new skill's
   steps against the repo's documented process before shipping it.
-- When a full UI suite fails broadly on a PR, partition before any fix loop: each failing test
-  alone on a fresh runtime, then the deterministic survivors on a main-baseline worktree. Only
-  what passes on main is the PR's; the rest is its own issue.
+- When a full UI suite fails broadly on a PR, partition before any fix loop: each failing test alone
+  on a fresh runtime, then the deterministic survivors on a reviewer probe at main's head. Only what
+  passes on main is the PR's; the rest is its own issue.
 - Any change that verifies Ctrl-C/trap behavior needs real pty-generated signals; `kill -INT`
   evidence is inadmissible and has false-validated a Critical through two fix rounds.
 - A live run of a merge/upsert job into an empty target exercises only the insert path; require
@@ -50,7 +50,7 @@ on. Read before writing the issue for such a slice and again before its gates.
   `uv cache clean` or `--reinstall` plus a behavior probe before any published number, and launch
   with `--no-sync`.
 - A PR that regenerates one benchmark table re-checks every derived number (sibling results files,
-  README headline, PyPI and GitHub descriptions); list those homes in the brief, and never run
+  README headline, PyPI and repo descriptions); list those homes in the brief, and never run
   reviewer builds concurrently with a benchmark whose numbers will be published.
 - Before filing a CI job for a floor interpreter or runtime version, probe the floor directly
   against the real dependency graph (`uv sync --python <floor>`, collect the suite): a declared

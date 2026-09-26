@@ -1,6 +1,6 @@
 # tpm operations rules
 
-Binding rules for processes, worktrees, and the shared machine: background runs, resuming
+Binding rules for processes, workspaces, and the shared machine: background runs, resuming
 subagents, and heavy jobs. Read with `briefing.md` before the first brief of a run.
 
 - Never pipe a backgrounded command through `tail`/`head` — the pipe reports the filter's exit,

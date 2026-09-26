@@ -47,9 +47,10 @@ string equality), adapted to house style:
 2. Badge row                    (see §4 policy)
 3. **Bold value proposition**   1-3 sentences, own paragraph: what + why + the
                                 differentiator. A stranger decides here.
-4. Short description alignment  the GitHub repo description and the package
-                                manager description field MUST match the README's
-                                one-line summary (triple-match check — lintable)
+4. Short description alignment  the repo description (Repo description
+                                operation) and the package manager description
+                                field MUST match the README's one-line summary
+                                (triple-match check — lintable)
 5. Status (dated)               "Status (Month YYYY): ..." — maturity, channels
                                 published, what's deliberately not done
 6. Install                      every real channel (registry, binary, source),
@@ -118,8 +119,8 @@ Rules, all reviewable:
   committed generated report (RESULTS.md-style) and match it exactly. A number
   that matches nothing in the repo record is a HIGH finding (this repo family
   has caught the same stale-number drift repeatedly — 12.4-vs-12.799 class).
-- **The triple-match**: README one-liner == GitHub repo description == package
-  manager description field. String-comparable; check all three.
+- **The triple-match**: README one-liner == repo description (Repo description
+  operation) == package manager description field. String-comparable; check all three.
 
 ## 4. Badges — signal, not fruit salad
 
@@ -149,9 +150,9 @@ correlates with FEWER downloads** for popular packages.
 is the H1 and the repo/engine name goes in the first sentence — arceus is the
 precedent: repo `arceus`, H1 `cdk-glue-iceberg-table`); the value proposition
 contains the terms a searcher would use (what-it-is + ecosystem, e.g. "Rust",
-"DeepDiff-compatible", "JSON diff"); GitHub repo
-topics set (do it via gh api, it's free); repo description filled (triple-match
-§3); social-preview image optional but cheap.
+"DeepDiff-compatible", "JSON diff"); repo description
+filled (Repo description operation; triple-match §3); GitHub host: repo topics
+set (do it via gh api, it's free); social-preview image optional but cheap.
 
 **AI/LLM consumption (real concern, honest evidence):** verified: LLMs
 systematically fail on under-documented libraries (~30% success on niche libs
