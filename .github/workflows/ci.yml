@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CLAUDE_CODE_VERSION: 2.1.283
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Validate marketplace manifest
+        run: claude plugin validate .claude-plugin/marketplace.json --strict
+
+      - name: Validate dev-team plugin
+        run: claude plugin validate plugins/dev-team --strict
+
+      - name: Shellcheck plugin scripts
+        run: |
+          shopt -s nullglob
+          scripts=(plugins/dev-team/hooks/*.sh plugins/dev-team/bin/*)
+          if [ "${#scripts[@]}" -eq 0 ]; then
+            echo "No hooks/bin scripts yet, skipping shellcheck"
+          else
+            shellcheck "${scripts[@]}"
+          fi
+
+      - name: Check plugin version bump
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main --depth=50
+          base_file="$RUNNER_TEMP/base-plugin.json"
+          if git show origin/main:plugins/dev-team/.claude-plugin/plugin.json > "$base_file" 2>/dev/null; then
+            base_version=$(jq -r '.version' "$base_file")
+          else
+            base_version=""
+          fi
+          head_version=$(jq -r '.version' plugins/dev-team/.claude-plugin/plugin.json)
+          echo "base=$base_version head=$head_version"
+          if [ "$base_version" = "$head_version" ]; then
+            echo "plugin.json version must be bumped from $base_version"
+            exit 1
+          fi

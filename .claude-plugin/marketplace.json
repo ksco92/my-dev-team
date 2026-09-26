@@ -1,0 +1,14 @@
+{
+  "name": "ksco92",
+  "owner": {
+    "name": "Rodrigo"
+  },
+  "description": "Marketplace for Rodrigo's personal Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "dev-team",
+      "source": "./plugins/dev-team",
+      "description": "Claude Code plugin carrying a personal dev harness: TPM orchestration, tiered implementers, and review gates."
+    }
+  ]
+}

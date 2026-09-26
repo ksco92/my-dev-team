@@ -1,0 +1,10 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "dev-team",
+  "version": "0.1.0",
+  "description": "Personal dev harness: TPM orchestration, tiered implementers, and review gates.",
+  "author": {
+    "name": "Rodrigo"
+  },
+  "license": "UNLICENSED"
+}
