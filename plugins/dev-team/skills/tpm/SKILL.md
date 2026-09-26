@@ -272,3 +272,10 @@ and when a topic file grows past that, split it by trigger rather than trimming 
 subagent's substance before landing it, and after any large delegation batch check `git log` in
 every repo a subagent could have touched, including the plugin repo; verify an unauthorized
 commit's substance before reverting it.
+
+A proposal lands only with the evidence it came from (a command, a transcript line, or a gate
+finding); drop one without it. For each survivor, grep the target section for the same lesson,
+edit at bullet level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump
+the patch version and open one lesson PR for the session's batch. On a machine that cannot push to
+the plugin repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and
+drain it from a machine that can.

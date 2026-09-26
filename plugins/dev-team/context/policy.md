@@ -119,15 +119,18 @@ here; a stack-specific lesson in that stack's `context/*-coding-guide.md`; a pro
 the relevant skill or agent file; a repo-specific fact in that repo's `.claude/rules/<topic>.md`
 or the agent's project memory (`.claude/agent-memory/<agent>/`), never in these global files.
 State the rule, not the incident — the git log keeps the archaeology: one imperative sentence,
-two at most, no date, no repo or PR name, no "added after" tail. Agents write in the register they
-are given, and an incident-narrative guide produces incident-narrative doc comments. Refine an
+two at most, no date, no repo or PR name, no "added after" tail. Refine an
 existing entry instead of adding a near-duplicate; when a learned pattern matures into policy, fold it into the
 section above and remove the bullet. Keep `## Learned patterns` under ~20 entries: this file loads
 into every session.
 
-This file is shipped by the `dev-team` plugin; the orchestrating session lands changes through a
-PR in its repository (`ksco92/my-dev-team`). Subagents never edit or commit these files; they
-propose a bullet and the orchestrating session lands it.
+The `dev-team` plugin ships this file; changes land through a PR in its repository
+(`ksco92/my-dev-team`). Subagents never edit these files: they propose a bullet with its evidence
+(a command, a transcript line, or a gate finding), and one without evidence is dropped. The
+orchestrating session applies the test above, greps the target section for the same lesson, edits
+single bullets, runs the plugin's `bin/lesson-lint` on the file, bumps the patch version, and opens
+one lesson PR per session; a machine that cannot push there appends bullet and evidence to
+`~/.claude/lesson-outbox.md` for one that can to drain.
 
 ## Learned patterns
 

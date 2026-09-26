@@ -7,12 +7,13 @@
 # mechanism that makes the merge gate deterministic instead of a model's recollection.
 #
 # Usage:
-#   gate-ledger record <repo> <id> <gate> <verdict> <findings> <head-sha> <model>
-#   gate-ledger check  <repo> <id> <head-sha>          # exit 0 = mergeable, 1 = not
-#   gate-ledger show   <repo> <id>
-#   gate-ledger reset  <repo> <id>
+#   gate-ledger record <repo-key> <id> <gate> <verdict> <findings> <head-sha> <model>
+#   gate-ledger check  <repo-key> <id> <head-sha>      # exit 0 = mergeable, 1 = not
+#   gate-ledger show   <repo-key> <id>
+#   gate-ledger reset  <repo-key> <id>
 #
-#   <repo>   owner/name for GitHub repos, or the absolute repo path for no-remote repos
+#   <repo-key> as the process file's Repo key operation defines it: owner/name on GitHub, or the
+#            absolute repo path for a no-remote repo
 #   <id>     PR number, or the branch name for a local branch→main merge
 #   <gate>   one of: pr-reviewer code-health oss-reviewer security-review readme-writer
 #   <verdict> PASS | FAIL | BLOCKED
@@ -26,7 +27,7 @@ set -euo pipefail
 LEDGER_ROOT="${GATE_LEDGER_ROOT:-$HOME/.claude/gate-ledger}"
 REQUIRED_GATES=(pr-reviewer code-health oss-reviewer security-review readme-writer)
 
-usage() { sed -n '2,22p' "$0"; exit 2; }
+usage() { sed -n '2,23p' "$0"; exit 2; }
 
 ledger_path() {
   # slugify repo + id into a stable path
