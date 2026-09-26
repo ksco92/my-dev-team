@@ -70,7 +70,7 @@ status: open
 | Merge state | `git merge-tree --write-tree main <branch> >/dev/null`; a non-zero exit means rebase before merging |
 | CI status | No CI: run the project's own lint, test, and build commands (from its `CLAUDE.md`) on the head and record each command and its result under Test Results in the change body; the merge hook checks the ledger only |
 | Rebase | `git rebase main` on the branch before requesting gates and before the merge; nothing is pushed |
-| Merge | Orchestrator only, as two separate commands because the hook reads the current branch before the command runs: `git checkout main`, then `git merge --no-ff <branch> -F "$(git rev-parse --git-common-dir)/changes/<branch>.md"` with the branch as the first non-option argument; the hook refuses it unless the ledger shows every gate PASS at the branch head |
+| Merge | Orchestrator only, as two separate commands because the hook reads the current branch before the command runs: `git checkout main`, then `git merge --no-ff <branch> -F "$(git rev-parse --git-common-dir)/changes/<branch>.md"` with the branch as the first non-option argument, only after every CI status command recorded for the head passed; the hook refuses it unless the ledger shows every gate PASS at the branch head |
 | After merge | Confirm the ticket file reads `status: done` on `main`; delete the change body file; remove the workspace (below) |
 | Repo description | Not applicable; the README's opening line is the only description |
 | Experiment mode | Only when the user says so: one branch, direct commits, no change body and no gates; never merged to `main` without going through the normal path |

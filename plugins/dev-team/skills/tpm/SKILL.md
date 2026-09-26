@@ -90,10 +90,10 @@ may re-tag.
 
 Create one ticket per approved slice (the process file's Create ticket operation), from the ticket
 body template in its Tracker section, with the component. Record its difficulty and priority
-(`p0`–`p2`) with the Set difficulty / priority operation and its blockers with the Link
-dependencies operation. The ticket carries every heading its template requires (the contract's
-minimum), or the tracker's native equivalent; amend a ticket lacking one before dispatch (Amend
-ticket operation).
+(`p0`–`p2`) with the Set difficulty / priority operation and its blockers with the Link dependencies
+operation. The ticket carries every heading in the contract's Create ticket row
+(`${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`), or the tracker's native equivalent; amend
+a ticket lacking one before dispatch (Amend ticket operation).
 
 Specification depth follows the tier because the implementer's capability does. `low`: a
 near-complete recipe — exact files, function names and signatures, ordered steps, the specific
@@ -227,12 +227,13 @@ applicable); a repo with no CI runs its own lint/test/build locally and you reco
 before merging. When the hook denies, its reason names what is missing — run that, don't work around
 it.
 
-Merge with the process file's Merge operation, using the merge method in the project's own
-`CLAUDE.md` when it names one and the process file's `merge_method` otherwise. Before any Merge the
-hook does not check for CI, confirm the CI status operation reports terminal-green. Afterwards run
-the After merge operation, confirm the ticket closed (Link to a change and close operation), and
-report the merged PR. If the request or the project's `CLAUDE.md` says no auto-merge, stop at a
-green ledger and hand back the URL.
+Before every Merge, whatever its form, run the Check ledger operation and require it to pass. Then
+confirm the CI status operation reports terminal-green, or in a repo with no CI that every recorded
+local check passed. Merge with the process file's Merge operation, using the merge method in the
+project's own `CLAUDE.md` when it names one and the process file's `merge_method` otherwise.
+Afterwards run the After merge operation, confirm the ticket closed (Link to a change and close
+operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
+auto-merge, stop at a green ledger and hand back the URL.
 
 ## Risk
 

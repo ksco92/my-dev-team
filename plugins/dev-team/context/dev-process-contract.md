@@ -79,10 +79,13 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Repo description | readme-reviewer, tpm | text | the command that reads and sets the one-line description, or "Not applicable" |
 | Experiment mode | tpm, Phase 1 | none | whether it is allowed and what it skips |
 
-The merge hook checks `gh pr merge` and a `gh api` call to a PR's merge endpoint against the
-ledger at the head and terminal-green checks, and `git merge` into `main` or `master` against the
-ledger only. Before any Merge command it does not check for CI, the file states that `gate-ledger
-check` passes and the CI status operation reports terminal-green.
+The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
+passes at the head and `gh pr checks` reports every check green, treating a PR that reports no
+checks as passing. It refuses `git merge` into `main` or `master` unless the ledger passes, and
+always refuses a GraphQL `mergePullRequest`. The hook checks CI for some forms only and passes a PR
+with no reported checks, so the tpm runs the Check ledger and CI status operations before every
+Merge, including any form outside those, and the file's Merge row states that its command runs only
+after both.
 
 ## Workspace
 

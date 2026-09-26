@@ -45,7 +45,7 @@ Ticket body template:
 | Merge state | | command reporting conflicts, and what a conflict requires |
 | CI status | | required checks, reading them at the head, waiting, no-CI fallback |
 | Rebase | | when to rebase and how the result is pushed |
-| Merge | | orchestrator-only merge command using `merge_method` |
+| Merge | | orchestrator-only merge command using `merge_method`; runs only after `gate-ledger check` passes and the CI status is terminal-green |
 | After merge | | confirmation and cleanup steps |
 | Repo description | | command reading and setting the one-line description |
 | Experiment mode | | whether allowed, and what it skips |
