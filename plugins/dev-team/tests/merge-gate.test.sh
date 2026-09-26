@@ -55,30 +55,50 @@ for repo in "$on_main" "$on_feature"; do
 done
 git -C "$on_main" checkout -q main
 
-combined="merge-gate: run the checkout of main and the git merge as separate commands, from inside the repository; a merge in the same command as a checkout or switch to main, and a git -C <dir> merge, are not accepted."
-check "checkout main && merge is denied" "$(gate 'git checkout main && git merge feature/x' "$on_feature")" "2 $combined"
-check "switch main; merge is denied" "$(gate 'git switch main; git merge feature/x' "$on_feature")" "2 $combined"
-check "git -C <dir> merge is denied" "$(gate "git -C $on_main merge feature/x" "$TMP")" "2 $combined"
-check "git -C with a quoted path is denied" "$(gate "git -C \"$on_main\" merge --no-ff feature/x" "$TMP")" "2 $combined"
-check "checkout -B master && merge is denied" "$(gate 'git checkout -B master && git merge feature/x' "$on_feature")" "2 $combined"
+combined="merge-gate: run the merge as its own command, from a session whose working directory is the repository, on the already checked-out trunk; a merge in the same command as a cd, pushd, worktree add, checkout, or switch, or one redirected with -C, --git-dir, or --work-tree, is not accepted."
+denied_combined() { check "$1 is denied" "$(gate "$1" "$2")" "2 $combined"; }
+denied_combined 'git checkout main && git merge feature/x' "$on_feature"
+denied_combined 'git switch main; git merge feature/x' "$on_feature"
+denied_combined 'git checkout -B master && git merge feature/x' "$on_feature"
+denied_combined 'git checkout "main" && git merge feature/x' "$on_feature"
+denied_combined "git checkout 'main' && git merge feature/x" "$on_feature"
+denied_combined 'git switch - && git merge feature/x' "$on_feature"
+denied_combined "cd $on_main && git merge feature/x" "$TMP"
+denied_combined "cd $on_main && git merge feature/x" "$on_feature"
+denied_combined "(cd $on_main; git merge feature/x)" "$TMP"
+denied_combined "pushd $on_main && git merge feature/x" "$TMP"
+denied_combined "git worktree add $TMP/wt main && cd $TMP/wt && git merge feature/x" "$on_feature"
+denied_combined "git worktree add $TMP/wt main && git merge feature/x" "$on_feature"
+denied_combined "git -C $on_main merge feature/x" "$TMP"
+denied_combined "git -C \"$on_main\" merge --no-ff feature/x" "$TMP"
+denied_combined "git -c k=v -C $on_main merge feature/x" "$TMP"
+denied_combined "git --git-dir=$on_main/.git --work-tree=$on_main merge feature/x" "$TMP"
 check "a checkout of main alone is allowed" "$(gate 'git checkout main' "$on_feature")" "0 "
 check "a checkout of main-like branch with a merge is not the combined shape" \
   "$(gate 'git checkout main-next && git merge feature/x' "$on_feature")" "0 "
 check "git -C <dir> merge-base is allowed" "$(gate "git -C $on_main merge-base main feature/x" "$TMP")" "0 "
 
+check "merge from a cwd that is not a repository is denied" "$(gate 'git merge feature/x' "$TMP")" \
+  "2 merge-gate: the working directory '$TMP' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
 check "merge on a feature branch is allowed" "$(gate 'git merge main' "$on_feature")" "0 "
-out="$(gate 'git merge feature/x' "$on_main")"
-check "merge on main without a ledger is denied" "${out%% *}" "2"
-check "the denial names the unproven gates" "$(grep -c 'review gates not proven for feature/x' <<<"$out")" "1"
+for cmd in 'git merge feature/x' 'git -c k=v merge feature/x' 'git --no-pager merge feature/x' 'git -c "user.name=a b" merge feature/x'; do
+  out="$(gate "$cmd" "$on_main")"
+  check "'$cmd' on main without a ledger is denied" "${out%% *}" "2"
+  check "'$cmd' denial names the unproven gates" "$(grep -c 'review gates not proven for feature/x' <<<"$out")" "1"
+done
 repo_key="$(git -C "$on_main" rev-parse --show-toplevel)"
 branch_head="$(git -C "$on_main" rev-parse feature/x)"
 for g in pr-reviewer code-health oss-reviewer security-review readme-writer; do
   "$LEDGER" record "$repo_key" feature/x "$g" PASS 0 "$branch_head" sonnet >/dev/null
 done
-check "merge on main with five PASS at the head is allowed" "$(gate 'git merge feature/x' "$on_main")" "0 "
+for cmd in 'git merge feature/x' 'git -c k=v merge feature/x' 'git --no-pager merge feature/x' 'git -c "user.name=a b" merge feature/x'; do
+  check "'$cmd' on main with five PASS at the head is allowed" "$(gate "$cmd" "$on_main")" "0 "
+done
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."
+check "gh pr merge without a PR number is denied at the PR number" "$(gate 'gh pr merge --repo o/r --squash' "$TMP")" \
+  "2 merge-gate: could not determine the PR number from 'gh pr merge --repo o/r --squash'; pass an explicit PR number."
 out="$(gate 'gh pr merge 1 --repo o/r' "$TMP")"
 check "gh pr merge --repo without a ledger is denied" "${out%% *}" "2"
 for g in pr-reviewer code-health oss-reviewer security-review readme-writer; do

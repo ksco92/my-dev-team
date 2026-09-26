@@ -82,11 +82,14 @@ and replaces a longer file with a pointer to `dev-process show`.
 The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
 passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
 reports no checks as passing. It refuses `git merge` into `main` or `master` unless the ledger
-passes, and always refuses a GraphQL `mergePullRequest`, a `git merge` in the same command as a
-checkout or switch to `main` or `master`, and a `git -C <dir> merge`. The hook checks CI for some
-forms only and passes a PR with no reported checks or with skipped checks, so the tpm runs the
-Check ledger and CI status operations before every Merge, including any form outside those, and
-the file's Merge row states that its command runs only after both.
+passes, and always refuses a GraphQL `mergePullRequest`, a `git merge` from a working directory
+that is not a repository, and a `git merge` in the same command as a `cd`, `pushd`,
+`git worktree add`, or checkout or switch to `main`, `master`, or `-`, or redirected with `-C`,
+`--git-dir`, or `--work-tree`. A merge the matcher cannot see as its own git command (`bash -c`, an
+absolute git path, a backtick substitution) and a branch switch through `symbolic-ref` are not gated.
+The hook checks CI for some forms only and passes a PR with no reported checks or with skipped
+checks, so the tpm runs the Check ledger and CI status operations before every Merge, including any
+form outside those, and the file's Merge row states that its command runs only after both.
 
 ## Workspace
 

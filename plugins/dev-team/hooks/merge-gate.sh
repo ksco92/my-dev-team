@@ -7,15 +7,19 @@
 #   gh api ... repos/<o>/<r>/pulls/<n>/merge       the same check, PR and repo parsed from the path
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
-#   git merge with a checkout/switch to main,      always denied; the hook reads the branch before
-#     or git -C <dir> merge                        the command runs, so it cannot gate these
+#   git merge after cd/pushd/worktree add or with  always denied; the hook reads the branch before
+#     a checkout/switch to main or -, or through   the command runs, so it cannot gate these
+#     -C, --git-dir, --work-tree
+#   git merge from a cwd that is no repository     always denied
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --force / +ref / --delete ... main    always denied
 #
 # Exit 2 blocks the tool call (any other exit lets it through), so every unexpected error path
 # here fails CLOSED: a hook that cannot prove the gate is green refuses the merge. The match is
 # textual, so a command that merely quotes one of the guarded phrases is also refused; write such
-# text with a file tool instead.
+# text with a file tool instead. A merge the matcher cannot see as its own git command (`bash -c`,
+# an absolute git path, a backtick substitution) and a branch switch through `symbolic-ref` are not
+# gated, which is why the tpm runs its Check ledger and CI status step before every Merge.
 #
 # Owner-only bypass: create $GATE_LEDGER_ROOT/.bypass, default ~/.claude/gate-ledger/.bypass
 # (delete it afterwards). The model has no reason to touch that file; if it does, that is itself
@@ -25,8 +29,11 @@ set -uo pipefail
 LEDGER="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/bin/gate-ledger"
 GATE_LEDGER_ROOT="${GATE_LEDGER_ROOT:-$HOME/.claude/gate-ledger}"
 BYPASS="$GATE_LEDGER_ROOT/.bypass"
-W='(^|[;&|[:space:]])'
+W='(^|[;&|([:space:]])'
 MAIN='(refs/heads/)?(main|master)'
+# `git`, its global options (a value may be quoted), and the space before the subcommand.
+VAL='("[^"]*"|'"'"'[^'"'"']*'"'"'|[^;&|()[:space:]]+)'
+GIT="${W}git([[:space:]]+(-[cC][[:space:]]*${VAL}|--(git-dir|work-tree|namespace|exec-path|config-env)([[:space:]]+|=)${VAL}|-[-A-Za-z]+))*[[:space:]]+"
 
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"
@@ -37,19 +44,23 @@ deny() {
   jq -n --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
   exit 2
 }
-has() { grep -Eq "$1" <<<"$command"; }
+flat="${command//$'\n'/ }"
+has() { grep -Eq "$1" <<<"$flat"; }
 
 has "${W}gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)" && is_gh_merge=1 || is_gh_merge=0
 has "${W}gh[[:space:]]+api([[:space:]]|$)" && is_gh_api=1 || is_gh_api=0
-has "${W}git[[:space:]]+merge([[:space:]]|$)" && is_git_merge=1 || is_git_merge=0
+has "${GIT}merge([[:space:]]|$)" && is_git_merge=1 || is_git_merge=0
 has "${W}git[[:space:]]+push([[:space:]]|$)" && is_git_push=1 || is_git_push=0
-has "${W}git[[:space:]]+-C[^;&|]*[[:space:]]merge([[:space:]]|$)" && is_c_merge=1 || is_c_merge=0
-(( is_gh_merge || is_gh_api || is_git_merge || is_git_push || is_c_merge )) || exit 0
+has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]]merge([[:space:]]|$)" && is_redirected_merge=1 || is_redirected_merge=0
+(( is_gh_merge || is_gh_api || is_git_merge || is_git_push || is_redirected_merge )) || exit 0
 
 [[ -f "$BYPASS" ]] && { echo "merge-gate: bypass file present, allowing" >&2; exit 0; }
 
-if (( is_c_merge )) || { (( is_git_merge )) && has "${W}git[[:space:]]+(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+${MAIN}([;&|[:space:]]|$)"; }; then
-  deny "merge-gate: run the checkout of main and the git merge as separate commands, from inside the repository; a merge in the same command as a checkout or switch to main, and a git -C <dir> merge, are not accepted."
+if (( is_redirected_merge )) || { (( is_git_merge )) && {
+  has "${W}(cd|pushd)([[:space:]]|$).*${GIT}merge([[:space:]]|$)" \
+    || has "${GIT}worktree[[:space:]]+add([[:space:]]|$).*${GIT}merge([[:space:]]|$)" \
+    || has "${GIT}(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+([\"']?${MAIN}[\"']?|-)([;&|)[:space:]]|$)"; }; }; then
+  deny "merge-gate: run the merge as its own command, from a session whose working directory is the repository, on the already checked-out trunk; a merge in the same command as a cd, pushd, worktree add, checkout, or switch, or one redirected with -C, --git-dir, or --work-tree, is not accepted."
 fi
 
 # Ledger + CI proof for one GitHub PR. Any failure to read state denies.
@@ -125,9 +136,10 @@ fi
 
 if (( is_git_merge )); then
   # git merge — only guarded when merging INTO main/master (the no-remote "PR").
-  current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" || exit 0
+  current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" \
+    || deny "merge-gate: the working directory '$cwd' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
   if [[ "$current" == "main" || "$current" == "master" ]]; then
-    branch="$(sed -E 's/.*git[[:space:]]+merge//' <<<"$command" | tr ' ' '\n' | grep -vE '^(-|$)' | head -1)"
+    branch="$(sed -E "s/.*${GIT}merge//" <<<"$flat" | tr ' ' '\n' | grep -vE '^(-|$)' | head -1)"
     [[ -n "$branch" ]] || deny "merge-gate: could not determine the branch being merged into $current."
     repo="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)"
     head="$(git -C "$cwd" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
