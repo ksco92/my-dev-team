@@ -7,6 +7,8 @@
 #   gh api ... repos/<o>/<r>/pulls/<n>/merge       the same check, PR and repo parsed from the path
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
+#   git merge with a checkout/switch to main,      always denied; the hook reads the branch before
+#     or git -C <dir> merge                        the command runs, so it cannot gate these
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --force / +ref / --delete ... main    always denied
 #
@@ -41,9 +43,14 @@ has "${W}gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)" && is_gh_merge=1 || i
 has "${W}gh[[:space:]]+api([[:space:]]|$)" && is_gh_api=1 || is_gh_api=0
 has "${W}git[[:space:]]+merge([[:space:]]|$)" && is_git_merge=1 || is_git_merge=0
 has "${W}git[[:space:]]+push([[:space:]]|$)" && is_git_push=1 || is_git_push=0
-(( is_gh_merge || is_gh_api || is_git_merge || is_git_push )) || exit 0
+has "${W}git[[:space:]]+-C[^;&|]*[[:space:]]merge([[:space:]]|$)" && is_c_merge=1 || is_c_merge=0
+(( is_gh_merge || is_gh_api || is_git_merge || is_git_push || is_c_merge )) || exit 0
 
 [[ -f "$BYPASS" ]] && { echo "merge-gate: bypass file present, allowing" >&2; exit 0; }
+
+if (( is_c_merge )) || { (( is_git_merge )) && has "${W}git[[:space:]]+(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+${MAIN}([;&|[:space:]]|$)"; }; then
+  deny "merge-gate: run the checkout of main and the git merge as separate commands, from inside the repository; a merge in the same command as a checkout or switch to main, and a git -C <dir> merge, are not accepted."
+fi
 
 # Ledger + CI proof for one GitHub PR. Any failure to read state denies.
 gate_pr() {
@@ -79,7 +86,8 @@ if (( is_gh_merge )); then
   if [[ -z "$repo" ]]; then
     repo="$(cd "$cwd" 2>/dev/null && gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" || repo=""
   fi
-  [[ -n "$pr" && -n "$repo" ]] || deny "merge-gate: could not determine PR number/repo from '$command' — pass an explicit PR number (and --repo when outside the checkout)."
+  [[ -n "$pr" ]] || deny "merge-gate: could not determine the PR number from '$command'; pass an explicit PR number."
+  [[ -n "$repo" ]] || deny "merge-gate: could not resolve the repository from the cwd '$cwd' with gh repo view; pass --repo <owner/name>."
   gate_pr "$repo" "$pr"
 fi
 
