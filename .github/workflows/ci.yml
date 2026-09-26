@@ -45,13 +45,17 @@ jobs:
       - name: Check plugin version bump
         if: github.event_name == 'pull_request'
         run: |
-          base_file="$RUNNER_TEMP/base-plugin.json"
-          if git show origin/main:plugins/dev-team/.claude-plugin/plugin.json > "$base_file" 2>/dev/null; then
-            base_version=$(jq -r '.version' "$base_file")
+          plugin_path=plugins/dev-team/.claude-plugin/plugin.json
+          if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
+            echo "cannot read origin/main"
+            exit 1
+          fi
+          if git cat-file -e "origin/main:$plugin_path" 2>/dev/null; then
+            base_version=$(git show "origin/main:$plugin_path" | jq -r '.version')
           else
             base_version=""
           fi
-          head_version=$(jq -r '.version' plugins/dev-team/.claude-plugin/plugin.json)
+          head_version=$(jq -r '.version' "$plugin_path")
           echo "base=$base_version head=$head_version"
           if [ "$base_version" = "$head_version" ]; then
             echo "plugin.json version must be bumped from $base_version"
