@@ -27,6 +27,9 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
 shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh
 bash plugins/dev-team/tests/dev-process.test.sh
+bash plugins/dev-team/tests/lesson-lint.test.sh
+bash plugins/dev-team/tests/merge-gate.test.sh
+plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
 ```
 
 ## Conventions
