@@ -237,8 +237,10 @@ Policy: any repository set to **public** MUST have branch protection on `main` t
 direct pushes — changes land only through merged pull requests. This gate is enforced here, not
 left to human discipline.
 
-Check visibility and trunk protection with the process file's Protection check operation. When
-it says "Not applicable", record INFO naming the reason it gives.
+Check visibility and trunk protection with the process file's Protection check operation. Its
+"Not applicable" is accepted only when the process file's host is `none`; where a remote exists
+the check settles visibility, and a public, unprotected `main` is a BLOCKER whatever the process
+file says.
 
 Evaluate:
 

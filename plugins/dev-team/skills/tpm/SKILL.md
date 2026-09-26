@@ -83,8 +83,7 @@ typing — prefer more, thinner, sharply tagged slices. When torn between `low` 
 `low`: the tighter spec costs a few lines and escalation is automatic. Anything touching security,
 auth, money, or data integrity is never `low`.
 
-Present the numbered slice list with dependencies (ticket IDs in the process file's ID format,
-for example `#3 blocks #5`) and tags for approval; the user
+Present the numbered slice list with dependencies (`#3 blocks #5`) and tags for approval; the user
 may re-tag.
 
 ## Phase 3 — Tickets
@@ -92,7 +91,10 @@ may re-tag.
 Create one ticket per approved slice (the process file's Create ticket operation), from the ticket
 body template in its Tracker section, with the component. Record its difficulty and priority
 (`p0`–`p2`) with the Set difficulty / priority operation and its blockers with the Link
-dependencies operation.
+dependencies operation. Whatever the tracker, the ticket body carries Context, Requirements
+(testable, binary), Acceptance Criteria (lint passing and coverage on new code at or above the
+project standard among them), Implementation Plan, Dependencies (a heading or the tracker's native
+links), and Out of Scope, or their native equivalents; amend a ticket lacking them before dispatch.
 
 Specification depth follows the tier because the implementer's capability does. `low`: a
 near-complete recipe — exact files, function names and signatures, ordered steps, the specific
@@ -171,8 +173,8 @@ tier always. `D` is the slice's difficulty tag.
 | README | `Agent(subagent_type="readme-reviewer", …)` | Sonnet |
 
 Every brief states: the PR (number/URL or branch + base), the head SHA you expect (Head SHA
-operation), the issue, the reviewer probe the gate reads the head in (Reviewer probe operation;
-a reviewer removes only what it created), the
+operation), the ticket, the reviewer probe the gate reads the head in (Reviewer probe operation),
+the
 scope (`full` on the first cycle for oss-reviewer, `diff` on re-review), no writes to the repo
 and no commits anywhere, and the `GATE / VERDICT / HEAD / FINDINGS` header the agent files
 already require. Read the evidence, not just the header: gates hallucinate concrete file states,
@@ -217,20 +219,21 @@ the last attempt. Do not merge.
 
 ### 5.3 Merge
 
-The merge is deterministic, not a verdict: the hook at `${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh`
-refuses the merge unless the ledger shows all five gates PASS with zero findings at the PR's current
-head and CI is terminal-green (CI status operation). Required checks are the project's, stated in
-the process file (default: lint · tests · coverage ≥ standard · build · package dry-run where
-applicable); a repo with no CI runs its own lint/test/build locally and you record them in the PR
-before merging. When the hook denies, its reason names what is missing — run that, don't work around
-it.
+The merge is deterministic, not a verdict: for the forms it guards (`gh pr merge`, a `gh api` call
+to a PR's merge endpoint, `git merge` into main), the hook at
+`${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh` refuses the merge unless the ledger shows all five gates
+PASS with zero findings at the PR's current head and CI is terminal-green (CI status operation).
+Required checks are the project's, stated in the process file (default: lint · tests · coverage ≥
+standard · build · package dry-run where applicable); a repo with no CI runs its own lint/test/build
+locally and you record them in the PR before merging. When the hook denies, its reason names what is
+missing — run that, don't work around it.
 
-Merge with the process file's Merge operation, which uses its `merge_method`; a Merge command
-outside the forms the hook guards (listed in
-`${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`) runs only after the Check ledger operation
-passes. Afterwards run the After merge operation, confirm the ticket closed (Link to a change and
-close operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
-auto-merge, stop at a green ledger and hand back the URL.
+Merge with the process file's Merge operation, using the merge method in the project's own
+`CLAUDE.md` when it names one and the process file's `merge_method` otherwise. A Merge command
+outside the forms the hook guards runs only after the Check ledger operation passes and the CI
+status operation reports terminal-green. Afterwards run the After merge operation, confirm the
+ticket closed (Link to a change and close operation), and report the merged PR. If the request or
+the project's `CLAUDE.md` says no auto-merge, stop at a green ledger and hand back the URL.
 
 ## Risk
 
@@ -241,7 +244,7 @@ reversible option; when two approaches are equally good, present both.
 ## Git conventions
 
 Branches follow the process file's Branch name operation; implementers open PRs with its Open
-change operation; PR body template as in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`; no
+change operation; the PR body template is the process file's Code host change body template; no
 attribution strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy,
 give every brief one rule — at every rebase onto main set the version to (main's current minor +
 1).0 and regenerate the lockfile in the same commit — and merge serially. A branch cut before a

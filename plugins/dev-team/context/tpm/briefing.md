@@ -24,9 +24,9 @@ brief (5.2).
   resolves before any git op and keep runner scripts and logs inside the workspace, not the
   reapable scratchpad.
 - Reviewer briefs name a uniquely named reviewer probe per round (Reviewer probe operation), never
-  the scratchpad root and never the live checkout; a reviewer removes only what it created, and no
-  one else detaches, moves, or removes a reviewer's probe while it may be running. After removing
-  any workspace or probe, full-line `ps` scan for its path and kill what remains.
+  the scratchpad root and never the live checkout; never detach, move, or remove a reviewer's probe
+  while it may be running. After removing any workspace or probe, full-line `ps` scan for its path
+  and kill what remains.
 - When a required gate command outlasts a subagent's foreground cap, brief the hand-back up front
   (return pid and log path; the orchestrator watches and resumes with fast-ops-only instructions)
   instead of demanding a foreground run that cannot happen.

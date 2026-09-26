@@ -77,7 +77,7 @@ Out of Scope
 | --- | --- |
 | Repo key | `<owner>/<repo>` from `gh repo view --json nameWithOwner -q .nameWithOwner`; this is the ledger's repo key, and the change id is the PR number |
 | Trunk | `main`, protected: status checks required, no approving review required, no direct pushes |
-| Protection check | `gh api repos/<owner>/<repo> --jq .visibility` and `gh api repos/<owner>/<repo>/branches/main/protection`; a public repo without protection is a blocker |
+| Protection check | `gh api repos/<owner>/<repo> --jq .visibility`, then `gh api repos/<owner>/<repo>/branches/main/protection` and `gh api repos/<owner>/<repo>/rules/branches/main --jq '[.[].type]'`; a public repo without either is a blocker |
 | Open change | `git push -u origin <branch>` then `gh pr create --base main --title "<title>" --body-file <file>`; returns the PR URL |
 | Read change | `gh pr view <n> --json title,body`; the linked task is the permalink under Issues Closed |
 | Head SHA | `gh pr view <n> --json headRefOid -q .headRefOid` |

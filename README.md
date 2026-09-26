@@ -23,9 +23,9 @@ claude plugin marketplace add /path/to/clone
 
 ## DEV_PROCESS.md
 
-`DEV_PROCESS.md` holds every tracker, code-host, and workspace command the skills and agents run,
-so the plugin carries none of its own; a lesson true only on a GitHub host keeps its command and
-says so. The operations it covers are listed in
+`DEV_PROCESS.md` holds every tracker, code-host, and workspace command the skills and agents run;
+they carry no commands of their own, and a lesson true only on a GitHub host keeps its command and
+says so. The operations it covers, and the forms the merge hook guards, are listed in
 `plugins/dev-team/context/dev-process-contract.md`; a blank copy is
 `plugins/dev-team/templates/DEV_PROCESS.md`, with examples in `docs/examples/DEV_PROCESS.github.md`
 and `docs/examples/DEV_PROCESS.asana.md`. Run `plugins/dev-team/bin/dev-process` with no arguments

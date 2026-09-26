@@ -162,7 +162,7 @@ process (a separate test binary) or a per-session token the recorder checks.
 3. Work in that workspace in small, logically grouped commits
 4. Lint, typecheck, test — fix everything; verify coverage
 5. git add <specific files> && git commit
-6. Open the change with the body below (Open change operation)
+6. Open the change with the body described below (Open change operation)
 7. Return the PR URL and the workspace path
 ```
 
@@ -173,28 +173,8 @@ target repo for cross-repo briefs. The orchestrator removes it after the merge.
 Commit messages and PR bodies carry no AI-attribution strings (no `Co-Authored-By: Claude`, no
 `Claude-Session:`, no "Generated with Claude Code") — a hook rejects them.
 
-PR body template:
-
-```markdown
-## Summary
-- [1-3 bullets describing the change]
-
-## Issues Closed
-- <the link to the ticket that the process file's Link to a change and close operation names>
-
-## Test Results
-- Lint: PASS
-- Tests: X passed, Y total
-- Coverage: XX.XX% on changed lines
-
-## Skipped
-- [What was deliberately not built or was cut to a simpler form, and the trigger to add it
-  ("custom cache class; add when lru_cache measurably falls short"). Every `ponytail:` marker
-  in the diff gets a line. "Nothing skipped" if so.]
-
-## Notes
-[Non-obvious trade-offs, assumptions made, follow-ups found]
-```
+The PR body follows the change body template in the process file's Code host section, and its
+Skipped section gets a line for every `ponytail:` marker in the diff.
 
 ## The review gates
 
@@ -202,7 +182,8 @@ Five gates run on your PR — `pr-reviewer` (correctness), `code-health` (code e
 `oss-reviewer` (quality / OSS readiness), `security-review`, and `readme-writer` (README drift).
 The TPM relays every finding back to you as a fix brief. Every finding, at any severity, is
 blocking — nits included — and the merge is refused by a hook until every gate records PASS at the
-PR head. Fix each one on the same branch and publish it as the Open change operation does; if you
+PR head. Fix each one and push to the same branch (the push step of the Open change operation; the
+change already exists), with the Rebase operation's rule when the branch was rebased; if you
 believe a finding is wrong, say why with evidence in your reply rather than silently skipping it.
 
 ## Long-running commands

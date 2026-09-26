@@ -3698,7 +3698,7 @@ two lines above in the same commit.
 
 A README embedded verbatim into a package's registry-facing metadata (PyPI wheel `METADATA`/sdist `PKG-INFO`, npm tarball README, crates.io `readme`) is fixed to use absolute `https://github.com/<owner>/<repo>/...` links instead of repo-relative ones — the correct fix for relative links having no base outside the repo (§4.37). But the fix's correctness depends on the target repo being reachable: if `<owner>/<repo>` is still private, every link 404s for non-collaborators. Pre-publish this is inert; the moment the package is published while the repo stays private, the links go live and broken simultaneously.
 
-Detection: for each absolute repo link in a README that a manifest embeds into publishable metadata, extract `(owner, repo)` and check (GitHub host:) `gh api repos/<owner>/<repo> --jq .visibility`; cross-check against the package's actual registry publish state (§4.18/§4.33).
+Detection: for each absolute repo link in a README that a manifest embeds into publishable metadata, extract `(owner, repo)` and check visibility (GitHub host: `gh api repos/<owner>/<repo> --jq .visibility`); cross-check against the package's actual registry publish state (§4.18/§4.33).
 
 ```
 https?://github\.com/([^/\s)]+)/([^/\s)]+)/(blob|tree|issues|pull)/

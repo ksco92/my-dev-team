@@ -51,7 +51,7 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Operation | Called by | Inputs | The file states |
 | --- | --- | --- | --- |
 | ID format | every role citing a ticket | ticket | the ID's shape, its permalink, and how code and docs cite it |
-| Create ticket | tpm, Phase 3 | title, difficulty, component, priority, body | the command; it yields the new ID |
+| Create ticket | tpm, Phase 3 | title, difficulty, component, priority, body | the command; it yields the new ID; the ticket body template's minimum headings, or their native equivalents: Context, Requirements (testable, binary), Acceptance Criteria (lint passing and coverage on new code at or above the project standard among them), Implementation Plan, Dependencies (a tracker with native dependency links may omit it), Out of Scope |
 | Read ticket | implementer and pr-reviewer before work; tpm | ID | the command printing title, body, state, difficulty |
 | Set difficulty / priority | tpm, Phase 3 and on tier escalation | ID, `low\|medium\|high`, `p0`-`p2` | where each is stored and the command that changes it |
 | Link dependencies | tpm, Phase 3 | ID, blocking and blocked IDs | how "blocked by" and "blocks" are recorded |
