@@ -68,7 +68,7 @@ status: open
 | Merge state | `gh pr view <n> --json mergeStateStatus -q .mergeStateStatus`; `CONFLICTING` means rebase, not retrigger |
 | CI status | `gh pr checks <n>`; the required check is `validate` (both manifests validate, shellcheck, the `dev-process` test script, the version bump); pin them to the head with `gh api repos/ksco92/my-dev-team/commits/<sha>/check-suites`; wait with one `gh pr checks <n> --watch` waiter |
 | Rebase | Rebase onto `origin/main` before opening, before the final push, and after every sibling merge (the branch must be up to date); push with `--force-with-lease` after checking the remote tip is the last SHA pushed; the version bump happens in the final rebase |
-| Merge | Orchestrator only: `gh pr merge <n> --repo ksco92/my-dev-team --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; a hook also refuses it otherwise |
+| Merge | Orchestrator only: `gh pr merge <n> --repo ksco92/my-dev-team --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; the hook also refuses it unless the ledger check passes and `gh pr checks` reports every check passed or skipped |
 | After merge | Confirm the plan file reads `status: done` on `origin/main` (Tracker above); remove the workspace (below) |
 | Repo description | `gh repo view --json description -q .description`; set with `gh repo edit --description "<text>"` |
 | Experiment mode | Only when the user says so: one branch, direct commits, no change request and no gates; never merged to `main` without going through the normal path |

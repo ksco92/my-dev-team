@@ -172,6 +172,8 @@ for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCES
   check "${file#"$REPO_ROOT"/} Merge row requires gate-ledger check and CI status" \
     "$(grep -F 'gate-ledger check' <<<"$merge_row" | grep -cF 'CI status')" "1"
 done
+check "the default's Merge row does not claim the hook checks CI" \
+  "$(grep '^| Merge |' "$DEFAULT" | grep -cF 'refuses it otherwise')" "0"
 
 echo "$pass passed, $fail failed"
 (( fail == 0 ))
