@@ -3,12 +3,12 @@
   "owner": {
     "name": "Rodrigo"
   },
-  "description": "Claude Code plugin marketplace: TPM orchestration, tiered implementers, five review gates, stack guides; tracker, host and workspace read from DEV_PROCESS.md",
+  "description": "Claude Code development harness, designed to provide TPM orchestration, tiered implementers, five review gates, and stack guides, and to read tracker, host, and workspace commands from DEV_PROCESS.md",
   "plugins": [
     {
       "name": "dev-team",
       "source": "./plugins/dev-team",
-      "description": "Claude Code plugin carrying a personal dev harness: TPM orchestration, tiered implementers, and review gates."
+      "description": "Claude Code development harness, designed to provide TPM orchestration, tiered implementers, five review gates, and stack guides, and to read tracker, host, and workspace commands from DEV_PROCESS.md"
     }
   ]
 }

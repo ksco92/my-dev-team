@@ -1,5 +1,5 @@
 # dev-team
 
-Claude Code plugin providing TPM orchestration, tiered implementer agents, five review gates, and stack guides.
+Claude Code development harness, designed to provide TPM orchestration, tiered implementers, five review gates, and stack guides, and to read tracker, host, and workspace commands from DEV_PROCESS.md
 
-Reads the tracker, code host, and workspace commands from `DEV_PROCESS.md` at the repository root, falling back to `~/.claude/DEV_PROCESS.md`.
+See the repository README for installation and the DEV_PROCESS.md lookup order.
