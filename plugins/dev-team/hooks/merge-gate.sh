@@ -28,8 +28,10 @@
 # redirections (fd numbers, &N, &>, >&, >!, {fd}) are dropped with their targets before matching and
 # again when a subcommand's arguments are read.
 # Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
-# variables, `eval`, `bash -c`, backticks, aliases, config, split strings, `xargs`/`find -exec`), and
-# trunk updates with no merge or push. The tpm's Check ledger and CI status step is the backstop.
+# variables, `eval`, `bash -c`, backticks, aliases, config, split strings, `xargs`/`find -exec`),
+# git or gh named other than as the bare lowercase word (a path to the binary, a wrapper, a case
+# variant that a case-insensitive filesystem still runs), and trunk updates with no merge or push.
+# The tpm's Check ledger and CI status step is the backstop.
 #
 # Owner-only bypass: create $GATE_LEDGER_ROOT/.bypass, default ~/.claude/gate-ledger/.bypass
 # (delete it afterwards). The model has no reason to touch that file; if it does, that is itself

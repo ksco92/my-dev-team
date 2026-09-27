@@ -167,6 +167,11 @@ for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCES
     done < <(operations "$word")
   done
 done
+# Headroom under the hook's 10,000-character limit, so a lesson or a filled-in `<...>` value does not
+# turn an inlined file into a pointer.
+for file in "$PLUGIN/context/policy.md" "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
+  check "${file#"$REPO_ROOT"/} stays under 9,500 characters" "$(( $(wc -c <"$file") <= 9500 ))" "1"
+done
 for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCESS.md" "$REPO_ROOT"/docs/examples/DEV_PROCESS.*.md; do
   merge_row="$(grep '^| Merge |' "$file")"
   check "${file#"$REPO_ROOT"/} Merge row requires gate-ledger check and CI status" \
