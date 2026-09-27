@@ -15,6 +15,8 @@ See the root README for what this repo is.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
+- `plugins/dev-team/evals/`, the `claude plugin eval` suite for the implementer and the five review
+  gates.
 - `plugins/dev-team/README.md`, the plugin's README.
 - `.github/workflows/ci.yml`, the validation CI workflow.
 - `docs/examples/`, example `DEV_PROCESS.md` files; the plugin never reads them.
@@ -29,7 +31,9 @@ shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/t
 bash plugins/dev-team/tests/dev-process.test.sh
 bash plugins/dev-team/tests/lesson-lint.test.sh
 bash plugins/dev-team/tests/merge-gate.test.sh
+bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
+claude plugin eval plugins/dev-team --case <cheapest-case> --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 ```
 
 ## Conventions

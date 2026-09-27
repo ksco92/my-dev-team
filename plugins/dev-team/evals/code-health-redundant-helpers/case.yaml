@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: code-health-redundant-helpers
+tags: [gate, code-health]
+context:
+  scaffold_script: scaffold.sh

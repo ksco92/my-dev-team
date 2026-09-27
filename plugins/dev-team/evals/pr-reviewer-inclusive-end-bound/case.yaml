@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: pr-reviewer-inclusive-end-bound
+tags: [gate, pr-reviewer]
+context:
+  scaffold_script: scaffold.sh
