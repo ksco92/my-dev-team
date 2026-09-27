@@ -56,3 +56,37 @@ Read before the first gate of a run.
   constraint with the reason, and the gate that cited the old constraint re-issues its verdict.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
+- When a gate finding rests on a default heuristic with an "unless justified" clause and the
+  owner's written requirement supplies the justification, amend the ticket once with the
+  substantive checks that replace the heuristic before the first gate runs on the next
+  dependency-adding PR; refining it round by round against one lockfile costs a round each time.
+- A gate that flags a token from the harness's own conventions (the `# ponytail:` marker) is
+  answered with the file that defines it, and the repo's `CLAUDE.md` states the convention on its
+  first use so a reader without the harness can resolve it.
+- Reviewing a redactor or parser fix, re-run every earlier regression input with the parser's
+  delimiters placed inside the secret and with the payload at every position the parser splits (a
+  later field, a value, the query string); after a normalising step is added in front of a check
+  that matched several representations, run the mutant that deletes each existing representation;
+  and execute each parametrised security case through the library call the check reads before
+  trusting its count.
+- When a fix round replaces a mechanism and the next round finds the same leak class in a
+  neighbouring input, brief a fail-closed design (a placeholder for the whole input class) before
+  the third attempt, and have the repo doc state the acceptance as a closed list of what is
+  covered; later gates judge against that list, and a claim in it broader than the code reopens
+  the loop.
+- Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
+  implementer's report; a mistyped SHA voids every verdict of the round and costs a correction
+  message per gate.
+- Verify an "the ORM cannot do X" justification for raw SQL against the pinned framework's source
+  (`inspect.getsource` on the relevant method) before accepting it; one call turns a claim into a
+  citation, and the base manager or a conditional update often already does it.
+- Before briefing a test deletion that a gate asks for, check the test against the ticket's
+  acceptance criteria; a test that pins a stated criterion stays even when the framework enforces
+  the behaviour, because the criterion is the contract and the next gate will fail its absence.
+- A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
+  the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates it.
+- Reviewing a limit or counter: swap the atomic statement for a read-then-write in the probe and
+  require the threaded test to fail on every run; drive zero, negative and oversized well-typed
+  values end to end (the insert side of a conflict-guarded limit never sees the limit; a huge day
+  count overflows `timedelta` into a traceback); and when a PR edits a line already over the
+  column convention, the PR owns the line's new length.

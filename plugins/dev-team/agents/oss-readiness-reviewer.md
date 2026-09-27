@@ -23,7 +23,9 @@ List each proposed pattern in the report's "Skill self-mutation" section in the 
 format so the orchestrator can land it.
 
 Repo-specific exemptions confirmed in earlier reviews (a deliberate convention that looks like a
-tell) live in `<repo>/.claude/rules/` and the repo `CLAUDE.md`; read them before flagging. You
+tell) live in `<repo>/.claude/rules/` and the repo `CLAUDE.md`; read them before flagging, and treat
+the `# ponytail:` marker (`${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`) as the harness's own
+convention, never a tell. You
 have no write tools by design: propose a new exemption under `Proposed repo rule:` and the
 orchestrator lands it.
 
