@@ -106,9 +106,9 @@ delete of main (a bare `HEAD` or `@` resolved first), a forced `--all`, and a fo
 refspec from the trunk. Not gated: git reached through shell constructs the matcher does not expand
 (quoting, escapes, variables, `eval`, `bash -c`, backticks, aliases, git config, split strings,
 argument-supplying commands such as `xargs`, `find -exec`, `parallel`), git or gh named other than
-as the bare lowercase word (a path to the binary, a wrapper, a case variant that a case-insensitive
-filesystem still runs), and a trunk update with no merge or push (`reset --hard`, `update-ref`). The
-hook checks CI for some forms only and passes a PR
+as the bare lowercase word (a path to the binary, a wrapper under another name, a case variant that
+a case-insensitive filesystem still runs), and a trunk update with no merge or push (`reset --hard`,
+`update-ref`). The hook checks CI for some forms only and passes a PR
 with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI status
 operations before every Merge, including any form outside those, and the file's Merge row states
 that its command runs only after both.
