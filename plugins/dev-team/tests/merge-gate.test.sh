@@ -10,8 +10,9 @@ export GATE_LEDGER_ROOT="$TMP/ledger"
 LEDGER="$PLUGIN/bin/gate-ledger"
 on_main="$TMP/on-main"
 on_feature="$TMP/on-feature"
+fresh="$TMP/fresh"
 # An empty fixture path would point `git -C ""` at the caller's repository.
-for fixture in PLUGIN TMP on_main on_feature; do
+for fixture in PLUGIN TMP on_main on_feature fresh; do
   [[ -n "${!fixture}" && "${!fixture}" == /* ]] || { echo "fixture path $fixture is empty or relative" >&2; exit 1; }
 done
 STUB_HEAD=0123456789abcdef0123456789abcdef01234567
@@ -64,7 +65,7 @@ git -C "$on_main" fetch -q origin
 printf 'Merge feature/x\n' >"$TMP/msg"
 upstream() { git -C "$on_main" branch -q -u "$1" main; }
 
-combined="merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+combined="merge-gate: run the merge, pull, or push as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
 denied_combined() { check "$1 is denied" "$(gate "$1" "$2")" "2 $combined"; }
 denied_combined 'git checkout main && git merge feature/x' "$on_feature"
 denied_combined 'git switch main; git merge feature/x' "$on_feature"
@@ -176,8 +177,39 @@ check "a bare pull with a local upstream is denied" "$(gate 'git pull' "$on_main
 check "a pull on a feature branch is allowed" "$(gate 'git pull . main' "$on_feature")" "0 "
 
 onto="2 merge-gate: pushing 'feature/x' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
-check "push through -C onto main is denied" "$(gate "git -C $on_main push . feature/x:main" "$TMP")" "$onto"
-check "push through --git-dir onto main is denied" "$(gate "git --git-dir=$on_main/.git push . feature/x:main" "$TMP")" "$onto"
+bare_force="2 merge-gate: a force push without a refspec from main pushes main; name the branch to push."
+denied_combined "git -C $on_main push . feature/x:main" "$TMP"
+denied_combined "git --git-dir=$on_main/.git push . feature/x:main" "$TMP"
+denied_combined "git -C $on_feature push origin HEAD:main" "$on_main"
+denied_combined "cd $on_feature && git push origin HEAD:main" "$on_main"
+denied_combined "GIT_DIR=$on_feature/.git git push origin HEAD:main" "$on_main"
+denied_combined "git -C $on_main push -f" "$on_feature"
+check "a push redirected through > is still parsed" "$(gate 'git push origin feature:main>/dev/null' "$on_feature")" \
+  "2 merge-gate: pushing 'feature' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
+for cmd in 'git push
+git push -f' 'git push
+git push' 'git push
+git pull'; do
+  check "newline-joined '$cmd' has several gated segments and is denied" "$(gate "$cmd" "$on_main")" "$segments"
+done
+literal="merge-gate: only literal refspecs (<branch> or <src>:<dst>) are accepted;"
+for ref in "'refs/heads/x*:refs/heads/m*'" '-f origin :' "'+refs/heads/*:refs/heads/*'" "--prune origin 'refs/heads/*:refs/heads/*'" "-f origin 'refs/heads/*'"; do
+  case "$ref" in -*) cmd="git push $ref" ;; *) cmd="git push origin $ref" ;; esac
+  check "'$cmd' is refused as a non-literal refspec" "$(gate "$cmd" "$on_feature" | grep -cF "$literal")" "1"
+done
+check "a literal branch pair is allowed" "$(gate 'git push origin feature/x:feature/x' "$on_feature")" "0 "
+for cmd in 'git push --force-w origin main' 'git push --dele origin main'; do
+  check "'$cmd' on main is a force or delete of main" "$(gate "$cmd" "$on_main")" \
+    "2 merge-gate: force or delete push to main is refused; main is only ever advanced by a gated merge."
+done
+check "'git push --mirr origin' is a mirror push" "$(gate 'git push --mirr origin' "$on_main")" \
+  "2 merge-gate: git push --mirror rewrites main; push branches and merge through the gated path."
+for cmd in 'git push --branches -f origin' 'git push --bran -f origin' 'git push --al -f origin'; do
+  check "'$cmd' is a forced --all" "$(gate "$cmd" "$on_feature")" "2 merge-gate: a forced push --all includes main; name the branch to push."
+done
+for cmd in 'git push --recurse-submodules no origin -f' 'git push -o ci.skip -f origin'; do
+  check "'$cmd' on main skips the option value and is a bare force" "$(gate "$cmd" "$on_main")" "$bare_force"
+done
 for prefix in "${option_forms[@]}"; do
   check "'$prefix push' onto main is denied" "$(gate "$prefix push origin feature/x:main" "$on_feature")" "$onto"
 done
@@ -188,13 +220,15 @@ check "an empty source onto main is denied" "$(gate 'git push origin :main' "$on
   "2 merge-gate: pushing an empty source onto main deletes it; main is only ever advanced by a gated merge."
 check "an empty source onto refs/heads/main is denied" "$(gate 'git push origin :refs/heads/main' "$on_feature")" \
   "2 merge-gate: pushing an empty source onto refs/heads/main deletes it; main is only ever advanced by a gated merge."
-bare_force="2 merge-gate: a force push without a refspec from main pushes main; name the branch to push."
 check "a bare force push on main is denied" "$(gate 'git push -f' "$on_main")" "$bare_force"
 check "a force push to a remote on main is denied" "$(gate 'git push --force origin' "$on_main")" "$bare_force"
 check "a mirror push is denied" "$(gate 'git push --mirror' "$on_feature")" \
   "2 merge-gate: git push --mirror rewrites main; push branches and merge through the gated path."
 check "a force push of a feature branch is allowed" "$(gate 'git push -f origin feature/x' "$on_feature")" "0 "
 check "a bare force push on a feature branch is allowed" "$(gate 'git push -f' "$on_feature")" "0 "
+mkdir -p "$fresh" && git -C "$fresh" init -q -b main && git_t "$fresh" commit -q --allow-empty -m base
+check "'git merge -' with no previous branch is denied" "$(gate 'git merge -' "$fresh")" \
+  "2 merge-gate: no previous branch for 'git merge -'."
 check "a push of main onto main is allowed" "$(gate 'git push origin main' "$on_main")" "0 "
 check "a push of a feature branch is allowed" "$(gate 'git push origin feature/x' "$on_feature")" "0 "
 for cmd in 'git push -uf origin' 'git push -fu origin' 'git push +HEAD'; do
