@@ -65,7 +65,7 @@ git -C "$on_main" fetch -q origin
 printf 'Merge feature/x\n' >"$TMP/msg"
 upstream() { git -C "$on_main" branch -q -u "$1" main; }
 
-combined="merge-gate: run the merge, pull, or push as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+combined="merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
 denied_combined() { check "$1 is denied" "$(gate "$1" "$2")" "2 $combined"; }
 denied_combined 'git checkout main && git merge feature/x' "$on_feature"
 denied_combined 'git switch main; git merge feature/x' "$on_feature"
@@ -178,12 +178,26 @@ check "a pull on a feature branch is allowed" "$(gate 'git pull . main' "$on_fea
 
 onto="2 merge-gate: pushing 'feature/x' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
 bare_force="2 merge-gate: a force push without a refspec from main pushes main; name the branch to push."
-denied_combined "git -C $on_main push . feature/x:main" "$TMP"
-denied_combined "git --git-dir=$on_main/.git push . feature/x:main" "$TMP"
-denied_combined "git -C $on_feature push origin HEAD:main" "$on_main"
-denied_combined "cd $on_feature && git push origin HEAD:main" "$on_main"
-denied_combined "GIT_DIR=$on_feature/.git git push origin HEAD:main" "$on_main"
-denied_combined "git -C $on_main push -f" "$on_feature"
+redirected_push="merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal branches, none of them the trunk, without delete, --all, or --mirror; run any other push from the repository as its own command."
+denied_redirected_push() { check "$1 is denied" "$(gate "$1" "$2")" "2 $redirected_push"; }
+denied_redirected_push "git -C $on_main push . feature/x:main" "$TMP"
+denied_redirected_push "git --git-dir=$on_main/.git push . feature/x:main" "$TMP"
+denied_redirected_push "git -C $on_feature push origin HEAD:main" "$on_main"
+denied_redirected_push "cd $on_feature && git push origin HEAD:main" "$on_main"
+denied_redirected_push "GIT_DIR=$on_feature/.git git push origin HEAD:main" "$on_main"
+denied_redirected_push "git -C $on_main push -f" "$on_feature"
+denied_redirected_push "cd $on_feature && git push" "$on_main"
+denied_redirected_push "git -C $on_feature push origin main" "$on_main"
+denied_redirected_push "git -C $on_feature push origin HEAD" "$on_main"
+denied_redirected_push "git -C $on_feature push origin :feature/x" "$on_main"
+denied_redirected_push "git -C $on_feature push --delete origin feature/x" "$on_main"
+denied_redirected_push "git -C $on_feature push -d origin feature/x" "$on_main"
+denied_redirected_push "git -C $on_feature push --all origin" "$on_main"
+check "cd <wt> && git push origin 'refs/heads/*' is denied" "$(gate "cd $on_feature && git push origin 'refs/heads/*'" "$on_main" | cut -c1)" "2"
+for cmd in "cd $on_feature && git push -u origin feature/x" "git -C $on_feature push -u origin feature/x" \
+  "git -C $on_feature push --force-with-lease origin feature/x" "git -C $on_feature push origin feature/x:feature/x"; do
+  check "'$cmd' pushes a literal non-trunk branch and is allowed" "$(gate "$cmd" "$on_main")" "0 "
+done
 check "a push redirected through > is still parsed" "$(gate 'git push origin feature:main>/dev/null' "$on_feature")" \
   "2 merge-gate: pushing 'feature' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
 for cmd in 'git push

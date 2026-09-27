@@ -8,10 +8,12 @@
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
 #   git pull on main                               only from a remote trunk; anything else denied
-#   git merge/pull/push after cd, pushd, worktree  always denied; the hook reads the branch before
-#     add, a switch to main, -, @{-N}, a rebase    the command runs, so it cannot gate these
-#     onto main, a -C/--git-dir/--work-tree/
-#     GIT_DIR/env -C redirect, or in a subshell
+#   git merge/pull after cd, pushd, worktree add,  always denied; the hook reads the branch before
+#     a switch to main, -, @{-N}, a rebase onto    the command runs, so it cannot gate these
+#     main, a -C/--git-dir/--work-tree/GIT_DIR/
+#     env -C redirect, or in a subshell
+#   git push in any of those forms                 allowed only with a remote and literal non-trunk
+#                                                  branches, no delete, --all, or --mirror
 #   two merge/pull/push segments, a merge of two   always denied
 #     branches, a merge from a cwd that is no repo
 #   git push ... <src>:main                        denied unless <src> is main itself
@@ -67,16 +69,22 @@ has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]](merge
 
 [[ -f "$BYPASS" ]] && { echo "merge-gate: bypass file present, allowing" >&2; exit 0; }
 
-MP="(merge|pull|push)${END}"
-if (( is_redirected )) || { (( is_git_merge || is_git_pull || is_git_push )) && {
-  has "${W}(cd|pushd)([[:space:]]|$).*${GIT}${MP}" \
-    || has "${GIT}worktree[[:space:]]+add([[:space:]]|$).*${GIT}${MP}" \
+# Whether a `git <sub>` (an alternation) is redirected or combined with a branch or directory change.
+combined() {
+  local mp="($1)${END}"
+  has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]]${mp}" \
+    || has "${W}(cd|pushd)([[:space:]]|$).*${GIT}${mp}" \
+    || has "${GIT}worktree[[:space:]]+add([[:space:]]|$).*${GIT}${mp}" \
     || has "(^|[;&|([:space:]\"'])GIT_(DIR|WORK_TREE)=" \
     || has "${W}env[[:space:]]([^;&|]*[[:space:]])?(-[A-Za-z]*C|--chdir)" \
-    || has "\\([[:space:]]*${GIT_BODY}${MP}" \
+    || has "\\([[:space:]]*${GIT_BODY}${mp}" \
     || has "${GIT}(checkout|switch)([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+[\"']?(${MAIN}|-|@\\{-[0-9]+\\})[\"']?${END}" \
-    || has "${GIT}rebase([[:space:]]+[^;&|[:space:]]+)+[[:space:]]+[\"']?${MAIN}[\"']?${END}"; }; }; then
-  deny "merge-gate: run the merge, pull, or push as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+    || has "${GIT}rebase([[:space:]]+[^;&|[:space:]]+)+[[:space:]]+[\"']?${MAIN}[\"']?${END}"
+}
+redirected_push=0
+(( is_git_push || is_redirected )) && combined push && redirected_push=1
+if (( is_git_merge || is_git_pull || is_redirected )) && combined 'merge|pull'; then
+  deny "merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
 fi
 
 spaced="$(sed -E 's/[;&|()<>]/& /g' <<<"$flat")"
@@ -145,7 +153,7 @@ if (( is_git_pull && on_trunk )); then
 fi
 
 if (( is_git_push )); then
-  force=0 all=0 skip=0 push_ops=()
+  force=0 delete=0 all=0 skip=0 push_ops=()
   while IFS= read -r w; do
     if (( skip )); then skip=0; continue; fi
     # Long options match by prefix, as git accepts them.
@@ -153,15 +161,26 @@ if (( is_git_push )); then
       --no-*) ;;
       --mi*) deny "merge-gate: git push --mirror rewrites main; push branches and merge through the gated path." ;;
       --al* | --br*) all=1 ;;
-      --del* | --forc*) force=1 ;;
+      --del*) force=1 delete=1 ;;
+      --forc*) force=1 ;;
       --*=*) ;;
       --rep* | --recu* | --rece* | --ex* | --pu*) skip=1 ;;
       --*) ;;
-      -*) [[ "$w" == *[fd]* ]] && force=1; [[ "$w" == *o ]] && skip=1 ;;
+      -*) [[ "$w" == *[fd]* ]] && force=1; [[ "$w" == *d* ]] && delete=1; [[ "$w" == *o ]] && skip=1 ;;
       +*) force=1; push_ops+=("$w") ;;
       *) push_ops+=("$w") ;;
     esac
   done < <(words push)
+  if (( redirected_push )); then
+    # Another directory's current branch is unknown, so only literal non-trunk branches may be pushed.
+    ok=$(( !delete && !all && ${#push_ops[@]} > 1 ))
+    for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
+      tok="${tok#+}"; dst="${tok#*:}"
+      [[ -n "${tok%%:*}" && "$dst" != HEAD && "$dst" != @ && "$tok" != *'*'* ]] \
+        && ! grep -Eqx "$PUSH_MAIN" <<<"$dst" || ok=0
+    done
+    (( ok )) || deny "merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal branches, none of them the trunk, without delete, --all, or --mirror; run any other push from the repository as its own command."
+  fi
   (( force && all )) && deny "merge-gate: a forced push --all includes main; name the branch to push."
   (( force && on_trunk && ${#push_ops[@]} <= 1 )) \
     && deny "merge-gate: a force push without a refspec from $current pushes main; name the branch to push."
