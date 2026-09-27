@@ -24,7 +24,8 @@
 #     refspec
 #
 # Exit 2 blocks the tool call and every error path fails closed. The match is textual, so a command
-# that merely quotes a guarded phrase is refused; write such text with a file tool instead.
+# that merely quotes a guarded phrase is refused; write such text with a file tool instead. Shell
+# redirections (fd numbers, &N, &>, >&, >!, {fd}) are dropped with their targets before matching.
 # Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
 # variables, `eval`, `bash -c`, backticks, aliases, config, split strings, `xargs`/`find -exec`), and
 # trunk updates with no merge or push. The tpm's Check ledger and CI status step is the backstop.
@@ -45,7 +46,7 @@ QUOTED='"[^"]*"|'"'"'[^'"'"']*'"'"''
 # One shell word: quoted strings, $(...) substitutions, escaped and plain characters.
 WORD="(${QUOTED}|\\\$\\([^)]*\\)|\\\\.|[^][:space:]\"';&|()<>\\\\])+"
 # A redirection operator; its target, if any, is the next word.
-REDIR='[0-9]*(<<<|<<|>>|<>|>\||<|>)(&[0-9]+|&-)?|&>>?'
+REDIR='(\{[A-Za-z_][A-Za-z0-9_]*\}|[0-9]*)((<<<|<<|>>!?|>!|<>|>\||<|>)(&[0-9]+|&-)?|>&)|&>>?'
 TOK="${REDIR}|${WORD}|[;&|()<>]"
 GIT_BODY="git([[:space:]]+(-[cC][[:space:]]*${WORD}|--(git-dir|work-tree|namespace|exec-path|config-env)[[:space:]]+${WORD}|--[a-z-]+=${WORD}|-[-A-Za-z]+))*[[:space:]]+"
 GIT="${W}${GIT_BODY}"
@@ -61,6 +62,13 @@ deny() {
   exit 2
 }
 flat="${command//$'\n'/; }"
+stripped="" target=0
+while IFS= read -r tok; do
+  if (( target )); then target=0; continue; fi
+  if [[ "$tok" =~ ^(${REDIR})$ ]]; then [[ "$tok" == *'&'[0-9-] ]] || target=1; continue; fi
+  stripped+="$tok "
+done < <(grep -oE "$TOK" <<<"$flat")
+flat="$stripped"
 has() { grep -Eq "$1" <<<"$flat"; }
 
 has "${W}gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)" && is_gh_merge=1 || is_gh_merge=0
@@ -101,11 +109,8 @@ words() {
   local tok n rest
   [[ "$flat" =~ ${GIT}$1${END}(.*) ]] || return 0
   n=${#BASH_REMATCH[@]}; rest="${BASH_REMATCH[n-2]}${BASH_REMATCH[n-1]}"
-  local target=0
   while IFS= read -r tok; do
-    if (( target )); then target=0; continue; fi
     [[ "$tok" == [\;\&\|\(\)] ]] && break
-    if grep -Eqx "$REDIR" <<<"$tok"; then [[ "$tok" == *'&'[0-9-] ]] || target=1; continue; fi
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
   done < <(grep -oE "$TOK" <<<"$rest")
 }
@@ -168,7 +173,7 @@ if (( is_git_push )); then
       --no-*) ;;
       --m*) deny "merge-gate: git push --mirror rewrites main; push branches and merge through the gated path." ;;
       --al* | --b*) all=1 ;;
-      --de*) force=1 delete=1 ;;
+      --de* | --pru*) force=1 delete=1 ;;
       --forc*) force=1 ;;
       --*=*) ;;
       --rep* | --recu* | --rece* | --e* | --pu*) skip=1 ;;

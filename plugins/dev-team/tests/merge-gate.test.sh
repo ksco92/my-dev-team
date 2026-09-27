@@ -301,6 +301,28 @@ out="$(gate 'git merge other 2>&1' "$on_main")"
 check "'git merge other 2>&1' is gated on its one branch" "$(grep -c 'review gates not proven for other' <<<"$out")" "1"
 check "'git merge feature/x 2>&1' with five PASS is allowed" "$(gate 'git merge feature/x 2>&1' "$on_main")" "0 "
 
+check "a redirection before the push subcommand is parsed" "$(gate 'git 2>&1 push origin feature/x:main' "$on_feature")" "$onto"
+check "a redirection glued to git is parsed" "$(gate 'git>x push origin feature/x:main' "$on_feature")" "$onto"
+check "a redirection after a global option is parsed" "$(gate 'git -c a=b >x push origin feature/x:main' "$on_feature")" "$onto"
+check "a redirection before a forced push of main is parsed" "$(gate 'git 2>&1 push -f origin main' "$on_feature")" \
+  "2 merge-gate: force or delete push to main is refused; main is only ever advanced by a gated merge."
+check "a redirection before a mirror push is parsed" "$(gate 'git 2>&1 push --mirror origin' "$on_feature")" \
+  "2 merge-gate: git push --mirror rewrites main; push branches and merge through the gated path."
+denied_redirected_push 'git -C /tmp 2>&1 push origin feature:main' "$on_feature"
+check "a redirection before the merge subcommand is parsed" "$(gate 'git 2>&1 merge feature' "$on_main")" "2 merge-gate: unknown branch 'feature'."
+check "a redirection before the pull subcommand is parsed" "$(gate 'git >x pull origin feature' "$on_main")" "$pull_denied"
+check "a push with a redirection before the subcommand is allowed" "$(gate 'git 2>&1 push origin feature/x' "$on_feature")" "0 "
+for cmd in 'git push --prune --all origin' 'git push --prune --branches origin'; do
+  check "'$cmd' is a forced --all" "$(gate "$cmd" "$on_feature")" "2 merge-gate: a forced push --all includes main; name the branch to push."
+done
+for cmd in 'git push -f origin >&/dev/null' 'git push -f origin >! /tmp/x' 'git push -f origin {fd}>/dev/null'; do
+  check "'$cmd' on main consumes the redirection target and is a bare force" "$(gate "$cmd" "$on_main")" "$bare_force"
+done
+check "'git pull origin main >&/dev/null' is allowed" "$(gate 'git pull origin main >&/dev/null' "$on_main")" "0 "
+for cmd in 'git push -of origin' 'git push -od origin feature/x'; do
+  check "'$cmd' on main reads the rest of the -o cluster as its value and is allowed" "$(gate "$cmd" "$on_main")" "0 "
+done
+
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."
 check "gh pr merge without a PR number is denied at the PR number" "$(gate 'gh pr merge --repo o/r --squash' "$TMP")" \
