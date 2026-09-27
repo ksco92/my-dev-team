@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -51,6 +52,9 @@ jobs:
       - name: Test merge-gate and attribution-guard hooks
         run: bash plugins/dev-team/tests/merge-gate.test.sh
 
+      - name: Test eval suite (case.yaml parsing, scaffold scripts)
+        run: bash plugins/dev-team/tests/evals.test.sh
+
       - name: Lint added learned patterns
         run: |
           git ls-files -z 'plugins/dev-team/*.md' | xargs -0 plugins/dev-team/bin/lesson-lint --added origin/main
@@ -74,3 +78,45 @@ jobs:
             echo "plugin.json version must be bumped from $base_version"
             exit 1
           fi
+
+  evals:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'run-evals')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for ANTHROPIC_API_KEY
+        id: has_key
+        run: echo "present=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip notice (no API key configured)
+        if: steps.has_key.outputs.present != 'true'
+        run: echo "::notice::ANTHROPIC_API_KEY is not set; skipping the eval suite."
+
+      - uses: actions/setup-node@v4
+        if: steps.has_key.outputs.present == 'true'
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        if: steps.has_key.outputs.present == 'true'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Install pytest for the implementer case's sandboxed Bash
+        if: steps.has_key.outputs.present == 'true'
+        run: python3 -m pip install --break-system-packages "pytest==9.1.1"
+
+      - name: Run eval suite
+        if: steps.has_key.outputs.present == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude plugin eval plugins/dev-team --threshold 1.0 --max-cost-usd 5 --trust-plugin \
+            --scaffold --allow-tools Bash Write Edit --ablation none --runs 1 --json
+
+      - name: Upload eval report
+        if: steps.has_key.outputs.present == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: plugins/dev-team/evals/results/

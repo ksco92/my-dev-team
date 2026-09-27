@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: readme-writer-doc-drift
+tags: [gate, readme-writer]
+context:
+  scaffold_script: scaffold.sh

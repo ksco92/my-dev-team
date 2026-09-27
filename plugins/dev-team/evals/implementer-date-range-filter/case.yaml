@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: implementer-date-range-filter
+description: >
+  Needs Bash, Write, and Edit granted with --allow-tools to exercise the implementer; under the
+  default read-only grant it can only plan, not code, and scores near zero.
+tags: [implementer, needs-bash]
+context:
+  scaffold_script: scaffold.sh

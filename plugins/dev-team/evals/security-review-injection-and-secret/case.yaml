@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: security-review-injection-and-secret
+tags: [gate, security-review]
+context:
+  scaffold_script: scaffold.sh
