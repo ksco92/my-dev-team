@@ -121,8 +121,9 @@ or the agent's project memory (`.claude/agent-memory/<agent>/`), never in these 
 State the rule, not the incident — the git log keeps the archaeology: one imperative sentence,
 two at most, no date, no repo or PR name, no "added after" tail. Refine an
 existing entry instead of adding a near-duplicate; when a learned pattern matures into policy, fold it into the
-section above and remove the bullet. Keep `## Learned patterns` under ~20 entries: this file loads
-into every session.
+section above and remove the bullet. Keep `## Learned patterns` under ~20 entries and this file
+under about 9,500 characters: it loads into every session through the SessionStart hook, which
+inlines at most 10,000 characters and replaces a longer file with a pointer.
 
 The `dev-team` plugin ships this file, and subagents never edit it: a proposed bullet carries its
 evidence (a command, a transcript line, or a gate finding) and lands through the `tpm` skill's
