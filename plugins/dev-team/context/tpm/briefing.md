@@ -64,13 +64,14 @@ brief (5.2).
   consuming parser does, or store a placeholder"), never the mechanism that closes one case; a
   mechanism written from one example opens the sibling case the next gate finds.
 - Every brief that touches a shared local resource (a database, a port) names a value unique to
-  that agent and forbids running any script whose default targets the owner's own resource;
-  reviewers that run the suite get a name of their own per round.
+  that agent, PR and round and forbids running any script whose default targets the owner's own
+  resource; two gates for different PRs briefed with the same port collide.
 - Implementer briefs say to push from a worktree with an explicit refspec
   (`git -C <worktree> push origin <branch>:<branch>`): the merge gate refuses a bare push run
   through `-C`, and the refusal reads as a permission error.
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
-- Parallel reviewer briefs that share one scratchpad tell each gate to record its probe path under
-  a filename unique to that gate; a shared filename let one gate remove another's worktree.
+- Parallel reviewer briefs that share one scratchpad tell each gate to keep its probe path in a
+  shell variable or a file named for the gate, PR and round; a filename shared by two gates let
+  one remove another's worktree, and one shared across PRs redirected a gate into the wrong tree.

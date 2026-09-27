@@ -22,3 +22,6 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   per-client permission dialog (Postgres.app on macOS), so it fails only on requests that open a
   connection; start it with the tool's own background mode, and ask the owner to approve the
   interpreter binary once rather than editing the app's preferences from a probe.
+- When a probe or implementer mutation-tests a file that carries uncommitted edits, it reverts the
+  mutant from a copy saved beforehand, never with `git checkout -- <file>`, which discards the
+  edit under test along with the mutant.

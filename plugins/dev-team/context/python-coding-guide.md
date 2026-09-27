@@ -1231,7 +1231,10 @@ plugin repository (`ksco92/my-dev-team`).
   runs no model validation and would surface a raw `IntegrityError`.
 - DRF answers an anonymous request with 401 or 403 according to the first class in
   `authentication_classes` (`SessionAuthentication` first gives 403); an endpoint that promises
-  401 lists a challenge-issuing class first, and tests assert the code they mean.
+  401 lists a challenge-issuing class first, and tests assert the code they mean. `initial()` runs
+  authentication, permissions and throttles before the handler is resolved, so a throttle may skip
+  exactly the requests the handler rejects before work (unregistered name, wrong method) without
+  opening an uncounted path; check that pairing, not the skip alone.
 - A length limit applies to the value that is persisted: lower-casing can lengthen a string
   (`İ` becomes two code points), so a 254-character email passes the raw check and overflows the
   column after normalisation; the rejection fixture lands exactly one unit over the limit.
@@ -1253,3 +1256,9 @@ plugin repository (`ksco92/my-dev-team`).
   redact the value whenever the stored key gained a placeholder. Charge every re-serialised string
   to one budget shared across the request, checked at every level: nested escapes grow output
   geometrically, and decode depth is set by the escape the attacker chooses, not the encoder.
+- A limit enforced in `INSERT ... ON CONFLICT DO UPDATE ... WHERE count < limit` never applies to the
+  fresh insert, so a limit of zero still admits one request; refuse limits below 1 where the class is
+  defined, and drive 0, a negative and an oversized value end to end.
+- A soft-delete manager declared as `objects` does not make `Model._base_manager` soft-deleting:
+  unless `Meta.base_manager_name` is set it is Django's plain `Manager`, whose queryset `delete()`
+  issues a real `DELETE`, so a purge needs no raw SQL; verify by printing the manager's class.

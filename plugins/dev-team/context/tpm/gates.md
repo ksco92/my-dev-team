@@ -74,3 +74,19 @@ Read before the first gate of a run.
   the third attempt, and have the repo doc state the acceptance as a closed list of what is
   covered; later gates judge against that list, and a claim in it broader than the code reopens
   the loop.
+- Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
+  implementer's report; a mistyped SHA voids every verdict of the round and costs a correction
+  message per gate.
+- Verify an "the ORM cannot do X" justification for raw SQL against the pinned framework's source
+  (`inspect.getsource` on the relevant method) before accepting it; one call turns a claim into a
+  citation, and the base manager or a conditional update often already does it.
+- Before briefing a test deletion that a gate asks for, check the test against the ticket's
+  acceptance criteria; a test that pins a stated criterion stays even when the framework enforces
+  the behaviour, because the criterion is the contract and the next gate will fail its absence.
+- A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
+  the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates it.
+- Reviewing a limit or counter: swap the atomic statement for a read-then-write in the probe and
+  require the threaded test to fail on every run; drive zero, negative and oversized well-typed
+  values end to end (the insert side of a conflict-guarded limit never sees the limit; a huge day
+  count overflows `timedelta` into a traceback); and when a PR edits a line already over the
+  column convention, the PR owns the line's new length.
