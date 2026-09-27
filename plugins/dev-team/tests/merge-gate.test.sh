@@ -330,6 +330,11 @@ done
 denied_redirected_push "out=\$(git -C $on_main push -f origin 2>&1)" "$on_feature"
 # shellcheck disable=SC2016 # the substitution is the command under test
 check "a captured push of a feature branch is allowed" "$(gate 'out=$(git push origin feature/x 2>&1)' "$on_feature")" "0 "
+# shellcheck disable=SC2016 # the substitutions are the commands under test
+check "an fd copy inside a substitution takes no target" "$(gate 'out=$(git push 2>&1 origin feature/x)' "$on_feature")" "0 "
+# shellcheck disable=SC2016 # the substitutions are the commands under test
+check "a trunk refspec after an fd copy inside a substitution is denied" \
+  "$(gate 'out=$(git push origin 2>&1 main feature/x)' "$on_feature")" "2 $redirected_push"
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."
