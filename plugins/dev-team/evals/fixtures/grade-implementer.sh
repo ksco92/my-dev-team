@@ -16,7 +16,7 @@ assert_eq() { if [[ "$1" == "$2" ]]; then check 0 "$3"; else check 1 "$3"; fi; }
 PY=(python3)
 if ! python3 -c 'import pytest' 2>/dev/null; then
   command -v uv >/dev/null || { echo "need pytest importable by python3, or uv"; exit 2; }
-  PY=(uv run --no-project --with pytest python)
+  PY=(uv run --no-project --with pytest==9.1.1 python)
 fi
 export PYTHONPATH=.
 
