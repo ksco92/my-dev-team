@@ -1244,7 +1244,8 @@ plugin repository (`ksco92/my-dev-team`).
   any charset `codecs.lookup` resolves, including `base64`, `quopri`, `idna` and `undefined`,
   and a lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
   Under `DEBUG=True` it placeholders every non-JSON error body: `technical_500_response` also
-  serves a bad `Host` at status 400, as `text/plain`, with `POST` fields unfiltered.
+  serves a bad `Host` at status 400 with `POST` fields unfiltered, as `text/html` unless the
+  `Accept` header prefers `text/plain`.
 - A redactor over text a downstream tokenizer splits (form fields at `&` and `=`) cannot redact by
   key once a secret spans a split: store a placeholder for any field that opens as JSON (`{`, `[`
   or `"` after a byte-order mark and JSON whitespace) but does not parse, and for a body declared
