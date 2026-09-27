@@ -69,3 +69,8 @@ brief (5.2).
 - Implementer briefs say to push from a worktree with an explicit refspec
   (`git -C <worktree> push origin <branch>:<branch>`): the merge gate refuses a bare push run
   through `-C`, and the refusal reads as a permission error.
+- When a fix brief asks for a test that kills a surviving mutant and the implementer instead
+  deletes the guarded code on an equivalence argument, treat the deletion as a design change that
+  needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
+- Parallel reviewer briefs that share one scratchpad tell each gate to record its probe path under
+  a filename unique to that gate; a shared filename let one gate remove another's worktree.

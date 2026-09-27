@@ -63,3 +63,14 @@ Read before the first gate of a run.
 - A gate that flags a token from the harness's own conventions (the `# ponytail:` marker) is
   answered with the file that defines it, and the repo's `CLAUDE.md` states the convention on its
   first use so a reader without the harness can resolve it.
+- Reviewing a redactor or parser fix, re-run every earlier regression input with the parser's
+  delimiters placed inside the secret and with the payload at every position the parser splits (a
+  later field, a value, the query string); after a normalising step is added in front of a check
+  that matched several representations, run the mutant that deletes each existing representation;
+  and execute each parametrised security case through the library call the check reads before
+  trusting its count.
+- When a fix round replaces a mechanism and the next round finds the same leak class in a
+  neighbouring input, brief a fail-closed design (a placeholder for the whole input class) before
+  the third attempt, and have the repo doc state the acceptance as a closed list of what is
+  covered; later gates judge against that list, and a claim in it broader than the code reopens
+  the loop.

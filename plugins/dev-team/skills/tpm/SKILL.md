@@ -52,6 +52,11 @@ When an issue rests on a claim about an external system (an API's error semantic
 window, a rate weight), write it as an ASSUMPTION the implementer verifies against the live source
 before building on it. A premise stated as fact gets encoded into mocks and tests at 100% coverage.
 
+When a criterion is a universal negative ("must never leak", "never loses a row"), write the
+acceptance at intake as a closed list of the inputs it covers and have the slice record the
+remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gates judge the slice
+against that list, and without it every review round finds a neighbouring input.
+
 When the request is framed as an experiment or exploration ("for starters", "we'll take it from
 there", "see if this works"), confirm here whether the PR-and-gates pipeline applies at all;
 default to a single branch with direct commits and live verification, and run gates only when the

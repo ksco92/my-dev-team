@@ -1173,7 +1173,9 @@ plugin repository (`ksco92/my-dev-team`).
 - After bumping the project version in `pyproject.toml`, run `uv lock` and commit `uv.lock` in the
   same commit; verify by grepping the committed file, not the working tree.
 - Python 3.14 (PEP 758) accepts `except A, B:` without `as`; it is a readability finding, fixed
-  with stacked single-exception clauses, each a branch with its own test.
+  with stacked single-exception clauses, each a branch with its own test. black with a py314
+  target rewrites `except (A, B):` into that form, so neither a tuple nor a formatter directive
+  is a fix, and a request to collapse two clauses into one is declined on that ground.
 - Guard non-finite JSON numerics before a `Decimal` conversion: `json.loads` accepts bare
   `NaN`/`Infinity`.
 - A fix that validates each side of a comparison independently at a conversion boundary also
@@ -1240,3 +1242,14 @@ plugin repository (`ksco92/my-dev-team`).
   and a lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
   Under `DEBUG=True` it placeholders every non-JSON error body: `technical_500_response` also
   serves a bad `Host` at status 400, as `text/plain`, with `POST` fields unfiltered.
+- A redactor over text a downstream tokenizer splits (form fields at `&` and `=`) cannot redact by
+  key once a secret spans a split: store a placeholder for any field that opens as JSON (`{`, `[`
+  or `"` after a byte-order mark and JSON whitespace) but does not parse, and for a body declared
+  or opening as JSON that fails to parse or is too deep, never the raw scrubbed text. Parse JSON
+  found inside JSON strings and inside object keys the same way, recursively; clients encode twice.
+- Match a secret-key name on the key as received, as stored, and on each decoded layer of a
+  JSON-string key: re-serialisation keeps quotes so an anchored name never matches the stored
+  spelling, and parsing can delete text (duplicate keys collapse) so the received spelling stays;
+  redact the value whenever the stored key gained a placeholder. Charge every re-serialised string
+  to one budget shared across the request, checked at every level: nested escapes grow output
+  geometrically, and decode depth is set by the escape the attacker chooses, not the encoder.
