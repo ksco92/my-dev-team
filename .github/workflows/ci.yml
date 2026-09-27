@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize, labeled]
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -112,7 +112,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude plugin eval plugins/dev-team --threshold 1.0 --max-cost-usd 5 --trust-plugin \
-            --scaffold --allow-tools Bash Write Edit --json
+            --scaffold --allow-tools Bash Write Edit --ablation none --runs 1 --json
 
       - name: Upload eval report
         if: steps.has_key.outputs.present == 'true' && always()

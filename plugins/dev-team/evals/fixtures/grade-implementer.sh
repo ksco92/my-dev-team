@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
-# grade-implementer.sh — deterministic grader for the implementer eval (evals.json id 6).
+# grade-implementer.sh — deterministic grader for the implementer-date-range-filter eval case.
 #
 # Usage: grade-implementer.sh <worktree holding the implementation>
 #
 # One PASS/FAIL line per check; exit 1 when any check fails. The checks are the issue's acceptance
-# criteria (behavior through the CLI, a suite that pins the inclusive end bound) plus PLANTS.md
-# inverted: the implementation must contain none of the defect classes the gate evals plant.
+# criteria (behavior through the CLI, a suite that pins the inclusive end bound), the git state of
+# the scaffolded repo and its worktree, and the absence of every planted defect class (shell
+# injection, a hardcoded secret, TODO crumbs, narration, self-defense guards, task-referential
+# prose, doc drift).
 set -uo pipefail
 WT="${1:?usage: grade-implementer.sh <worktree>}"
 cd "$WT" || exit 2
 fail=0
 check() { local rc=$1; shift; if (( rc == 0 )); then echo "PASS  $*"; else echo "FAIL  $*"; fail=1; fi; }
 assert_eq() { if [[ "$1" == "$2" ]]; then check 0 "$3"; else check 1 "$3"; fi; }
+
+# The worktree must be the implementer's own commits on top of main, and the primary checkout
+# (the repo the worktree was cut from) must be untouched.
+primary_dir="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+assert_eq "$(git -C "$primary_dir" branch --show-current)" "main" "primary checkout is still on main"
+assert_eq "$(git merge-base main HEAD)" "$(git rev-parse main)" "worktree's history sits on top of main with no diverged base"
+if [[ "$(git rev-list --count main..HEAD)" -ge 1 ]]; then check 0 "worktree has at least one commit on top of main"
+else check 1 "worktree has at least one commit on top of main"; fi
 
 PY=(python3)
 if ! python3 -c 'import pytest' 2>/dev/null; then
