@@ -20,8 +20,7 @@ assert_eq() { if [[ "$1" == "$2" ]]; then check 0 "$3"; else check 1 "$3"; fi; }
 primary_dir="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 assert_eq "$(git -C "$primary_dir" branch --show-current)" "main" "primary checkout is still on main"
 assert_eq "$(git merge-base main HEAD)" "$(git rev-parse main)" "worktree's history sits on top of main with no diverged base"
-if [[ "$(git rev-list --count main..HEAD)" -ge 1 ]]; then check 0 "worktree has at least one commit on top of main"
-else check 1 "worktree has at least one commit on top of main"; fi
+(( $(git rev-list --count main..HEAD) >= 1 )); check $? "worktree has at least one commit on top of main"
 
 PY=(python3)
 if ! python3 -c 'import pytest' 2>/dev/null; then
