@@ -319,9 +319,17 @@ for cmd in 'git push -f origin >&/dev/null' 'git push -f origin >! /tmp/x' 'git 
   check "'$cmd' on main consumes the redirection target and is a bare force" "$(gate "$cmd" "$on_main")" "$bare_force"
 done
 check "'git pull origin main >&/dev/null' is allowed" "$(gate 'git pull origin main >&/dev/null' "$on_main")" "0 "
-for cmd in 'git push -of origin' 'git push -od origin feature/x'; do
-  check "'$cmd' on main reads the rest of the -o cluster as its value and is allowed" "$(gate "$cmd" "$on_main")" "0 "
+check "'git push -of origin' on main reads the rest of the -o cluster as its value and is allowed" "$(gate 'git push -of origin' "$on_main")" "0 "
+check "a redirected '-od' push reads d as the -o value and is allowed" "$(gate "git -C $on_feature push -od origin feature/x" "$on_main")" "0 "
+check "'git push --pru --all origin' is a forced --all" "$(gate 'git push --pru --all origin' "$on_feature")" \
+  "2 merge-gate: a forced push --all includes main; name the branch to push."
+# shellcheck disable=SC2016 # the substitutions are the commands under test
+for cmd in 'out=$(git push -f origin 2>&1)' 'out=$(git push -f 2>/dev/null)' 'echo $(git push --force origin >/dev/null)' 'echo "$(git push -f origin 2>&1)"'; do
+  check "'$cmd' on main has no refspec inside a substitution and is denied" "$(gate "$cmd" "$on_main")" "2 $redirected_push"
 done
+denied_redirected_push "out=\$(git -C $on_main push -f origin 2>&1)" "$on_feature"
+# shellcheck disable=SC2016 # the substitution is the command under test
+check "a captured push of a feature branch is allowed" "$(gate 'out=$(git push origin feature/x 2>&1)' "$on_feature")" "0 "
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."

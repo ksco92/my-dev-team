@@ -25,7 +25,8 @@
 #
 # Exit 2 blocks the tool call and every error path fails closed. The match is textual, so a command
 # that merely quotes a guarded phrase is refused; write such text with a file tool instead. Shell
-# redirections (fd numbers, &N, &>, >&, >!, {fd}) are dropped with their targets before matching.
+# redirections (fd numbers, &N, &>, >&, >!, {fd}) are dropped with their targets before matching and
+# again when a subcommand's arguments are read.
 # Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
 # variables, `eval`, `bash -c`, backticks, aliases, config, split strings, `xargs`/`find -exec`), and
 # trunk updates with no merge or push. The tpm's Check ledger and CI status step is the backstop.
@@ -109,8 +110,12 @@ words() {
   local tok n rest
   [[ "$flat" =~ ${GIT}$1${END}(.*) ]] || return 0
   n=${#BASH_REMATCH[@]}; rest="${BASH_REMATCH[n-2]}${BASH_REMATCH[n-1]}"
+  local target=0
   while IFS= read -r tok; do
+    if (( target )); then target=0; continue; fi
     [[ "$tok" == [\;\&\|\(\)] ]] && break
+    # A redirection inside a $(...) word survives the whole-command strip.
+    if [[ "$tok" =~ ^(${REDIR})$ ]]; then [[ "$tok" == *'&'[0-9-] ]] || target=1; continue; fi
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
   done < <(grep -oE "$TOK" <<<"$rest")
 }

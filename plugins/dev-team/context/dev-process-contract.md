@@ -99,16 +99,17 @@ directory's branch cannot be read. Push accepts only literal refspecs (a branch 
 one colon at most), refusing a pattern (`*`) or matching (`:`, `+:`) refspec; it matches long
 options from the shortest prefix git accepts (`--prune` counts as a delete). Shell redirections (fd
 numbers, `&N`, `&>`, `>&`, `>!`, `{fd}`) are dropped with their targets wherever they sit, including
-between `git` and its subcommand. It refuses a push of `<src>:main` (`heads/main` and
-`refs/heads/main` included) unless `<src>` is main itself, and always refuses `--mirror`, an empty
-source onto main, a force or delete of main (a bare `HEAD` or `@` resolved first), a forced `--all`,
-and a force push without a refspec from the trunk. Not gated: git reached through shell constructs
-the matcher does not expand (quoting, escapes, variables, `eval`, `bash -c`, backticks, aliases, git
-config, split strings, argument-supplying commands such as `xargs`, `find -exec`, `parallel`), and a
-trunk update with no merge or push (`reset --hard`, `update-ref`). The hook checks CI for some forms
-only and passes a PR with no reported checks or with skipped checks, so the tpm runs the Check
-ledger and CI status operations before every Merge, including any form outside those, and the file's
-Merge row states that its command runs only after both.
+between `git` and its subcommand, and again when a subcommand's arguments are read, which covers one
+inside `$(...)`. It refuses a push of `<src>:main` (`heads/main` and `refs/heads/main` included)
+unless `<src>` is main itself, and always refuses `--mirror`, an empty source onto main, a force or
+delete of main (a bare `HEAD` or `@` resolved first), a forced `--all`, and a force push without a
+refspec from the trunk. Not gated: git reached through shell constructs the matcher does not expand
+(quoting, escapes, variables, `eval`, `bash -c`, backticks, aliases, git config, split strings,
+argument-supplying commands such as `xargs`, `find -exec`, `parallel`), and a trunk update with no
+merge or push (`reset --hard`, `update-ref`). The hook checks CI for some forms only and passes a PR
+with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI status
+operations before every Merge, including any form outside those, and the file's Merge row states
+that its command runs only after both.
 
 ## Workspace
 
