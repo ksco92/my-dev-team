@@ -16,6 +16,9 @@ Read before the first gate of a run.
 - Never pre-assign versions to open PRs; a PR takes its version in the final rebase before its
   merge (main's plus one step, lockfile regenerated in the same commit). A branch cut before a new
   required workflow merged must rebase to run it.
+- Two open PRs that both wrote the same next version rebase without a conflict and the second lands
+  a zero bump, so the rebase brief names the new version as an edit to make; the proof that only
+  the version files moved is a tree diff between the old and new heads, hunk headers stripped.
 - Grep-verify a gate's decisive factual claims against the head before dispatching a fix round, and
   verify a PR body's root-cause narrative with `git log --follow`; the duty runs both ways, and an
   overruled finding is recorded with its evidence rather than sent to the implementer.
@@ -49,6 +52,12 @@ Read before the first gate of a run.
 - A PR body's own preservation or fix checklist is not proof: reproduce it from the diff (every
   number-plus-unit token, every named symbol) before recording a verdict; the checklist lists what
   the author remembered to check.
+- A PR body that calls a state unreachable ("nothing soft-deletes X today") is checked against the
+  admin surface as well as the application paths: a `ModelAdmin` that overrides add but not delete
+  permission still reaches the state, and the gate reproduces it before accepting the claim.
+- Reviewing a rules or policy file that describes code, compare every mechanism word ("literal
+  table name", "aborts", "placeholder") against the line it describes at the head; text drafted
+  from an earlier proposal keeps the wording of an implementation a later PR replaced.
 - Check a PR against every issue-specific numeric criterion as well as the repo's general bar; the
   same computed figure can clear the general ceiling and miss the issue's tighter target.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
@@ -84,7 +93,8 @@ Read before the first gate of a run.
   acceptance criteria; a test that pins a stated criterion stays even when the framework enforces
   the behaviour, because the criterion is the contract and the next gate will fail its absence.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
-  the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates it.
+  the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
+  it.
 - Reviewing a limit or counter: swap the atomic statement for a read-then-write in the probe and
   require the threaded test to fail on every run; drive zero, negative and oversized well-typed
   values end to end (the insert side of a conflict-guarded limit never sees the limit; a huge day
