@@ -82,10 +82,34 @@ and replaces a longer file with a pointer to `dev-process show`.
 The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
 passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
 reports no checks as passing. It refuses `git merge` into `main` or `master` unless the ledger
-passes, and always refuses a GraphQL `mergePullRequest`. The hook checks CI for some forms only and
-passes a PR with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI
-status operations before every Merge, including any form outside those, and the file's Merge row
-states that its command runs only after both.
+passes for the merged branch (`-` is the previous branch); a bare `git merge` there passes only when
+the upstream is a remote trunk. On the trunk it allows only a bare `git pull` whose `@{upstream}` is
+a remote's `main` or `master`, or `git pull <remote> main|master` (`refs/heads/main` counts as the
+trunk), either form with or without `--ff-only`, `--rebase`, `--no-rebase`, or a strategy option
+given as a separate word (`-X theirs`), and denies any other pull. It always refuses a command with
+more than one `git merge`, `git pull`, or `git push`, a GraphQL `mergePullRequest`, a `git merge`
+from a working directory that is not a repository, a merge of two branches, and a `git merge` or
+`git pull` in the same command as a `cd`, `pushd`, `git worktree add`, a checkout or switch to
+`main`, `master`, `-`, or `@{-N}`, or a `rebase <branch> main`, or redirected with `-C`,
+`--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or `env -C`, or run in a subshell or
+`$(...)`. A `git push` in any of those forms passes only when it names its remote and literal
+refspecs whose destination is neither the trunk nor `HEAD`/`@`, with a non-empty source and no
+delete, `--all`, or `--mirror` (force is allowed); one with no refspec is denied, since the other
+directory's branch cannot be read. Push accepts only literal refspecs (a branch or `<src>:<dst>`,
+one colon at most), refusing a pattern (`*`) or matching (`:`, `+:`) refspec; it matches long
+options from the shortest prefix git accepts (`--prune` counts as a delete). Shell redirections (fd
+numbers, `&N`, `&>`, `>&`, `>!`, `{fd}`) are dropped with their targets wherever they sit, including
+between `git` and its subcommand, and again when a subcommand's arguments are read, which covers one
+inside `$(...)`. It refuses a push of `<src>:main` (`heads/main` and `refs/heads/main` included)
+unless `<src>` is main itself, and always refuses `--mirror`, an empty source onto main, a force or
+delete of main (a bare `HEAD` or `@` resolved first), a forced `--all`, and a force push without a
+refspec from the trunk. Not gated: git reached through shell constructs the matcher does not expand
+(quoting, escapes, variables, `eval`, `bash -c`, backticks, aliases, git config, split strings,
+argument-supplying commands such as `xargs`, `find -exec`, `parallel`), and a trunk update with no
+merge or push (`reset --hard`, `update-ref`). The hook checks CI for some forms only and passes a PR
+with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI status
+operations before every Merge, including any form outside those, and the file's Merge row states
+that its command runs only after both.
 
 ## Workspace
 

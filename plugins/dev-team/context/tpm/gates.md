@@ -54,3 +54,5 @@ Read before the first gate of a run.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
   not a contradiction for the owner: the repo rule decides, the orchestrator amends the issue's
   constraint with the reason, and the gate that cited the old constraint re-issues its verdict.
+- GitHub host: a merge run from a session whose cwd is not the target repository names it with
+  `--repo <owner/name>`; the hook resolves the repository from the cwd.

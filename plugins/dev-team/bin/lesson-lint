@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# lesson-lint — checks learned-pattern bullets for register faults before a reviewer reads them.
+#
+# Usage:
+#   lesson-lint <file>...                    every bullet under `## Learned patterns`, and every
+#                                            bullet of a context/tpm/*.md file
+#   lesson-lint --added <base-ref> <file>... only bullets with a line added since the merge base;
+#                                            every bullet of an untracked file
+#
+# Prints `<file>:<line>: <rule>: <first 60 chars>` per failure and exits 1 on any; a section
+# over its bullet budget is a warning on stderr. Exit 2 on a usage error.
+set -euo pipefail
+
+usage() { sed -n '4,8p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+base=""
+if [[ "${1:-}" == "--added" ]]; then
+  [[ $# -ge 3 ]] || usage
+  base="$2"; shift 2
+fi
+[[ $# -ge 1 && "$1" != -* ]] || usage
+
+status=0
+for file in "$@"; do
+  [[ -f "$file" ]] || { echo "lesson-lint: no such file: $file" >&2; exit 2; }
+  case "$file" in
+    context/tpm/*.md | */context/tpm/*.md) whole=1 budget=30 ;;
+    *-coding-guide.md | *baseline.md | *npm-publishing-pattern.md) whole=0 budget=25 ;;
+    *) whole=0 budget=20 ;;
+  esac
+  added="" mode=""
+  if [[ -n "$base" ]] && git -C "$(dirname "$file")" ls-files --error-unmatch -- "$(basename "$file")" >/dev/null 2>&1; then
+    mode=added
+    # Hunk headers `@@ -a,b +c,d @@` name the added lines c..c+d-1 of the working-tree file.
+    added="$(git -C "$(dirname "$file")" diff -U0 --no-color --merge-base "$base" -- "$(basename "$file")" \
+      | sed -nE 's/^@@ -[0-9,]+ \+([0-9]+)(,([0-9]+))? @@.*/\1 \3/p' \
+      | awk '{ n = ($2 == "") ? 1 : $2; for (i = 0; i < n; i++) printf "%d ", $1 + i }')" \
+      || { echo "lesson-lint: git diff against '$base' failed for $file" >&2; exit 2; }
+    [[ -n "$added" ]] || continue
+  fi
+  awk -v file="$file" -v whole="$whole" -v budget="$budget" -v added_list="$added" -v mode="$mode" '
+    function flush(   i) {
+      if (start == 0) return
+      n++; text[n] = body; line[n] = start; pick[n] = (mode != "added")
+      for (i = start; i <= last; i++) if (i in added) pick[n] = 1
+      start = 0
+    }
+    function fail(i, rule) { printf "%s:%d: %s: %s\n", file, line[i], rule, substr(text[i], 1, 60); bad = 1 }
+    BEGIN { split(added_list, a, " "); for (k in a) added[a[k]] = 1 }
+    /^(```|~~~)/ { flush(); fence = !fence; next }
+    fence { next }
+    /^#+ / {
+      flush()
+      if (!whole && /^## /) insec = ($0 ~ /^## Learned patterns[[:space:]]*$/)
+      if (!whole && /^# /) insec = 0
+      next
+    }
+    /^[[:space:]]*[-*] / && (whole || insec) { flush(); start = NR; last = NR; body = $0; sub(/^[[:space:]]*[-*] /, "", body); next }
+    /^[[:space:]]*$/ { flush(); next }
+    start { last = NR; sub(/^[[:space:]]+/, ""); body = body " " $0; next }
+    END {
+      flush()
+      for (i = 1; i <= n; i++) {
+        t = text[i]; gsub(/[[:space:]]+/, " ", t); sub(/^ /, "", t); sub(/ $/, "", t); text[i] = t
+        norm[i] = t; count[t]++
+      }
+      if (n > budget) printf "%s: warning: budget: %d bullets, budget %d\n", file, n, budget > "/dev/stderr"
+      for (i = 1; i <= n; i++) {
+        if (!pick[i]) continue
+        t = text[i]; lower = tolower(t); padded = " " t " "; lpadded = " " lower " "
+        plain = t; gsub(/`[^`]*`/, "", plain); sub(/[[:space:]]+$/, "", plain)
+        if (gsub(/[.!?] /, "&", plain) + 1 > 2) fail(i, "sentences")
+        if (t ~ /[0-9][0-9][0-9][0-9][-\/][0-9][0-9]?[-\/][0-9][0-9]?/ ||
+            padded ~ /[^A-Za-z](Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December)\.? ([0-9][0-9]?,? )?(19|20)[0-9][0-9][^0-9]/)
+          fail(i, "date")
+        if (t ~ /#[0-9]/ || t ~ /\/(pull|issues)\/[0-9]/ || padded ~ /[^A-Za-z]PR( |-)?[0-9]/ || padded ~ /[^A-Za-z][Ii]ssue [0-9]/)
+          fail(i, "ticket")
+        if (lower ~ /claude-([a-z]+-)?[0-9]/ || lower ~ /(opus|sonnet|haiku|fable)[- ][0-9]/) fail(i, "model-id")
+        rest = t
+        while (match(rest, /~\/\.claude\/[^[:space:]`'"'"'"),;]*/)) {
+          p = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH); sub(/[.:]+$/, "", p)
+          if (p !~ /^~\/\.claude\/(DEV_PROCESS\.md|gate-ledger|settings\.json|projects)(\/|$)/) { fail(i, "claude-path"); break }
+        }
+        if (lpadded ~ /[^a-z](added after|after observing|observed in|learned from)[^a-z]/ || padded ~ /[^A-Za-z]in PR[^A-Za-z-]/)
+          fail(i, "incident")
+        if (count[norm[i]] > 1) fail(i, "duplicate")
+        if (t ~ /^[a-z]/) fail(i, "lowercase")
+      }
+      exit bad
+    }
+  ' "$file" || status=1
+done
+exit "$status"

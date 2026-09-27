@@ -45,6 +45,16 @@ jobs:
       - name: Test dev-process resolver and session hook
         run: bash plugins/dev-team/tests/dev-process.test.sh
 
+      - name: Test lesson-lint
+        run: bash plugins/dev-team/tests/lesson-lint.test.sh
+
+      - name: Test merge-gate and attribution-guard hooks
+        run: bash plugins/dev-team/tests/merge-gate.test.sh
+
+      - name: Lint added learned patterns
+        run: |
+          git ls-files -z 'plugins/dev-team/*.md' | xargs -0 plugins/dev-team/bin/lesson-lint --added origin/main
+
       - name: Check plugin version bump
         if: github.event_name == 'pull_request'
         run: |

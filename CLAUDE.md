@@ -12,7 +12,7 @@ See the root README for what this repo is.
   `DEV_PROCESS.md` contract, and built-in default process.
 - `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, and session-context Bash hooks and
   `hooks.json`.
-- `plugins/dev-team/bin/`, the gate-ledger and dev-process scripts.
+- `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
 - `plugins/dev-team/README.md`, the plugin's README.
@@ -27,6 +27,9 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
 shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh
 bash plugins/dev-team/tests/dev-process.test.sh
+bash plugins/dev-team/tests/lesson-lint.test.sh
+bash plugins/dev-team/tests/merge-gate.test.sh
+plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
 ```
 
 ## Conventions
