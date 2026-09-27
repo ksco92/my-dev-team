@@ -1223,3 +1223,20 @@ plugin repository (`ksco92/my-dev-team`).
 - Measure a file's comment ratio with `tokenize` COMMENT tokens plus docstrings found by AST
   position (the first string statement of a module, class or function); a scan for `#` lines or
   triple quotes counts an embedded script or fixture string as prose.
+- With a soft-delete default manager, Django's uniqueness validation and `get_by_natural_key` see
+  hidden rows as free while the unique index does not; validate against the all-rows manager in
+  `validate_unique`, and give `create_superuser` its own check, since `createsuperuser --noinput`
+  runs no model validation and would surface a raw `IntegrityError`.
+- DRF answers an anonymous request with 401 or 403 according to the first class in
+  `authentication_classes` (`SessionAuthentication` first gives 403); an endpoint that promises
+  401 lists a challenge-issuing class first, and tests assert the code they mean.
+- A length limit applies to the value that is persisted: lower-casing can lengthen a string
+  (`İ` becomes two code points), so a 254-character email passes the raw check and overflows the
+  column after normalisation; the rejection fixture lands exactly one unit over the limit.
+- Middleware that stores request or response text decodes and parses bytes exactly as the
+  consuming parser does (`request.encoding` for the body, the query string and `parse_qsl`
+  percent-escapes; `response.charset` for the response) or stores a placeholder; Django accepts
+  any charset `codecs.lookup` resolves, including `base64`, `quopri`, `idna` and `undefined`,
+  and a lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
+  Under `DEBUG=True` it placeholders every non-JSON error body: `technical_500_response` also
+  serves a bad `Host` at status 400, as `text/plain`, with `POST` fields unfiltered.

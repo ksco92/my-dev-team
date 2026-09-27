@@ -56,3 +56,10 @@ Read before the first gate of a run.
   constraint with the reason, and the gate that cited the old constraint re-issues its verdict.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
+- When a gate finding rests on a default heuristic with an "unless justified" clause and the
+  owner's written requirement supplies the justification, amend the ticket once with the
+  substantive checks that replace the heuristic before the first gate runs on the next
+  dependency-adding PR; refining it round by round against one lockfile costs a round each time.
+- A gate that flags a token from the harness's own conventions (the `# ponytail:` marker) is
+  answered with the file that defines it, and the repo's `CLAUDE.md` states the convention on its
+  first use so a reader without the harness can resolve it.

@@ -18,3 +18,7 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   lines, so guard with a full-line `ps` scan.
 - `mkdir -p` the log dir before a backgrounded compound command and verify the log exists after
   launch; a failed `cd` writes the EXIT marker elsewhere and reports success.
+- A server a probe starts detached from the GUI session cannot answer a desktop database app's
+  per-client permission dialog (Postgres.app on macOS), so it fails only on requests that open a
+  connection; start it with the tool's own background mode, and ask the owner to approve the
+  interpreter binary once rather than editing the app's preferences from a probe.

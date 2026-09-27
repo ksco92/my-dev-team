@@ -60,3 +60,12 @@ brief (5.2).
 - A fix brief that includes a rebase of an already-pushed branch says the push is
   `--force-with-lease` after checking the remote tip is the last SHA the implementer pushed; a
   plain push after a rebase fails as non-fast-forward and reads as a permission refusal.
+- A fix brief for a security finding prescribes the property ("decode and parse exactly as the
+  consuming parser does, or store a placeholder"), never the mechanism that closes one case; a
+  mechanism written from one example opens the sibling case the next gate finds.
+- Every brief that touches a shared local resource (a database, a port) names a value unique to
+  that agent and forbids running any script whose default targets the owner's own resource;
+  reviewers that run the suite get a name of their own per round.
+- Implementer briefs say to push from a worktree with an explicit refspec
+  (`git -C <worktree> push origin <branch>:<branch>`): the merge gate refuses a bare push run
+  through `-C`, and the refusal reads as a permission error.
