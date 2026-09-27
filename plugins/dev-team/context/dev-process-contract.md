@@ -93,20 +93,21 @@ from a working directory that is not a repository, a merge of two branches, and 
 `main`, `master`, `-`, or `@{-N}`, or a `rebase <branch> main`, or redirected with `-C`,
 `--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or `env -C`, or run in a subshell or
 `$(...)`. A `git push` in any of those forms passes only when it names its remote and literal
-branches, none of them the trunk, with no delete, `--all`, or `--mirror` (force is allowed); one
-with no refspec is denied, since the other directory's branch cannot be read. Push accepts only
-literal refspecs (a branch or `<src>:<dst>`), refusing a pattern (`*`) or matching (`:`, `+:`)
-refspec, and matches long options by prefix as git does. It refuses a push of `<src>:main`
-(`heads/main` and `refs/heads/main` included) unless `<src>` is main itself, and always refuses
-`--mirror`, an empty source onto main, a force or delete of main (a bare `HEAD` or `@` resolved
-first), a forced `--all`, and a force push without a refspec from the trunk. Not gated: git reached
-through shell constructs the matcher does not expand (quoting, escapes, variables, `eval`,
-`bash -c`, backticks, aliases, git config, split strings, argument-supplying commands such as
-`xargs`, `find -exec`, `parallel`), and a trunk update with no merge or push (`reset --hard`,
-`update-ref`). The hook checks CI for some forms only and passes a PR with no reported checks or
-with skipped checks, so the tpm runs the Check ledger and CI status operations before every Merge,
-including any form outside those, and the file's Merge row states that its command runs only after
-both.
+refspecs whose destination is neither the trunk nor `HEAD`/`@`, with a non-empty source and no
+delete, `--all`, or `--mirror` (force is allowed); one with no refspec is denied, since the other
+directory's branch cannot be read. Push accepts only literal refspecs (a branch or `<src>:<dst>`,
+one colon at most), refusing a pattern (`*`) or matching (`:`, `+:`) refspec; it matches long
+options from the shortest prefix git accepts and skips shell redirections with their targets. It
+refuses a push of `<src>:main` (`heads/main` and `refs/heads/main` included) unless `<src>` is main
+itself, and always refuses `--mirror`, an empty source onto main, a force or delete of main (a bare
+`HEAD` or `@` resolved first), a forced `--all`, and a force push without a refspec from the trunk.
+Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
+variables, `eval`, `bash -c`, backticks, aliases, git config, split strings, argument-supplying
+commands such as `xargs`, `find -exec`, `parallel`), and a trunk update with no merge or push
+(`reset --hard`, `update-ref`). The hook checks CI for some forms only and passes a PR with no
+reported checks or with skipped checks, so the tpm runs the Check ledger and CI status operations
+before every Merge, including any form outside those, and the file's Merge row states that its
+command runs only after both.
 
 ## Workspace
 

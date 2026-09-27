@@ -178,7 +178,7 @@ check "a pull on a feature branch is allowed" "$(gate 'git pull . main' "$on_fea
 
 onto="2 merge-gate: pushing 'feature/x' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
 bare_force="2 merge-gate: a force push without a refspec from main pushes main; name the branch to push."
-redirected_push="merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal branches, none of them the trunk, without delete, --all, or --mirror; run any other push from the repository as its own command."
+redirected_push="merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither the trunk nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
 denied_redirected_push() { check "$1 is denied" "$(gate "$1" "$2")" "2 $redirected_push"; }
 denied_redirected_push "git -C $on_main push . feature/x:main" "$TMP"
 denied_redirected_push "git --git-dir=$on_main/.git push . feature/x:main" "$TMP"
@@ -193,7 +193,8 @@ denied_redirected_push "git -C $on_feature push origin :feature/x" "$on_main"
 denied_redirected_push "git -C $on_feature push --delete origin feature/x" "$on_main"
 denied_redirected_push "git -C $on_feature push -d origin feature/x" "$on_main"
 denied_redirected_push "git -C $on_feature push --all origin" "$on_main"
-check "cd <wt> && git push origin 'refs/heads/*' is denied" "$(gate "cd $on_feature && git push origin 'refs/heads/*'" "$on_main" | cut -c1)" "2"
+check "cd <wt> && git push origin 'refs/heads/*' is refused as non-literal" \
+  "$(gate "cd $on_feature && git push origin 'refs/heads/*'" "$on_main" | grep -cF "merge-gate: only literal refspecs (<branch> or <src>:<dst>) are accepted;")" "1"
 for cmd in "cd $on_feature && git push -u origin feature/x" "git -C $on_feature push -u origin feature/x" \
   "git -C $on_feature push --force-with-lease origin feature/x" "git -C $on_feature push origin feature/x:feature/x"; do
   check "'$cmd' pushes a literal non-trunk branch and is allowed" "$(gate "$cmd" "$on_main")" "0 "
@@ -256,6 +257,49 @@ check "a forced --all is denied from a feature branch" "$(gate 'git push --all -
   "2 merge-gate: a forced push --all includes main; name the branch to push."
 check "a push onto heads/main is denied" "$(gate 'git push origin evil:heads/main' "$on_feature")" \
   "2 merge-gate: pushing 'evil' onto heads/main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
+
+for cmd in 'git push origin >/dev/null feature:main' 'git push origin 2>&1 feature:main' 'git push origin &>/dev/null feature:main'; do
+  check "'$cmd' parses the refspec after the redirection" "$(gate "$cmd" "$on_feature")" \
+    "2 merge-gate: pushing 'feature' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
+done
+check "an empty source after a redirection is denied" "$(gate 'git push origin </dev/null :main' "$on_feature")" \
+  "2 merge-gate: pushing an empty source onto main deletes it; main is only ever advanced by a gated merge."
+check "a force of main after a redirection is denied" "$(gate 'git push -f origin </dev/null main' "$on_feature")" \
+  "2 merge-gate: force or delete push to main is refused; main is only ever advanced by a gated merge."
+check "a pattern refspec after a redirection is denied" \
+  "$(gate "git push origin >/dev/null '+refs/heads/*:refs/heads/*'" "$on_feature" | grep -cF "$literal")" "1"
+denied_redirected_push "git -C $on_main push -f origin feature >/dev/null HEAD:main" "$TMP"
+check "a merge operand after a redirection is gated" "$(gate 'git merge >/dev/null evil' "$on_main")" "2 merge-gate: unknown branch 'evil'."
+upstream origin/main
+check "a pull source after a redirection is gated" "$(gate 'git pull >/dev/null origin feature' "$on_main")" "$pull_denied"
+check "a push with a trailing redirection is allowed" "$(gate 'git push origin feature/x >/dev/null' "$on_feature")" "0 "
+colons="2 merge-gate: a refspec takes one colon at most;"
+for cmd in "git push origin 'HEAD^{/feat:}:refs/heads/main'" 'git push origin HEAD^{/feat:}:main' \
+  "git -C $on_feature push -f origin 'HEAD^{/rogue:}:refs/heads/main'" "git -C $on_feature push origin feature:x:main"; do
+  check "'$cmd' has two colons and is denied" "$(gate "$cmd" "$on_main" | grep -cF "$colons")" "1"
+done
+
+for cmd in 'git push -f origin 2>&1' 'git push --force origin 2>/dev/null' 'git push -f origin 1>/tmp/x' 'git push -f origin &>/tmp/x' \
+  'git push -ohello -f origin' 'git push --repo x -f origin' 'git push --receive-pack x -f origin' 'git push --exec x -f origin' \
+  'git push --push-option x -f origin' 'git push --e git-receive-pack -f origin'; do
+  check "'$cmd' on main is a bare force" "$(gate "$cmd" "$on_main")" "$bare_force"
+done
+denied_redirected_push "git -C $on_main push -f origin 2>&1" "$on_feature"
+denied_redirected_push "git -C $on_main push -f origin @" "$on_feature"
+denied_redirected_push "git -C $on_feature push origin +:feature/x" "$on_main"
+denied_redirected_push "git -C $on_feature push --de origin feature/x" "$on_main"
+check "'git push --de origin main' on main is a delete of main" "$(gate 'git push --de origin main' "$on_main")" \
+  "2 merge-gate: force or delete push to main is refused; main is only ever advanced by a gated merge."
+check "'git push --m origin' is a mirror push" "$(gate 'git push --m origin' "$on_main")" \
+  "2 merge-gate: git push --mirror rewrites main; push branches and merge through the gated path."
+check "'git push --b -f origin' is a forced --all" "$(gate 'git push --b -f origin' "$on_feature")" \
+  "2 merge-gate: a forced push --all includes main; name the branch to push."
+check "'git push origin +:' is refused as non-literal" "$(gate 'git push origin +:' "$on_feature" | grep -cF "$literal")" "1"
+check "a push option before a branch is allowed" "$(gate 'git push -o ci.skip origin feature/x' "$on_feature")" "0 "
+check "'git pull origin main 2>&1' is allowed" "$(gate 'git pull origin main 2>&1' "$on_main")" "0 "
+out="$(gate 'git merge other 2>&1' "$on_main")"
+check "'git merge other 2>&1' is gated on its one branch" "$(grep -c 'review gates not proven for other' <<<"$out")" "1"
+check "'git merge feature/x 2>&1' with five PASS is allowed" "$(gate 'git merge feature/x 2>&1' "$on_main")" "0 "
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
   "2 merge-gate: could not resolve the repository from the cwd '$TMP' with gh repo view; pass --repo <owner/name>."

@@ -12,14 +12,16 @@
 #     a switch to main, -, @{-N}, a rebase onto    the command runs, so it cannot gate these
 #     main, a -C/--git-dir/--work-tree/GIT_DIR/
 #     env -C redirect, or in a subshell
-#   git push in any of those forms                 allowed only with a remote and literal non-trunk
-#                                                  branches, no delete, --all, or --mirror
+#   git push in any of those forms                 allowed only with a remote and literal refspecs
+#                                                  with a source and a destination other than the
+#                                                  trunk or HEAD/@, no delete, --all, or --mirror
 #   two merge/pull/push segments, a merge of two   always denied
 #     branches, a merge from a cwd that is no repo
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --mirror, :main, a force or delete    always denied; long options match by prefix
 #     of main, a forced --all, a bare force on main,
-#     a pattern (*) or matching (:) refspec
+#     a pattern (*), matching (:), or two-colon
+#     refspec
 #
 # Exit 2 blocks the tool call and every error path fails closed. The match is textual, so a command
 # that merely quotes a guarded phrase is refused; write such text with a file tool instead.
@@ -42,7 +44,9 @@ PUSH_MAIN='((refs/)?heads/)?(main|master)'
 QUOTED='"[^"]*"|'"'"'[^'"'"']*'"'"''
 # One shell word: quoted strings, $(...) substitutions, escaped and plain characters.
 WORD="(${QUOTED}|\\\$\\([^)]*\\)|\\\\.|[^][:space:]\"';&|()<>\\\\])+"
-TOK="${WORD}|[;&|()<>]"
+# A redirection operator; its target, if any, is the next word.
+REDIR='[0-9]*(<<<|<<|>>|<>|>\||<|>)(&[0-9]+|&-)?|&>>?'
+TOK="${REDIR}|${WORD}|[;&|()<>]"
 GIT_BODY="git([[:space:]]+(-[cC][[:space:]]*${WORD}|--(git-dir|work-tree|namespace|exec-path|config-env)[[:space:]]+${WORD}|--[a-z-]+=${WORD}|-[-A-Za-z]+))*[[:space:]]+"
 GIT="${W}${GIT_BODY}"
 STRATEGY_OPTS="-s --strategy -X --strategy-option"
@@ -97,8 +101,11 @@ words() {
   local tok n rest
   [[ "$flat" =~ ${GIT}$1${END}(.*) ]] || return 0
   n=${#BASH_REMATCH[@]}; rest="${BASH_REMATCH[n-2]}${BASH_REMATCH[n-1]}"
+  local target=0
   while IFS= read -r tok; do
-    [[ "$tok" == [\;\&\|\(\)\<\>] ]] && break
+    if (( target )); then target=0; continue; fi
+    [[ "$tok" == [\;\&\|\(\)] ]] && break
+    if grep -Eqx "$REDIR" <<<"$tok"; then [[ "$tok" == *'&'[0-9-] ]] || target=1; continue; fi
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
   done < <(grep -oE "$TOK" <<<"$rest")
 }
@@ -156,43 +163,48 @@ if (( is_git_push )); then
   force=0 delete=0 all=0 skip=0 push_ops=()
   while IFS= read -r w; do
     if (( skip )); then skip=0; continue; fi
-    # Long options match by prefix, as git accepts them.
+    # Long options match from the shortest prefix git accepts; in a short cluster, `o` takes the rest.
     case "$w" in
       --no-*) ;;
-      --mi*) deny "merge-gate: git push --mirror rewrites main; push branches and merge through the gated path." ;;
-      --al* | --br*) all=1 ;;
-      --del*) force=1 delete=1 ;;
+      --m*) deny "merge-gate: git push --mirror rewrites main; push branches and merge through the gated path." ;;
+      --al* | --b*) all=1 ;;
+      --de*) force=1 delete=1 ;;
       --forc*) force=1 ;;
       --*=*) ;;
-      --rep* | --recu* | --rece* | --ex* | --pu*) skip=1 ;;
+      --rep* | --recu* | --rece* | --e* | --pu*) skip=1 ;;
       --*) ;;
-      -*) [[ "$w" == *[fd]* ]] && force=1; [[ "$w" == *d* ]] && delete=1; [[ "$w" == *o ]] && skip=1 ;;
+      -*)
+        flags="${w#-}"; [[ "$w" == *o ]] && [[ "${flags%%o*}o" == "$flags" ]] && skip=1; flags="${flags%%o*}"
+        [[ "$flags" == *[fd]* ]] && force=1; [[ "$flags" == *d* ]] && delete=1 ;;
       +*) force=1; push_ops+=("$w") ;;
       *) push_ops+=("$w") ;;
     esac
   done < <(words push)
+  for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
+    [[ "$tok" == *'*'* || "$tok" == : || "$tok" == +: ]] \
+      && deny "merge-gate: only literal refspecs (<branch> or <src>:<dst>) are accepted; '$tok' is a pattern or matching refspec."
+    [[ "$tok" != *:*:* ]] || deny "merge-gate: a refspec takes one colon at most; '$tok' is refused."
+  done
   if (( redirected_push )); then
     # Another directory's current branch is unknown, so only literal non-trunk branches may be pushed.
     ok=$(( !delete && !all && ${#push_ops[@]} > 1 ))
     for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
-      tok="${tok#+}"; dst="${tok#*:}"
-      [[ -n "${tok%%:*}" && "$dst" != HEAD && "$dst" != @ && "$tok" != *'*'* ]] \
+      tok="${tok#+}"; dst="${tok##*:}"
+      [[ -n "${tok%:*}" && "$dst" != HEAD && "$dst" != @ ]] \
         && ! grep -Eqx "$PUSH_MAIN" <<<"$dst" || ok=0
     done
-    (( ok )) || deny "merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal branches, none of them the trunk, without delete, --all, or --mirror; run any other push from the repository as its own command."
+    (( ok )) || deny "merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither the trunk nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
   fi
   (( force && all )) && deny "merge-gate: a forced push --all includes main; name the branch to push."
   (( force && on_trunk && ${#push_ops[@]} <= 1 )) \
     && deny "merge-gate: a force push without a refspec from $current pushes main; name the branch to push."
   for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
-    [[ "$tok" == *'*'* || "$tok" == : || "$tok" == +: ]] \
-      && deny "merge-gate: only literal refspecs (<branch> or <src>:<dst>) are accepted; '$tok' is a pattern or matching refspec."
     tok="${tok#+}"
     [[ "$tok" == HEAD || "$tok" == @ ]] && tok="$current"
     if grep -Eqx "$PUSH_MAIN" <<<"$tok"; then
       (( force )) && deny "merge-gate: force or delete push to $tok is refused; main is only ever advanced by a gated merge."
-    elif grep -Eqx "[^:]*:${PUSH_MAIN}" <<<"$tok"; then
-      src="${tok%%:*}"
+    elif [[ "$tok" == *:* ]] && grep -Eqx "$PUSH_MAIN" <<<"${tok##*:}"; then
+      src="${tok%:*}"
       [[ -n "$src" ]] || deny "merge-gate: pushing an empty source onto ${tok#*:} deletes it; main is only ever advanced by a gated merge."
       (( force )) && deny "merge-gate: force push of '$src' onto ${tok#*:} is refused."
       if [[ "$src" == HEAD || "$src" == @ ]]; then
