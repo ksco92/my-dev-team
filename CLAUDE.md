@@ -34,6 +34,7 @@ bash plugins/dev-team/tests/merge-gate.test.sh
 bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
 claude plugin eval plugins/dev-team --case <cheapest-case> --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2
+claude plugin eval plugins/dev-team --case implementer-date-range-filter --scaffold --allow-tools Bash Write Edit --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 ```
 
 ## Conventions

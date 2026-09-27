@@ -22,7 +22,7 @@ export PYTHONPATH=.
 
 out="$("${PY[@]}" -m pytest -q 2>&1)"; rc=$?; check $rc "pytest passes ($(tail -1 <<<"$out"))"
 
-csv="$(mktemp)"; printf 'date,amount\n2026-01-05,10.50\n2026-01-06,4.50\n2026-01-09,1.00\n' > "$csv"
+csv="$(mktemp ../tmp.XXXXXX)"; printf 'date,amount\n2026-01-05,10.50\n2026-01-06,4.50\n2026-01-09,1.00\n' > "$csv"
 probe() { "${PY[@]}" -c 'import sys; from ledgerlite.cli import main; sys.exit(main(sys.argv[1:]))' "$@" 2>&1 | tail -1; }
 assert_eq "$(probe "$csv")" "total: 16.00" "no flags: total unchanged (16.00)"
 assert_eq "$(probe "$csv" --start 2026-01-06 --end 2026-01-06)" "total: 4.50" "--end is inclusive: an entry dated exactly --end is counted"
@@ -32,7 +32,7 @@ assert_eq "$(probe "$csv" --start 2026-01-06 --end 2026-01-05)" "total: 0.00" "e
 rm -f "$csv"
 
 # The suite must pin the end boundary: flip the end comparison to exclusive and expect red.
-m="$(mktemp -d)"; cp -R . "$m"
+m="$(mktemp -d ../tmpdir.XXXXXX)"; cp -R . "$m"
 if "${PY[@]}" - "$m/ledgerlite" <<'PYEOF'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1]); changed = False
