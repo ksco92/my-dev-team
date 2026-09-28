@@ -25,6 +25,7 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
 - When a probe or implementer mutation-tests a file that carries uncommitted edits, it reverts the
   mutant from a copy saved beforehand, never with `git checkout -- <file>`, which discards the
   edit under test along with the mutant.
-- The auto-mode classifier refuses `gate-ledger record ... PASS` written from a diff proof without a
-  gate run; re-run the gates on the head (a docs-only delta is a short round) instead of arguing the
-  proof.
+- Carrying a verdict by object-hash or diff proof (gates.md, SKILL.md 5.2) is the rule; when Claude
+  Code's auto-mode permission classifier refuses that `gate-ledger record ... PASS` as a verdict
+  without a gate run, re-run the gates on the head (a docs-only delta is a short round) rather than
+  rewording or routing around the refusal.
