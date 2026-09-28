@@ -203,11 +203,9 @@ Checklist (each item is a concrete check):
 - [ ] Section order per §2; License last; ToC if ≥100 lines
 - [ ] Install + Usage have copy-pasteable code blocks; quickstart is COMPLETE
       (run it, or confirm it's under doctest/codeblocks CI)
-- [ ] Examples run strictly in the README's own section order from a fresh
-      state, never in the order one section implies: an earlier section's side
-      effect changes a later example's output, and a paragraph documenting a new
-      refusal condition can falsify an untouched adjacent example that starts
-      from the state the earlier sections leave
+- [ ] Examples run in the README's own section order from a fresh state, never
+      the order a section implies; a new refusal paragraph is checked against
+      the untouched examples around it
 - [ ] Anti-drift sweep (§3): commands/flags exist; gate/CI tables match the
       Makefile/workflows; links resolve; numbers match generated reports;
       PR-diff vs README-claims cross-check

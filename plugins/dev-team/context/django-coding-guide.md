@@ -17,7 +17,7 @@ CLAUDE.md overrides.
 - A soft-delete manager declared as `objects` does not make `Model._base_manager` soft-deleting:
   unless `Meta.base_manager_name` is set it is Django's plain `Manager`, whose queryset `delete()`
   issues a real `DELETE`, so a purge needs no raw SQL. Verify by printing the manager's class.
-  Guards in `save()` and the default queryset's `update()` are bypassed by any write not through the
+- Guards in `save()` and the default queryset's `update()` are bypassed by any write not through the
   model's `save()` or its default querysets (`bulk_create`, `bulk_update`, which reaches the
   queryset's `update()` only with `Case`/`When` expressions a value check cannot evaluate, a reverse
   `RelatedManager.add()` through `_base_manager`, `save_base()`, deserialization, a hand-built
@@ -34,8 +34,8 @@ CLAUDE.md overrides.
   lists a challenge-issuing class first, and tests assert the code they mean.
 - `initial()` runs authentication, permissions and throttles before the handler is resolved, so a
   throttle may skip exactly the requests the handler rejects before doing work (unregistered name,
-  wrong method) without opening an uncounted path. Check that pairing, not the skip alone. The
-  same order holds inside the handler: decide an authorization refusal before calling a
+  wrong method) without opening an uncounted path. Check that pairing, not the skip alone.
+- The same order holds inside the handler: decide an authorization refusal before calling a
   `get_or_create` resolver, and have the 403 test assert the row count of every table it touches.
 - DRF binds `THROTTLE_RATES` at first import, so `override_settings` cannot change it; use
   `patch.object(<ThrottleClass>, "THROTTLE_RATES", {...})` as a context manager.
@@ -113,7 +113,7 @@ into a convention to a numbered section above, and open a PR against the plugin 
   real divergence is the unrounded value left on the returned instance. Write the value through both
   paths before accepting a rounding rationale.
 - DRF renders the body after the view returns, so a side effect placed after building the `Response`
-  (a charge, a counter) commits before a render failure turns the call into a 500; render inside the
+  (a charge, a counter) commits before a render failure turns the call into a 500. Render inside the
   view first, as `finalize_response` then `response.render()`, which dispatch's second
   `finalize_response` leaves idempotent.
 - An assertion that response header names are unique is vacuous: `HttpResponse.headers` is a
