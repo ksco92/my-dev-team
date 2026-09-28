@@ -120,3 +120,6 @@ into a convention to a numbered section above, and open a PR against the plugin 
   case-insensitive mapping, so `serialize_headers()` cannot repeat a name.
 - DRF's `JSONEncoder` turns a bare `Decimal` into a float; a fixed-point string in a response goes
   through a serializer `DecimalField` or `str()`.
+- To assert that a DRF view answers 500 (status, headers, absence of a side effect), drive the real
+  URL with `APIClient(raise_request_exception=False)`; `View.as_view()` called on an
+  `APIRequestFactory` request re-raises the uncaught exception instead of rendering the 500.
