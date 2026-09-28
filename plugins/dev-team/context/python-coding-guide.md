@@ -128,6 +128,9 @@ different source module):
 from typing_extensions import Self
 ```
 
+**No `typing.Any`** (flake8-annotations ANN401): a third-party client gets a `Protocol` with exactly
+the methods used, a JSON payload a recursive type alias.
+
 #### Complex Type Hints
 
 For complex return types, use full type specifications:
@@ -235,6 +238,8 @@ def some_function() -> None:
 - **No single-use one-statement helpers**: a private `_helper()` with one call site and one
   statement (`if pred(x): raise`, a renamed stdlib call) is inlined at the call site, not written,
   typed, and given a docstring longer than its body.
+- **Structure first**: a docstring is a numbered list of what happens, with rationale at most one
+  trailing clause per step; deep rationale belongs at the line it justifies or in the PR.
 - **Document all parameters, even obvious ones**
 - **Document return values unless returning None**
 - **Document exceptions that can be raised**: only the exceptions a function raises with a
@@ -439,6 +444,12 @@ in the PR description.
 - Keep comments concise and developer-friendly
 - Avoid AI-generated phrasing
 
+#### Comments on Constants
+
+- A constant's comment states its purpose in two lines or fewer and annotates the thing it is
+  attached to.
+- Never alias a shared constant (`LOCAL = SHARED`) to have something to hang a comment on.
+
 #### Section Separators
 
 Multiline comment separators are used for readability and **must not be removed**. Apply
@@ -511,6 +522,18 @@ def cpc_predictor(query_text: str | None = None) -> dict:
 - Be clear and specific
 - Include relevant context
 - End with a period
+
+#### Exception Clauses
+
+Python 3.14 (PEP 758) accepts `except A, B:` without `as`. It is a readability finding, fixed with
+stacked single-exception clauses, each a branch with its own test. black with a py314 target
+rewrites `except (A, B):` into that form, so neither a tuple nor a formatter directive is a fix, and
+a request to collapse two clauses into one is declined on that ground.
+
+#### Defensive Code
+
+A guard, retry or fallback needs an observed, recurring failure class; a guard for a case nothing
+has produced is removed, not documented.
 
 ### Logging
 
@@ -653,6 +676,11 @@ class S3Client:
         """Upload data directly to S3."""
         pass
 ```
+
+### Project Version and Lockfile
+
+After bumping the project version in `pyproject.toml`, run `uv lock` and commit `uv.lock` in the
+same commit. Verify by grepping the committed file, not the working tree.
 
 ### Linter Configuration
 
@@ -1071,6 +1099,10 @@ Each test should be independent:
 - Don't rely on test execution order
 - Don't share state between tests
 - Clean up any created resources
+- Never import a sibling test module; shared helpers live in `conftest.py`. A test module that
+  imports a sibling inherits its module-level `importorskip` through the re-raised `Skipped`, its
+  skip line merges into the sibling's, and the file vanishes from interpreter-coverage accounting;
+  each file carries its own guard.
 
 ### Environment Variables
 
@@ -1147,119 +1179,31 @@ These standards are enforced through:
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only — never by a delegated subagent or headless worker,
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
 even one instructed to read this file; a subagent that notices something worth adding reports it
 under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
 any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
-imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after" tail),
-refine near-duplicates in place, keep the section under ~25 entries, and open a PR against the
-plugin repository (`ksco92/my-dev-team`).
+imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name,
+no "added after" tail), refine near-duplicates in place, keep the section under ~25 entries, and
+open a PR against the plugin repository (`ksco92/my-dev-team`). A lesson that only fires in a
+Django or DRF project goes to `django-coding-guide.md`; one about the Python face of a native
+extension goes to `python-bindings-coding-guide.md`; a lesson that matures into a standing
+convention becomes a section above and leaves this list.
 
 ## Learned patterns
 
-- `typing.Any` is banned (flake8-annotations ANN401); a third-party client gets a `Protocol` with
-  exactly the methods used, a JSON payload a recursive alias.
-- Docstrings are structure-first: a numbered list of what happens, rationale at most one trailing
-  clause per step, deep rationale at the line it justifies or in the PR.
 - Prefer a shared boolean primitive (`is_df_empty`) with the raise inlined at the call site over a
   per-job `_guard_x` wrapper; emptiness probes use `take(1)`, never `count()`.
-- A constant's comment states purpose in two lines or fewer and annotates the thing it is attached
-  to; never alias a shared constant to hang a comment on it; defensive code needs an observed,
-  recurring failure class.
 - Hardware-resource numbers derive from the current machine at import (`os.cpu_count()`,
   `os.sysconf`) with the ratio as the named constant; server-side limits stay literals.
-- DRF binds `THROTTLE_RATES` at first import, so `override_settings` cannot change it; use
-  `patch.object(<ThrottleClass>, "THROTTLE_RATES", {...})` as a context manager.
-- After bumping the project version in `pyproject.toml`, run `uv lock` and commit `uv.lock` in the
-  same commit; verify by grepping the committed file, not the working tree.
-- Python 3.14 (PEP 758) accepts `except A, B:` without `as`; it is a readability finding, fixed
-  with stacked single-exception clauses, each a branch with its own test. black with a py314
-  target rewrites `except (A, B):` into that form, so neither a tuple nor a formatter directive
-  is a fix, and a request to collapse two clauses into one is declined on that ground.
 - Guard non-finite JSON numerics before a `Decimal` conversion: `json.loads` accepts bare
   `NaN`/`Infinity`.
-- A fix that validates each side of a comparison independently at a conversion boundary also
-  rejects structurally equal pairs the reference reports as unchanged; test that case and never
-  write "strictly safer than the reference" without checking it per input shape.
 - A differential test whose oracle is the interpreter (`repr()`, `unicodedata`, `json`) pins the
   interpreter (`.python-version`, `uv python install` in the workflow) and reads the CI log for
   the one `uv sync` picked.
-- In a project whose extension is built with `maturin develop`, run tests with `uv run --no-sync`:
-  a plain `uv run` re-syncs the environment and reinstalls the package from uv's version-keyed
-  build cache, silently replacing the freshly built extension with a stale one, so tests pass or
-  fail against code that is not the checkout's.
-- When validating a fix on a constrained-stack thread (threading.stack_size()), separate two variables the repro tends to conflate: whether the library's own native operation is safe at that stack size, vs whether the CALLER's own object construction/destruction is safe there — CPython's container deallocation is itself natively recursive and crashes a small-stack thread with zero extension involvement. Isolate by building the deep object on a normal-stack thread and passing it by reference into the constrained one, keeping it alive until after join, so only the call under test and its error/cleanup path run on the small stack.
-- A stub or surface "cannot drift" test must parse both sides: `dir(module)` on the runtime side
-  and every declared name on the stub side, including module-level `AnnAssign` constants, never a
-  literal set. Prove it in both directions: monkeypatch a new symbol onto the module, and delete a
-  declaration from a copy of the `.pyi`; each must fail the test.
-- When a PR widens which Python types or subclasses a binding accepts, enumerate every conversion
-  entry point for the same base type before trusting the PR's own scope list: value converters and
-  dict-key or set-member converters are separate paths, and one left on the old exact-type check
-  turns a supported input into a crash where the ported tool succeeds.
-- When a fix widens dict or set key acceptance to subclasses, test a subclass with a deliberately
-  overridden `__eq__`/`__hash__`: the ported tool's key matching runs native Python equality while
-  its element matching is a structural walk, so a port that unifies both is right for every
-  plain subclass and silently wrong for the overridden one; classify and document that boundary.
-- A test module that imports a sibling test module inherits the sibling's module-level
-  `importorskip` through the re-raised Skipped during collection: behaviorally right, but its
-  skip line merges into the sibling's and the file vanishes from any interpreter-coverage
-  accounting. The importing file carries its own explicit guard.
-- When a binding widens an accepted type through a slow path, check that the slow path reads the
-  value the same way the fast path does: a virtual call (`str()`, `__index__`, `__int__`) on the
-  object lets a subclass control the value compared, while the fast path reads the machine
-  value; a subclass with a lying override is the probe, on values, keys and set members.
-- When a binding converts a host big value through its decimal `str()`/`repr()`, probe the
-  host's own conversion limits before accepting an "any magnitude" claim: CPython caps int-to-str
-  and str-to-int at 4,300 digits by default, so a text round-trip caps the feature far below its
-  advertised range and raises the interpreter's error without the binding's path; the
-  byte-oriented accessor is uncapped and cheaper.
-- When a PR widens a conversion fallback (custom objects, generic containers), sweep every
-  builtin that previously raised through it: a type with nothing for the fallback to enumerate
-  (bytes, memoryview, an `__iter__`-only class, a class object) turns a loud refusal into silent
-  equality, and the invariant to assert is that nothing that raised before now reports {} for
-  two values Python considers unequal.
 - When rewriting a Python file by line ranges taken from `ast` line numbers, build the line array
   with `readlines()` or `split("\n")`, never `str.splitlines()`: it also splits on U+2028/U+2029,
   which a string literal can carry, and the array desyncs from the compiler's `\n`-only numbering.
 - Measure a file's comment ratio with `tokenize` COMMENT tokens plus docstrings found by AST
   position (the first string statement of a module, class or function); a scan for `#` lines or
   triple quotes counts an embedded script or fixture string as prose.
-- With a soft-delete default manager, Django's uniqueness validation and `get_by_natural_key` see
-  hidden rows as free while the unique index does not; validate against the all-rows manager in
-  `validate_unique`, and give `create_superuser` its own check, since `createsuperuser --noinput`
-  runs no model validation and would surface a raw `IntegrityError`.
-- DRF answers an anonymous request with 401 or 403 according to the first class in
-  `authentication_classes` (`SessionAuthentication` first gives 403); an endpoint that promises
-  401 lists a challenge-issuing class first, and tests assert the code they mean. `initial()` runs
-  authentication, permissions and throttles before the handler is resolved, so a throttle may skip
-  exactly the requests the handler rejects before work (unregistered name, wrong method) without
-  opening an uncounted path; check that pairing, not the skip alone.
-- A length limit applies to the value that is persisted: lower-casing can lengthen a string
-  (`İ` becomes two code points), so a 254-character email passes the raw check and overflows the
-  column after normalisation; the rejection fixture lands exactly one unit over the limit.
-- Middleware that stores request or response text decodes and parses bytes exactly as the
-  consuming parser does (`request.encoding` for the body, the query string and `parse_qsl`
-  percent-escapes; `response.charset` for the response) or stores a placeholder; Django accepts
-  any charset `codecs.lookup` resolves, including `base64`, `quopri`, `idna` and `undefined`,
-  and a lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
-  Under `DEBUG=True` it placeholders every non-JSON error body: `technical_500_response` also
-  serves a bad `Host` at status 400 with `POST` fields unfiltered, as `text/html` unless the
-  `Accept` header prefers `text/plain`.
-- A redactor over text a downstream tokenizer splits (form fields at `&` and `=`) cannot redact by
-  key once a secret spans a split: store a placeholder for any field that opens as JSON (`{`, `[`
-  or `"` after a byte-order mark and JSON whitespace) but does not parse, and for a body declared
-  or opening as JSON that fails to parse or is too deep, never the raw scrubbed text. Parse JSON
-  found inside JSON strings and inside object keys the same way, recursively; clients encode twice.
-- Match a secret-key name on the key as received, as stored, and on each decoded layer of a
-  JSON-string key: re-serialisation keeps quotes so an anchored name never matches the stored
-  spelling, and parsing can delete text (duplicate keys collapse) so the received spelling stays;
-  redact the value whenever the stored key gained a placeholder. Charge every re-serialised string
-  to one budget shared across the request, checked at every level: nested escapes grow output
-  geometrically, and decode depth is set by the escape the attacker chooses, not the encoder.
-- A limit enforced in `INSERT ... ON CONFLICT DO UPDATE ... WHERE count < limit` never applies to the
-  fresh insert, so a limit of zero still admits one request; refuse limits below 1 where the class is
-  defined, and drive 0, a negative and an oversized value end to end.
-- A soft-delete manager declared as `objects` does not make `Model._base_manager` soft-deleting:
-  unless `Meta.base_manager_name` is set it is Django's plain `Manager`, whose queryset `delete()`
-  issues a real `DELETE`, so a purge needs no raw SQL; verify by printing the manager's class.

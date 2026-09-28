@@ -128,7 +128,7 @@ required check verbatim when the repo goes remote. All parts blocking:
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only — never by a delegated subagent or headless worker,
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
 even one instructed to read this file; a subagent that notices something worth adding reports it
 under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
 any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
