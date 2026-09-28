@@ -18,7 +18,8 @@ Read before the first gate of a run.
   required workflow merged must rebase to run it.
 - Two open PRs that both wrote the same next version rebase without a conflict and the second lands
   a zero bump, so the rebase brief names the new version as an edit to make; the proof that only
-  the version files moved is a tree diff between the old and new heads, hunk headers stripped.
+  the version files moved is per-path object-hash equality for every other PR file plus a three-dot
+  diff against the base in which only the version files differ.
 - Grep-verify a gate's decisive factual claims against the head before dispatching a fix round, and
   verify a PR body's root-cause narrative with `git log --follow`; the duty runs both ways, and an
   overruled finding is recorded with its evidence rather than sent to the implementer.

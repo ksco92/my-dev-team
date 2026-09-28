@@ -1,19 +1,20 @@
 # Personal coding guides
 
-Stack-specific guides live in `${CLAUDE_PLUGIN_ROOT}/context/`. They are deliberately not
-imported into every session (most sessions touch one stack). Read the matching guide before
-writing or reviewing code in that stack, and treat it as authoritative project conventions:
+Stack-specific guides live in `${CLAUDE_PLUGIN_ROOT}/context/`; every file named below is in that
+directory. They are deliberately not imported into every session (most sessions touch one stack).
+Read the matching guide before writing or reviewing code in that stack, and treat it as
+authoritative project conventions:
 
 | Task involves | Read first |
 | --- | --- |
-| Python | `${CLAUDE_PLUGIN_ROOT}/context/python-coding-guide.md` |
-| Django / Django REST Framework | `${CLAUDE_PLUGIN_ROOT}/context/django-coding-guide.md`, with the Python guide |
-| A native extension's Python face (maturin / PyO3) | `${CLAUDE_PLUGIN_ROOT}/context/python-bindings-coding-guide.md`, with the Python guide |
-| Rust | `${CLAUDE_PLUGIN_ROOT}/context/rust-coding-guide.md` |
-| AWS CDK / infrastructure-as-code | `${CLAUDE_PLUGIN_ROOT}/context/cdk-coding-guide.md` |
-| React / frontend TypeScript | `${CLAUDE_PLUGIN_ROOT}/context/react-coding-guide.md` |
-| npm publishing / CI-CD / version bumps / badges | `${CLAUDE_PLUGIN_ROOT}/context/npm-publishing-pattern.md` |
-| Spawning or acting as an implementer-type subagent | `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` |
+| Python | `python-coding-guide.md` |
+| Django / Django REST Framework | `django-coding-guide.md`, with the Python guide |
+| A native extension's Python face (maturin / PyO3) | `python-bindings-coding-guide.md`, with the Python guide |
+| Rust | `rust-coding-guide.md` |
+| AWS CDK / infrastructure-as-code | `cdk-coding-guide.md` |
+| React / frontend TypeScript | `react-coding-guide.md` |
+| npm publishing / CI-CD / version bumps / badges | `npm-publishing-pattern.md` |
+| Spawning or acting as an implementer-type subagent | `agent-baseline.md` |
 | Writing or reviewing code in any language (comments, docstrings, helpers) | `agent-baseline.md`, section "Comment, docstring, and helper budget" |
 
 The implementer subagents do this through their own first steps; the rule here makes

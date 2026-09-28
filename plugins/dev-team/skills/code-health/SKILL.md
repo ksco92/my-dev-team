@@ -34,7 +34,7 @@ You do **not**:
 ## Context Loading (MANDATORY)
 
 1. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`** for each stack the review touches —
-   the `## Learned patterns` section is binding law; every entry is a review criterion.
+   its numbered sections and `## Learned patterns` are binding law; every rule is a review criterion.
 2. **`<repo>/CLAUDE.md`** — project conventions override this skill's defaults.
 3. For diff mode: the PR body and linked issue — an "unrequested abstraction" finding
    requires knowing what was requested.

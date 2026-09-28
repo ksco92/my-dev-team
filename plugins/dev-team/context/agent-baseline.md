@@ -48,8 +48,8 @@ decisions outside your task.
 4. Read the ticket (the process file's Read ticket operation, or the text in your brief). The
    acceptance criteria are your contract.
 5. Load the stack guide for every layer the task touches — `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`
-   (python, cdk, react, rust; `npm-publishing-pattern.md` for publishing/CI). Their `## Learned
-   patterns` sections are binding review criteria.
+   (python, django, python-bindings, cdk, react, rust; `npm-publishing-pattern.md` for
+   publishing/CI). Their numbered sections and `## Learned patterns` are binding review criteria.
 6. Skim the codebase for the closest existing pattern at each layer and match it. Copy a sibling
    test file only after auditing its private helpers against the suite's shared helper module —
    the template may predate the shared helper.

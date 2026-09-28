@@ -108,11 +108,14 @@ check "unknown key message" "$err" "dev-process: no frontmatter key 'bogus' in $
 
 # Hook: each block under the context limit, the plugin root expanded, exit 0 when resolution fails.
 HOOK="$PLUGIN/hooks/session-context.sh"
-long_root="$TMP/a-plugin-cache-path-as-long-as-an-installed-one/ksco92/dev-team/0.0.0"
-mkdir -p "$(dirname "$long_root")" && ln -s "$PLUGIN" "$long_root"
+# The root is padded to a fixed 120 characters so the limit checks do not depend on the temp dir.
+long_root="$TMP/$(printf '%*s' $((119 - ${#TMP})) '' | tr ' ' a)"
+check "long plugin root is 120 characters" "${#long_root}" "120"
+ln -s "$PLUGIN" "$long_root"
 out="$(CLAUDE_PLUGIN_ROOT="$long_root" "$HOOK" policy </dev/null)"
 check "policy block header" "$(head -1 <<<"$out")" "# Harness policy (dev-team plugin)"
 check "policy block is inlined under a long plugin root" "$(grep -c '^Not inlined' <<<"$out")" "0"
+check "policy block keeps headroom under a long plugin root" "$(( ${#out} <= 9500 ))" "1"
 check "policy block expands the plugin root" "$(grep -c 'CLAUDE_PLUGIN_ROOT' <<<"$out")" "0"
 out="$(HOME="$empty_home" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$repo" "$HOOK" process </dev/null)"
 check "process block names the resolved file" "$(head -1 <<<"$out")" "# Development process (resolved from $repo/DEV_PROCESS.md)"
