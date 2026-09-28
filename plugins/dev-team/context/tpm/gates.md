@@ -19,7 +19,13 @@ Read before the first gate of a run.
 - Two open PRs that both wrote the same next version rebase without a conflict and the second lands
   a zero bump, so the rebase brief names the new version as an edit to make; the proof that only
   the version files moved is per-path object-hash equality for every other PR file plus a three-dot
-  diff against the base in which only the version files differ.
+  diff against the base in which only the version files differ. Every oss-reviewer brief for one of
+  those PRs states the decided merge order, or its same-target version check fails each sibling and
+  each verdict needs a re-issue.
+- Record each gate verdict in a Bash call of its own before the merge call: the merge-gate hook
+  evaluates a compound line before any part of it runs, so a record chained onto the merge with
+  `&&` is refused because the ledger does not yet hold that verdict (the hook reports that gate
+  MISSING, no ledger, or a ledger at another head).
 - Grep-verify a gate's decisive factual claims against the head before dispatching a fix round, and
   verify a PR body's root-cause narrative with `git log --follow`; the duty runs both ways, and an
   overruled finding is recorded with its evidence rather than sent to the implementer.
