@@ -101,3 +101,7 @@ Read before the first gate of a run.
   values end to end (the insert side of a conflict-guarded limit never sees the limit; a huge day
   count overflows `timedelta` into a traceback); and when a PR edits a line already over the
   column convention, the PR owns the line's new length.
+- The README gate runs the document strictly in its own section order from a fresh database, never
+  in the order one section implies: an earlier section's side effect (a credit, a company) changes a
+  later example's output, and a paragraph documenting a new refusal condition falsifies an untouched
+  adjacent example that starts from the state the earlier sections leave.

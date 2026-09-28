@@ -86,3 +86,34 @@ into a convention to a numbered section above, and open a PR against the plugin 
 (`ksco92/my-dev-team`).
 
 ## Learned patterns
+- Prove a `transaction.atomic()` block by mutating it to `if True:` and running the suite: a threaded
+  lost-update test passes on that mutant, so a rollback needs its own test that patches the dependent
+  insert to raise and asserts the first write is undone.
+- A guard behind `if not self._state.adding` in `save()` never fires for a fresh instance built with a
+  stored pk, because Django tries an UPDATE first; pass `force_insert=True` when adding so a reused pk
+  raises `IntegrityError`.
+- Guards in `save()` and the default queryset's `update()` do not cover `bulk_create`, `bulk_update`, a
+  reverse `RelatedManager.add()` (it writes through `_base_manager`), `save_base()` and
+  deserialization, or a hand-built `QuerySet`; set `Meta.base_manager_name` to the guarded manager
+  and state the remaining unguarded set as a class (any write not through the model's `save()` or
+  its default querysets) rather than as a list.
+- A conditional `F()` update that feeds a dependent insert checks that it touched exactly one row
+  inside the transaction; a zero-row update on a filtered-out row otherwise commits the insert alone.
+- Bound an accumulated numeric column inside the same conditional UPDATE that moves it and raise a
+  typed error on zero rows; a per-call `max_digits` check passes while the running total overflows
+  into a `DataError` 500. Test at the ceiling with two back-to-back calls and with threads behind a
+  barrier.
+- Django and Postgres round a `numeric(p, s)` write the same way, so a guard justified by the ORM and
+  the database rounding differently is false; the real divergence is the unrounded value left on the
+  returned instance. Write the value through both paths before accepting a rounding rationale.
+- DRF renders the body after the view returns, so a side effect placed after building the `Response`
+  (a charge, a counter) commits before a render failure turns the call into a 500; render inside the
+  view first. `Response.renderer_context` is undeclared in the DRF stubs, so the shape that type-checks
+  is `finalize_response` then `response.render()` inside the handler, which dispatch's second
+  `finalize_response` leaves idempotent (`_is_rendered` stops a second render, headers overwrite).
+- An assertion that response header names are unique is vacuous: `HttpResponse.headers` is a
+  case-insensitive mapping, so `serialize_headers()` cannot repeat a name.
+- Decide an authorization refusal before calling a `get_or_create` resolver, and have the 403 test
+  assert the row count of every table the resolver touches.
+- DRF's `JSONEncoder` turns a bare `Decimal` into a float; a fixed-point string in a response goes
+  through a serializer `DecimalField` or `str()`.
