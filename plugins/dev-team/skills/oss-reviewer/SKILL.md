@@ -67,7 +67,7 @@ Before reviewing, read:
 2. **`<repo>/CLAUDE.md`** if present — the project's own conventions. Some "AI-tells" may actually be project conventions (see "Project-specific exemptions" below).
 3. **`<repo>/.gitignore`** — to skip generated files.
 4. **`<repo>/pyproject.toml` / `package.json` / `Cargo.toml` / etc.** — for declared support matrices.
-5. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md` for each stack the diff touches** (Python → `python-coding-guide.md`, CDK/infra → `cdk-coding-guide.md`, React/frontend → `react-coding-guide.md`) — read the `## Learned patterns` section and treat every entry as a binding review criterion, exactly like a project convention: a violation in reviewed code is a finding (severity per the pattern's own stakes, default HIGH for correctness-adjacent rules, INFO for style), even when the review brief doesn't mention the rule. These guides are the owner's cross-project law; the briefs may lag them.
+5. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md` for each stack the diff touches** (Python → `python-coding-guide.md`, plus `django-coding-guide.md` for Django/DRF and `python-bindings-coding-guide.md` for a native extension's Python face, CDK/infra → `cdk-coding-guide.md`, React/frontend → `react-coding-guide.md`) — read the `## Learned patterns` section and treat every entry as a binding review criterion, exactly like a project convention: a violation in reviewed code is a finding (severity per the pattern's own stakes, default HIGH for correctness-adjacent rules, INFO for style), even when the review brief doesn't mention the rule. These guides are the owner's cross-project law; the briefs may lag them.
 
 ### Project-specific exemptions
 

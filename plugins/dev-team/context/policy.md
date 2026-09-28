@@ -7,6 +7,8 @@ writing or reviewing code in that stack, and treat it as authoritative project c
 | Task involves | Read first |
 | --- | --- |
 | Python | `${CLAUDE_PLUGIN_ROOT}/context/python-coding-guide.md` |
+| Django / Django REST Framework | `${CLAUDE_PLUGIN_ROOT}/context/django-coding-guide.md`, with the Python guide |
+| A native extension's Python face (maturin / PyO3) | `${CLAUDE_PLUGIN_ROOT}/context/python-bindings-coding-guide.md`, with the Python guide |
 | Rust | `${CLAUDE_PLUGIN_ROOT}/context/rust-coding-guide.md` |
 | AWS CDK / infrastructure-as-code | `${CLAUDE_PLUGIN_ROOT}/context/cdk-coding-guide.md` |
 | React / frontend TypeScript | `${CLAUDE_PLUGIN_ROOT}/context/react-coding-guide.md` |
