@@ -74,3 +74,12 @@ brief (5.2).
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
+- When a rule enumerates unguarded paths and each gate round finds one more instance, restate the
+  rule as a class defined by the guard mechanism with the known instances as examples; listing
+  instances costs a round per instance.
+- When a fix adds an exception subclass of a builtin to a shared primitive, check every sibling open
+  PR that catches the base class; the rebase brief names the new condition and re-derives its
+  reachability from the caller's preconditions.
+- An explanatory clause added in a fix round to make a sample output fit is where an invented
+  mechanism slips in; the brief prescribes the rule sentence from the code, and the reviewer checks
+  the database state at that step, not only the final output.

@@ -17,6 +17,12 @@ CLAUDE.md overrides.
 - A soft-delete manager declared as `objects` does not make `Model._base_manager` soft-deleting:
   unless `Meta.base_manager_name` is set it is Django's plain `Manager`, whose queryset `delete()`
   issues a real `DELETE`, so a purge needs no raw SQL. Verify by printing the manager's class.
+- Guards in `save()` and the default queryset's `update()` are bypassed by any write not through the
+  model's `save()` or its default querysets (`bulk_create`, `bulk_update`, which reaches the
+  queryset's `update()` only with `Case`/`When` expressions a value check cannot evaluate, a reverse
+  `RelatedManager.add()` through `_base_manager`, `save_base()`, deserialization, a hand-built
+  `QuerySet`), so `base_manager_name` names the guarded manager and the remaining unguarded set is
+  stated as that class, never as a list.
 - A `ModelAdmin` that overrides `has_add_permission` but not `has_delete_permission` still lets
   staff reach the delete action, which soft-deletes through the model. A claim that "nothing
   deletes X today" is checked against the admin as well as the application code.
@@ -29,6 +35,8 @@ CLAUDE.md overrides.
 - `initial()` runs authentication, permissions and throttles before the handler is resolved, so a
   throttle may skip exactly the requests the handler rejects before doing work (unregistered name,
   wrong method) without opening an uncounted path. Check that pairing, not the skip alone.
+- The same order holds inside the handler: decide an authorization refusal before calling a
+  `get_or_create` resolver, and have the 403 test assert the row count of every table it touches.
 - DRF binds `THROTTLE_RATES` at first import, so `override_settings` cannot change it; use
   `patch.object(<ThrottleClass>, "THROTTLE_RATES", {...})` as a context manager.
 
@@ -37,6 +45,10 @@ CLAUDE.md overrides.
 - A limit enforced in `INSERT ... ON CONFLICT DO UPDATE ... WHERE count < limit` never applies to
   the fresh insert, so a limit of zero still admits one request. Refuse limits below 1 where the
   class is defined, and drive 0, a negative and an oversized value end to end.
+- Bound an accumulated numeric column inside the same conditional UPDATE that moves it and raise a
+  typed error on zero rows; a per-call `max_digits` check passes while the running total overflows
+  into a `DataError` 500. Test at the ceiling with two back-to-back calls and with threads behind a
+  barrier.
 
 ## 4. Persisted Values
 
@@ -86,3 +98,25 @@ into a convention to a numbered section above, and open a PR against the plugin 
 (`ksco92/my-dev-team`).
 
 ## Learned patterns
+
+- Prove a `transaction.atomic()` block by mutating it to `if True:` and running the suite: a
+  threaded lost-update test passes on that mutant, so a rollback needs its own test that patches the
+  dependent insert to raise and asserts the first write is undone.
+- A guard behind `if not self._state.adding` in `save()` never fires for a fresh instance built with
+  a stored pk, because Django tries an UPDATE first; pass `force_insert=True` when adding so a
+  reused pk raises `IntegrityError`.
+- A conditional `F()` update that feeds a dependent insert checks that it touched exactly one row
+  inside the transaction; a zero-row update on a filtered-out row otherwise commits the insert
+  alone.
+- On Postgres, Django writes a `Decimal` unrounded and the column's `numeric(p, s)` coercion is the
+  only rounding, so a guard justified by the ORM and the database rounding differently is false; the
+  real divergence is the unrounded value left on the returned instance. Write the value through both
+  paths before accepting a rounding rationale.
+- DRF renders the body after the view returns, so a side effect placed after building the `Response`
+  (a charge, a counter) commits before a render failure turns the call into a 500. Render inside the
+  view first, as `finalize_response` then `response.render()`, which dispatch's second
+  `finalize_response` leaves idempotent.
+- An assertion that response header names are unique is vacuous: `HttpResponse.headers` is a
+  case-insensitive mapping, so `serialize_headers()` cannot repeat a name.
+- DRF's `JSONEncoder` turns a bare `Decimal` into a float; a fixed-point string in a response goes
+  through a serializer `DecimalField` or `str()`.
