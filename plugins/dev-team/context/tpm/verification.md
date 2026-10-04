@@ -86,3 +86,13 @@ on. Read before writing the issue for such a slice and again before its gates.
   reads as a regression.
 - A byte-identity or output-comparison harness asserts that every output it hashes exists
   before comparing; two missing outputs hash equal and report a match.
+- When the test command runs more than one invocation, a reviewer reports each suite's count
+  copied from its own summary line; a single total invites arithmetic made to fit the change's
+  stated number.
+- A mutation is applied with an edit that fails when its pattern is absent and confirmed with
+  `git diff` before a green run is trusted; BSD `sed '0,/re/'` leaves the file unchanged without an
+  error.
+- A test that compares a real response with its documented schema compares keys at every nested
+  level, with data that makes each nested object non-null and each list non-empty, and checks each
+  documented alternative against the caller that should receive it; top-level keys, a null, an
+  empty list and overlapping alternatives all let drift pass.

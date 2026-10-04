@@ -77,9 +77,9 @@ brief (5.2).
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
-- When a rule enumerates unguarded paths and each gate round finds one more instance, restate the
-  rule as a class defined by the guard mechanism with the known instances as examples; listing
-  instances costs a round per instance.
+- When a rule enumerates unguarded paths or the sources of a property and each gate round finds one
+  more instance, restate the rule as the class defined by the mechanism with the known instances as
+  examples; listing instances costs a round per instance.
 - When a fix adds an exception subclass of a builtin to a shared primitive, check every sibling open
   PR that catches the base class; the rebase brief names the new condition and re-derives its
   reachability from the caller's preconditions.
@@ -98,3 +98,6 @@ brief (5.2).
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open.
+- Brief every doc and rules-file edit to state what the code does without a cause clause
+  (`because`, `which makes`, `as for any`) unless the cause was checked against the source; an
+  unverified explanation is the next round's finding.
