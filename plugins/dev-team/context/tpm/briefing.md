@@ -6,7 +6,10 @@ brief (5.2).
 
 - Brief the `pr-reviewer` to simulate the pre-fix code path against the exact fixture literals
   whenever a change consolidates or reshapes a regression fixture — a merged fixture can pass a
-  count-based guard under both the bug and the fix.
+  count-based guard under both the bug and the fix. When inline fixtures are replaced by one shared
+  constant, require each replaced literal compared field by field with the constant and the guard
+  mutated wherever a field differs; a swap that resets a deliberately inconsistent flag silently
+  drops that test's coverage.
 - Every gate and subagent brief forbids deleting outside the repo under work — no `/tmp` sweeps,
   no `*.log` sweeps; a sibling gate's `-p` report is written only at exit.
 - Every headless `claude -p` brief states that the entire report goes in the single final message,
@@ -83,3 +86,15 @@ brief (5.2).
 - An explanatory clause added in a fix round to make a sample output fit is where an invented
   mechanism slips in; the brief prescribes the rule sentence from the code, and the reviewer checks
   the database state at that step, not only the final output.
+- When a fix centralises a predicate into a helper, brief the correctness gate to break the helper's
+  definition and to remove its use at each call site in turn; a test that fails on the broken
+  definition proves one call site only.
+- Brief every mutation run to check the mutant for undefined names before trusting a failure; a
+  mutant that swaps in an unimported symbol fails every test and reads as killed.
+- When a code-economy finding trims a rules paragraph to a pointer, list the facts the pointed-to
+  file does not hold and brief them kept; a rules file names every change that needs review, even a
+  field that a description elsewhere already mentions.
+- Send a change you already know you will ask for (an implementer's open question, a stale test
+  name) before dispatching gates on that head; a round on a head you will change is spent twice.
+- When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
+  code, tests and body for statements that the path is still open.

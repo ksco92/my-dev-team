@@ -29,3 +29,7 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   Code's auto-mode permission classifier refuses that `gate-ledger record ... PASS` as a verdict
   without a gate run, re-run the gates on the head (a docs-only delta is a short round) rather than
   rewording or routing around the refusal.
+- When a subagent's completion notice arrives without its report, read the head and its delta from
+  the host before anything else and brief the gates to verify every requested change from the diff;
+  ask the agent for the missing evidence as its final message, sent after any backgrounded push
+  returns.

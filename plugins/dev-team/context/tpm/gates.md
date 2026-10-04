@@ -99,6 +99,8 @@ Read before the first gate of a run.
 - Before briefing a test deletion that a gate asks for, check the test against the ticket's
   acceptance criteria; a test that pins a stated criterion stays even when the framework enforces
   the behaviour, because the criterion is the contract and the next gate will fail its absence.
+  Then re-apply the mutation the test used to catch and require another test to fail before the
+  deletion or fold is briefed.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.

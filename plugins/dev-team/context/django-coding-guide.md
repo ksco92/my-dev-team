@@ -123,3 +123,35 @@ into a convention to a numbered section above, and open a PR against the plugin 
 - To assert that a DRF view answers 500 (status, headers, absence of a side effect), drive the real
   URL with `APIClient(raise_request_exception=False)`; `View.as_view()` called on an
   `APIRequestFactory` request re-raises the uncaught exception instead of rendering the 500.
+- A rollback test asserts inside the injected failure, before it raises, that the earlier write
+  exists; one that only checks absence afterwards still passes with the write moved after the
+  injection point.
+- A lock that serialises a rule check is mutated for position (below each lookup it protects) as
+  well as for presence, and each lookup read under it gets its own waits-on-the-lock case.
+- Prove a row lock deterministically: the test thread holds it in its own transaction, sends each
+  request from a thread, polls `pg_locks` after `pg_stat_clear_snapshot()` until the request is
+  waiting, then releases. Build every authenticated client before taking the lock, because a
+  test-client login writes the user row.
+- A handler authorised by a permission class that then takes a lock re-reads the caller's
+  authorisation under that lock, and each clause of the re-check (tenant, role, active) has a test
+  driven from the lock holder's transaction.
+- Lock a parent row with `select_for_update(no_key=True)` when concurrent transactions insert
+  children that reference it; plain `FOR UPDATE` conflicts with the `FOR KEY SHARE` of their
+  foreign-key checks and deadlocks once the locker waits on a row they hold.
+- A handler reads an object once and carries it forward; re-reading it through a differently
+  filtered query after a write lets the second read's 404 mask a filter missing from the first.
+- Composing DRF permissions with a method-only operand (`X | ReadOnly`) keeps `IsAuthenticated` as
+  its own earlier entry, since the OR replaces the default and an anonymous safe request passes
+  `ReadOnly`; test OPTIONS and HEAD for every caller class.
+- `ModelSerializer.update()` calls a full `instance.save()`, which rewrites every column from the
+  instance read at the start of the request and undoes a concurrent write such as a soft delete;
+  override it to save with `update_fields`.
+- DRF's `BooleanField` reads a key missing from a form or multipart body as False even when
+  required; a role or flag endpoint sets `default_empty_html = empty` on the field and tests a form
+  body without it.
+- An invariant enforced only in `save()` (two foreign keys sharing a tenant) is broken by any admin
+  form that leaves one of those keys editable on an existing row; make it read-only on change with
+  `get_readonly_fields` and prove it with a crafted change POST.
+- A uniqueness check written as `exists()` then insert races: back it with a constraint, map the
+  `IntegrityError` to the same 400, and probe the race through a live server, since the test client
+  re-raises in-thread and hides the 500.
