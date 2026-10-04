@@ -127,8 +127,7 @@ into a convention to a numbered section above, and open a PR against the plugin 
   exists; one that only checks absence afterwards still passes with the write moved after the
   injection point.
 - A lock that serialises a rule check is mutated for position (below each lookup it protects) as
-  well as for presence, and each lookup read under it gets its own waits-on-the-lock case; a
-  response that re-reads the object can turn a stale first read into the same status.
+  well as for presence, and each lookup read under it gets its own waits-on-the-lock case.
 - Prove a row lock deterministically: the test thread holds it in its own transaction, sends each
   request from a thread, polls `pg_locks` after `pg_stat_clear_snapshot()` until the request is
   waiting, then releases. Build every authenticated client before taking the lock, because a
@@ -143,7 +142,7 @@ into a convention to a numbered section above, and open a PR against the plugin 
   filtered query after a write lets the second read's 404 mask a filter missing from the first.
 - Composing DRF permissions with a method-only operand (`X | ReadOnly`) keeps `IsAuthenticated` as
   its own earlier entry, since the OR replaces the default and an anonymous safe request passes
-  `ReadOnly`; test OPTIONS and HEAD for every caller class, where no handler runs to refuse.
+  `ReadOnly`; test OPTIONS and HEAD for every caller class.
 - `ModelSerializer.update()` calls a full `instance.save()`, which rewrites every column from the
   instance read at the start of the request and undoes a concurrent write such as a soft delete;
   override it to save with `update_fields`.
