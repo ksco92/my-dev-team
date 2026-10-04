@@ -484,3 +484,21 @@ plugin repository (`ksco92/my-dev-team`).
   request cookies. An E2E helper that triggers a re-rendering mutation ends on a deterministic
   settle point (the new entity's locator) before returning.
 - A heavily-async e2e helper that awaits `page.waitForResponse` must check `response.ok()`; unchecked, a 4xx becomes a locator timeout tens of lines away, and from a `finally` it discards the test's real failure.
+- Assert that a request carries no header with exact equality on the headers object (`toEqual({})`);
+  `toMatchObject({headers: {}})` matches any headers.
+- An auth-expiry handler triggered by a 403 can only sign the user out, never replace a signed-in
+  user's data; prove it by counting requests over a second with a consumer whose effect re-requests
+  on that state, since a one-shot call cannot show a feedback loop.
+- For a client-side re-read of server state, each explicit re-read sends its own request, every read
+  is numbered, and only a result newer than the last applied is applied, on the error path too; a
+  re-read that joins an in-flight request can apply a value read before the change it follows.
+- With react-router's `BrowserRouter`, a context state change and a `navigate()` that must commit
+  together go in one `startTransition`, called from a component that stays mounted.
+- A lazily loaded route sits under the session guard as a parent route element, so the guard's
+  redirect renders before the page and no protected chunk is requested.
+- An error or suspense boundary around a route tree clears its failure by comparing the pathname in
+  state, never by a `key` on location, which remounts the shared layout on every navigation; test
+  each boundary by removing it alone and by holding a layout node across a navigation.
+- A Vite dev proxy in front of Django keeps `changeOrigin: false`, because Django's CSRF check
+  compares the browser's `Origin` with the `Host` it receives; prove it by running the login through
+  the proxy with both settings.
