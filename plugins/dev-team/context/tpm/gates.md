@@ -28,7 +28,8 @@ Read before the first gate of a run.
   MISSING, no ledger, or a ledger at another head).
 - Grep-verify a gate's decisive factual claims against the head before dispatching a fix round, and
   verify a PR body's root-cause narrative with `git log --follow`; the duty runs both ways, and an
-  overruled finding is recorded with its evidence rather than sent to the implementer.
+  overruled finding is recorded with its evidence, which goes into every gate's next brief rather
+  than to the implementer.
 - Every gate brief on a PR whose base has moved names the diff form (the Diff operation, or
   three-dot `origin/main...HEAD`); a two-dot diff attributes base commits to the PR. For a fix-round
   delta across a rebase, diff the two heads restricted to the PR's own paths (`git diff <old> <new>
@@ -89,7 +90,8 @@ Read before the first gate of a run.
   neighbouring input, brief a fail-closed design (a placeholder for the whole input class) before
   the third attempt, and have the repo doc state the acceptance as a closed list of what is
   covered; later gates judge against that list, and a claim in it broader than the code reopens
-  the loop.
+  the loop. A rule sentence that lists the sources of a property is prescribed as the class
+  instead; a list is missing its next member by the following round.
 - Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
   implementer's report; a mistyped SHA voids every verdict of the round and costs a correction
   message per gate.

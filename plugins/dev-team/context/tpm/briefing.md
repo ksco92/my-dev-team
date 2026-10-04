@@ -98,3 +98,6 @@ brief (5.2).
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open.
+- Brief every doc and rules-file edit to state what the code does without a cause clause
+  (`because`, `which makes`, `as for any`) unless the cause was checked against the source; an
+  unverified explanation is the next round's finding.

@@ -155,3 +155,15 @@ into a convention to a numbered section above, and open a PR against the plugin 
 - A uniqueness check written as `exists()` then insert races: back it with a constraint, map the
   `IntegrityError` to the same 400, and probe the race through a live server, since the test client
   re-raises in-thread and hides the 500.
+- Documenting an endpoint's answers by hand, send one request for each answer DRF and Django give
+  around the view: the 415 for an unsupported `Content-Type` and the `detail` 400 for a body that
+  does not parse (both counted by a throttle), the 406 answered before authentication, and Django's
+  own HTML 400 for a body over `DATA_UPLOAD_MAX_MEMORY_SIZE`; then state the documented statuses as
+  a closed list.
+- With drf-spectacular, derive tags, summaries and descriptions in one `AutoSchema` subclass set as
+  `DEFAULT_SCHEMA_CLASS`, in a module that imports no view, rather than per-view decorator arguments
+  or a postprocessing hook; an `@api_view` function's docstring is on the view class, not the
+  handler method.
+- A schema generator publishes docstrings (a view's as summary and description, a serializer's as
+  its component description): review every published string from the generated document, and write
+  those docstrings as the contract a customer reads, never the mechanism.

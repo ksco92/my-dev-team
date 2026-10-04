@@ -33,3 +33,5 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   the host before anything else and brief the gates to verify every requested change from the diff;
   ask the agent for the missing evidence as its final message, sent after any backgrounded push
   returns.
+- Every brief that starts a server has the agent record its PID at start and stop it by that PID;
+  stopping by command pattern can match another agent's server on the shared machine.
