@@ -90,8 +90,7 @@ Read before the first gate of a run.
   neighbouring input, brief a fail-closed design (a placeholder for the whole input class) before
   the third attempt, and have the repo doc state the acceptance as a closed list of what is
   covered; later gates judge against that list, and a claim in it broader than the code reopens
-  the loop. A rule sentence that lists the sources of a property is prescribed as the class
-  instead; a list is missing its next member by the following round.
+  the loop.
 - Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
   implementer's report; a mistyped SHA voids every verdict of the round and costs a correction
   message per gate.
