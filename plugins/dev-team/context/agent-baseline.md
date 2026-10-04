@@ -194,8 +194,8 @@ orchestrator watches the process and resumes you with fast-ops-only instructions
 finished slice uncommitted while waiting on a background waiter.
 
 A background server you started is yours to stop by the exact pid you recorded at start; one
-owned by the user or another agent is not. Never delete outside the repo you were sent to (no sweeps of `/tmp`, no `*.log`
-sweeps) — another gate may be writing there.
+owned by the user or another agent is not. Never delete outside the repo you were sent to (no
+sweeps of `/tmp`, no `*.log` sweeps) — another gate may be writing there.
 
 ## Output to your caller
 

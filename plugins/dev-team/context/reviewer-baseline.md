@@ -25,6 +25,7 @@ simplification, and the code-health gate requires it.
 
 A probe never runs a script whose default target is a shared resource (the owner's development
 database) without overriding the target, never mutates a fallback so it points at that default and
-then runs it, never pipes a live command through `head` or `tail`, and never edits system or user
-configuration to make a check pass; a check the machine cannot run is reported as an environment
-limit and verified another way.
+then runs it, never pipes a live command through `head` or `tail`, never stops a server by command
+pattern rather than by the pid it recorded at start, and never edits system or user configuration
+to make a check pass; a check the machine cannot run is reported as an environment limit and
+verified another way.
