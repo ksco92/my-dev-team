@@ -228,13 +228,10 @@ Checklist (each item is a concrete check):
 - [ ] Anti-drift sweep (§3): commands/flags exist; gate/CI tables match the
       Makefile/workflows; links resolve; numbers match generated reports;
       PR-diff vs README-claims cross-check
-- [ ] Prose rules (§2, §3): Performance current-release only; limitation
-      bullets state boundary and trigger, never frequency; no self-vouching
-      sentence; no self-link and no "above"/"below" across files
-- [ ] The §3 results-document, enumeration and markdown-hygiene rules apply to
+- [ ] §2 Performance and Limitations rules and §3 Self-vouching and Pointers bullets hold.
+- [ ] The §3 results-document, enumeration and Markdown hygiene rules apply to
       every tracked `*.md` the diff touches that holds a measurement table, not
-      only README.md; the re-count rule (§3 Markdown hygiene) covers every list
-      summary
+      only README.md.
 - [ ] Triple-match: README one-liner == repo description == package description
 - [ ] Badges: all resolve, all truthful, count ≤7, assessment-class
 - [ ] LICENSE file exists and README names it (public repos: BLOCKER if not)
