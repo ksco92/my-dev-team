@@ -107,7 +107,7 @@ the other homes for what you want to say. Most of it already lives in one of the
 
 - A function or type doc states the contract in one to three lines: what it does or returns, plus
   at most one constraint the signature cannot show (an ordering guarantee, a unit, an equality rule
-  that differs from the language's). Most private helpers need none. No doc justifies its item by
+  that differs from the language's). Most private helpers need none; no doc justifies its item by
   the lint or tool it satisfies ("stays under the argument limit", "split out so it is testable").
 - A module doc is under ten lines: what the module is for, and one attribution line (upstream,
   version, license) when it ports or mirrors something. Design essays, "why this exists", and how
@@ -117,12 +117,11 @@ the other homes for what you want to say. Most of it already lives in one of the
   once per file), test names, or reviewer questions answered in advance. A test comment states the
   boundary its fixture sits on, never the mutant it kills or cannot kill, a mutation run, the
   internal branch it reaches, a sibling test, or why the test lives where it does.
-- Rationale shared by a group of tests goes once, on the section banner.
 - Never document an absence: no `# Panics: never`, no `:raises:` for nothing, no "this branch cannot
   be reached because". An assertion on an invariant carries its proof in its message string.
 - Cross-reference one hop, by name, only when the reader must go there. "See X's doc, which
-  explains Y" chained across three items is three homes for one fact. A file points at a design page
-  once, in its module doc, and no doc calls itself "the single home" or lists who points at it.
+  explains Y" chained across three items is three homes for one fact, and a file points at a design
+  page once, from its module doc, never declaring itself the single home.
 - No adverbs of persuasion ("deliberately", "critically", "surprisingly", "faithful", "exactly
   like"), no bold for emphasis, and no defenses ("not a gap", "faithfully reproduced", "rare in
   practice"). They address a reviewer, not a maintainer: state a limit once and point at the

@@ -147,10 +147,10 @@ is their Rust mechanism, plus the Rust-only rules.
 - **Length and nesting (Part D rule 1).** `clippy.toml` sets
   `excessive-nesting-threshold = 4`, which enables the lint (the default 0 leaves it off)
   and counts `mod`, `impl` and function-body blocks; the length lint keeps its 100-line
-  ceiling and Part D's 60-line soft line is judged in review. A flat dispatch table, one
-  arm per line, is the only production `too_many_lines` allow, and tests are exempt
-  through `#![cfg_attr(test, allow(clippy::too_many_lines))]` at the library root and an
-  allow at each `tests/` crate root.
+  ceiling and Part D's 60-line soft line is judged in review. The only production allow is
+  a dispatch table (Part D rule 1), and tests are exempt through
+  `#![cfg_attr(test, allow(clippy::too_many_lines))]` at the library root and an allow at
+  each `tests/` crate root.
 - **Parameter bags (Part D rule 3)** become one `#[derive(Clone, Copy)]` struct of
   references, passed by value.
 - **Named fields (Part D rule 4)** cover tuple structs, `type` aliases over tuples and
