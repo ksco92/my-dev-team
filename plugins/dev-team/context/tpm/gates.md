@@ -51,9 +51,8 @@ Read before the first gate of a run.
   so the gates run once at the final head.
 - A rebase under branch protection (before the merge and after every sibling merge) carries
   verdicts only by per-path object-hash equality (`git rev-parse <head>:<path>` for every PR file),
-  never by re-review or a two-dot diff, and the rebased head runs the full `make check` and any CI
-  leg that main added before the push, since tests merged in from main can construct a type the
-  branch just wrapped and the hash proof does not cover files main added.
+  never by re-review or a two-dot diff, and the proof does not cover files main added; run the full
+  `make check` and any CI leg main added on the rebased head before the push.
 - A PR body's own preservation or fix checklist is not proof: reproduce it from the diff (every
   number-plus-unit token, every named symbol) before recording a verdict; the checklist lists what
   the author remembered to check.
