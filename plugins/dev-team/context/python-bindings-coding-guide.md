@@ -51,6 +51,13 @@ Binding for any repo that ships such an extension unless the repo's own CLAUDE.m
   every declared name on the stub side, including module-level `AnnAssign` constants, never a
   literal set. Prove it in both directions: monkeypatch a new symbol onto the module, and delete a
   declaration from a copy of the `.pyi`; each must fail the test.
+- Every docstring that ships to a `pip install`ed reader (a `.pyi` stub, `#[pyfunction]`,
+  `#[pymethods]`, `#[pyclass]`, `create_exception!`) is written for a reader with no checkout:
+  complete sentences, no `crate::` paths, no rustdoc `[`...`]` link syntax, a file pointer that
+  names the repository, and any bound the call enforces (a row cap, a thread ceiling) stated inline.
+- A stub's docstrings and the native `__doc__` are one home: either a test asserts each stub
+  docstring equals the normalized runtime `__doc__`, or the stub carries signatures plus a one-line
+  summary.
 
 ## 5. Reproducing on a Constrained Stack
 
