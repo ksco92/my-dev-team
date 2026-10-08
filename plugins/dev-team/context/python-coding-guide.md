@@ -695,8 +695,8 @@ the repository's configuration does not enable is reported as a finding against 
 only against the code that breaks it.
 
 The missing-docstring, missing-parameter, missing-return and missing-raises codes (pydocstyle
-`D1xx`, darglint `DAR101`/`DAR201`/`DAR401`, pydoclint `DOC201`/`DOC501` under ruff, or their equivalents)
-stay disabled, so a tool never demands a docstring or line the Docstrings rules omit.
+`D1xx`, darglint `DAR101`/`DAR201`/`DAR401`, pydoclint `DOC201`/`DOC501` under ruff, or their
+equivalents) stay disabled, so a tool never demands a docstring or line the Docstrings rules omit.
 
 The following linters are used and their rules must be followed:
 
