@@ -73,7 +73,7 @@ brief (5.2).
   push): the merge gate refuses a `-C` push that names no remote and literal non-trunk refspec, and
   its refusal reads as a permission error.
 - Every rebase brief says: run the full `make check` (all targets, clippy included) and any CI leg
-  main added on the rebased head before the push.
+  that main added on the rebased head before the push.
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
