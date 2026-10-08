@@ -7,9 +7,11 @@ read this first; it is binding unless the agent file or a project override contr
 ## Reviewer probe
 
 Read and run the head in a reviewer probe (the process file's Reviewer probe operation); a
-reviewer removes only what it created. A guarded command that a probe shows without running it is
-spelled as a word no lookup resolves (`git_`, `GIT_CMD`), never as a case variant such as `GIT`: a
-case-insensitive filesystem runs the real binary, and the merge gate matches the lowercase word only.
+reviewer removes only what it created. Use the probe as given: never clone into it or check out
+another revision inside it, and never run a checkout or switch in the live checkout. A guarded
+command that a probe shows without running it is spelled as a word no lookup resolves (`git_`,
+`GIT_CMD`), never as a case variant such as `GIT`: a case-insensitive filesystem runs the real
+binary, and the merge gate matches the lowercase word only.
 
 ## Diffing a PR whose base has moved
 

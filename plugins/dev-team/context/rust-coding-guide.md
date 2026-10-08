@@ -203,7 +203,13 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
 - In an explicit-stack rewrite, derive per-frame counters from a buffer already threaded through
   (`path.len()`) instead of storing them per frame.
 - A depth-budget counter on native recursion is a logic guard, not stack safety: make the walk
-  iterative, or run it on a thread sized from a measured per-frame bound at the maximum budget.
+  iterative, or run it on a thread sized from a measured per-frame bound at the maximum budget. A
+  doc that states the per-frame figure cites the committed example that measures it, and a second
+  doc that restates it re-runs that example rather than copying the number.
+- A change that grows a recursive frame (threading a `Result` or a closure through it) or shrinks a
+  thread's stack reservation bisects the native crash depth before and after on the deepest shape,
+  including every path that recurses natively before its depth bound applies (an FFI import of a
+  nested schema).
 - An iterative `Drop` on a recursive type is one door of several: check `PartialEq`, `Debug`,
   `Clone`, `Serialize`, and `Hash` on the same type against the same overflow.
 - Before calling a derived `Clone`/`Drop` on an external enum non-recursive because its nested
@@ -290,7 +296,10 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
   cannot short-circuit.
 - Accept a strengthened property test only after running it at 20 to 100 times the committed case
   count across several seeds and measuring the flake rate; guard a perturbation that feeds
-  canonicalization order by depth rather than `prop_assume!`.
+  canonicalization order by depth rather than `prop_assume!`. A case-count claim names the form
+  the test runs under, since the `proptest!` macro applies `PROPTEST_CASES` over its config while a
+  direct `TestRunner::new` with an explicitly set `cases` ignores it, and its proof is the observed
+  run count or runtime, not the config value.
 - Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
   workspace crates and fingerprint sources.
 - A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals

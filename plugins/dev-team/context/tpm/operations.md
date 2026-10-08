@@ -33,3 +33,8 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   the host before anything else and brief the gates to verify every requested change from the diff;
   ask the agent for the missing evidence as its final message, sent after any backgrounded push
   returns.
+- Brief every subagent to keep scratch files in its own workspace or its own `mktemp -d`, never a
+  fixed name in the shared `$TMPDIR`.
+- Brief every subagent to re-read a PR body immediately before editing it.
+- Brief scratch-file writes as a heredoc (`cat > f <<'EOF'`); a bare `cat > f` waits on stdin and
+  leaves a shell running.

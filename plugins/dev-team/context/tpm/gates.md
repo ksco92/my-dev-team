@@ -9,8 +9,9 @@ Read before the first gate of a run.
   tracked `.githooks/pre-push` where pushes must be gated.
 - Before merging, poll the CI status operation until every required check is terminal and confirm
   every gate for that PR has returned; a verdict on a pre-rebase head is void once a re-review runs
-  on the new head. The ledger keeps one head per PR: record a late verdict at the current head only,
-  with the diff proof, and finish with `gate-ledger show` counting five PASS.
+  on the new head. The ledger keeps one head per PR and a record at any other head, an older one
+  included, starts it afresh: record a late verdict at the current head only, with the diff proof,
+  and finish with `gate-ledger show` counting five PASS.
 - A green CI run is evidence only if it built the PR: with an unchanged lockfile and a cached
   `target/`, check the log for a `Compiling <crate>` line and a test count matching the branch.
 - Never pre-assign versions to open PRs; a PR takes its version in the final rebase before its
@@ -40,23 +41,17 @@ Read before the first gate of a run.
 - When a CI failure is fixed by pinning at the root, do not also brief graceful degradation for the
   unpinned case; verify a new test path by running the project's own command and checking for
   unexpected SKIPs.
-- A rebase that merges textually can still fail to compile: tests merged in from main
-  construct a type the branch just wrapped. Every rebase brief says "run the full `make check`
-  (all targets, clippy included) on the rebased head before pushing", and the reviewer's per-path
-  object-hash proof does not cover files main added.
 - GitHub host: a PR with no CI run and `mergeable: CONFLICTING` needs a rebase, not a retrigger:
   GitHub runs no `pull_request` workflow when it cannot build the merge ref. Brief the rebase to
   re-run gates on the rebased head, because the conflict resolution is new review surface.
 - Concurrent gates that each `uv sync`/`maturin develop` share `~/.cache/uv` and stall on its
   lock for an hour; brief a light venv with a private `UV_CACHE_DIR` for test-only PRs, and accept
   CI's fresh run at the pinned head when it runs the same command sequence the local gate would.
-- A branch cut before a new CI leg merged runs that leg on its first pull_request run against
-  the merged main; brief the implementer to rebase onto main before opening the PR so a new
-  interpreter or platform leg is exercised locally first, not discovered by CI.
-- When branch protection requires the branch up to date with main, every PR rebases before its
-  merge and after every sibling merge: brief implementers to rebase before opening and before the
-  final push, and carry verdicts across a clean rebase by per-path object-hash proof
-  (`git rev-parse <head>:<path>` equal for every PR file), never by re-review or a two-dot diff.
+- Brief the implementer to rebase onto main before opening the PR and before the first gate round,
+  so the gates run once at the final head.
+- A rebase under branch protection (before the merge and after every sibling merge) carries
+  verdicts only by per-path object-hash equality (`git rev-parse <head>:<path>` for every PR file)
+  onto a main that added no file or CI leg the PR must pass, never by re-review or a two-dot diff.
 - A PR body's own preservation or fix checklist is not proof: reproduce it from the diff (every
   number-plus-unit token, every named symbol) before recording a verdict; the checklist lists what
   the author remembered to check.
@@ -66,11 +61,16 @@ Read before the first gate of a run.
 - Reviewing a rules or policy file that describes code, compare every mechanism word ("literal
   table name", "aborts", "placeholder") against the line it describes at the head; text drafted
   from an earlier proposal keeps the wording of an implementation a later PR replaced.
+- Brief every gate on a doc restructure or move to diff the set of sentences between base and head,
+  not the layout: each dropped sentence has a new home or is a deletion the ticket asked for, and
+  a figure another file cites is found at its new home.
 - Check a PR against every issue-specific numeric criterion as well as the repo's general bar; the
   same computed figure can clear the general ceiling and miss the issue's tighter target.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
   not a contradiction for the owner: the repo rule decides, the orchestrator amends the issue's
-  constraint with the reason, and the gate that cited the old constraint re-issues its verdict.
+  constraint with the reason, and the gate that cited the old constraint re-issues its verdict. A
+  ticket-mandated sentence or figure likewise outranks a gate's style preference, while a gate
+  that shows ticket text false outranks the ticket, which is amended to the claim that holds.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
 - When a gate finding rests on a default heuristic with an "unless justified" clause and the

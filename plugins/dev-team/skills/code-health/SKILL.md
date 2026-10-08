@@ -127,7 +127,8 @@ Implementers apply this ladder at write time (the code-economy section of
     like", "genuinely", "precisely", "perfectly", "dramatically", "drop-in", "exact same",
     "overwhelming", bold for emphasis, cross-reference chains past one hop, and defenses
     addressed to a reviewer ("not a gap", "faithfully reproduced", "rare in practice",
-    "accepted, documented limitation"): INFO, delete.
+    "accepted, documented limitation", "kept because <file> cites it", where the citing file
+    carries the cross-reference): INFO, delete.
 11. **Fix-round accretion.** In diff mode on a re-review, count comment lines added versus
     removed per file; a round that grows prose without removing as much is a finding
     regardless of what the prose says. The fix for a "why is this safe" question is a test
@@ -318,12 +319,13 @@ The reviewed repo is read-only.
   mocked derivation test and delete the live recomputation.
 - When an edit strips a literal from a sizing-rationale comment, re-check tense so the comment no
   longer asserts an invariant the code stopped maintaining.
-- On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, or a
-  package that starts accepting a value class it refused, grep the whole tree for the old name (for
-  the last, "unlike <package>"); stale prose hides in comments, CLAUDE.md, design pages, and build
-  scripts the diff never touches.
-- Diff a new type's field docs against its own implementation in the same PR; a fresh type and its
-  writer disagree on day one more often than they drift later.
+- On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, a
+  fix round that removes a word, or a package that starts accepting a value class it refused, grep
+  the whole tree for the old word (for the last, "unlike <package>"); stale prose hides in
+  comments, CLAUDE.md, design pages, and build scripts the diff never touches.
+- Diff a new type's field docs against its own implementation in the same PR, and grep the PR's
+  new tests for values built by hand the way a helper the PR adds builds them (A2); a fresh type
+  and its writer disagree on day one more often than they drift later.
 - When a PR changes a documented default, grep CLAUDE.md and README for the old value.
 - An "ERESOLVE fix via overrides" that regenerates the lockfile is tested first against the
   original lockfile with only the override added; a zero-line lockfile diff means the regen was
@@ -359,11 +361,16 @@ The reviewed repo is read-only.
   `"""` block that every "see the module docstring" pointer names, not in an adjacent `#` banner;
   a false pointer propagates by copy into every README and PR sentence that repeats it.
 - When a PR adds a table to one doc and a pointer to it from another, grep the pointing file for
-  the referenced heading: a same-document word ("below", "above") is false the moment the table
-  lands in a different file than the sentence naming it. The pointer names the file.
+  the referenced heading and require the pointer to name the file: a same-document word ("below",
+  "above") is false the moment the table lands in a different file than the sentence naming it. A
+  pointer that covers a heading's tables ("shapes are defined in X") is checked against every
+  table under that heading, not only the first.
 - A CI job added as a near-copy of an existing job (same steps, one varying parameter) is checked
   against the repo's own matrix usage first; `strategy.matrix` with one conditional step is
   usually smaller than a second job block.
+- A new mode added to a script or example that already dispatches its modes extends the existing
+  function with a parameter rather than adding a sibling function and an argument branch, and a
+  new function whose return value every caller discards returns nothing.
 - When a primitive already exists in a dependent crate, check the dependency direction before
   prescribing reuse: the fix is to push the primitive down into the shared lower crate, never a
   reference across crates in the wrong direction.

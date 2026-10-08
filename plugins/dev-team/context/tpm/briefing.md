@@ -49,31 +49,31 @@ brief (5.2).
 - When briefing a recurring mechanical chore (version bump, release prep, changelog roll),
   derive the file checklist from the previous instance's actual commit (`git show <sha> --stat`),
   never from the documented convention alone; the precedent commit shows every real touch-point.
-- When prescribing a doc reword to remove narration, prescribe the rule sentence only: never
-  "pinned by <test name>" or "confirmed against <version>", which trade one code-economy
-  violation for another; the suite is the evidence and the doc states the behavior.
+- When prescribing a doc reword, give the exact old and new text so the round closes on a diff
+  proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
+  <version>".
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is
   the evidence", not a re-plan. Accept a scope split only when the shipped half is mergeable on
   its own and the second half starts immediately.
-- A numeric per-file target in an issue (a comment ratio, a line count) is recomputed against
-  current main at dispatch when a dependency merged after the issue was written, and the brief
-  states whether the target is reachable through the issue's in-scope edits alone; an unreachable
-  target is amended before the implementer starts, not argued in the PR body.
-- A fix brief that includes a rebase of an already-pushed branch says the push is
-  `--force-with-lease` after checking the remote tip is the last SHA the implementer pushed; a
-  plain push after a rebase fails as non-fast-forward and reads as a permission refusal.
+- A numeric per-file target in an issue (a comment ratio, a line count) is recomputed at current
+  main with the issue's own counting method at dispatch, the brief has the implementer reproduce
+  that baseline with its counter before editing, and it states whether the target is reachable
+  through the issue's in-scope edits alone; an unreachable target is amended before the
+  implementer starts, not argued in the PR body.
 - A fix brief for a security finding prescribes the property ("decode and parse exactly as the
   consuming parser does, or store a placeholder"), never the mechanism that closes one case; a
   mechanism written from one example opens the sibling case the next gate finds.
 - Every brief that touches a shared local resource (a database, a port) names a value unique to
   that agent, PR and round and forbids running any script whose default targets the owner's own
   resource; two gates for different PRs briefed with the same port collide.
-- Implementer briefs say to push from a worktree as `git -C <worktree> push -u origin <branch>`:
-  the merge gate lets a push run through `-C` pass only when it names the remote and a literal
-  refspec with a non-empty source and a destination that is neither the trunk nor `HEAD`/`@`,
-  without delete, `--all`, or `--mirror`, and its refusal reads as a permission error.
+- Implementer briefs push from a worktree as `git -C <wt> push --force-with-lease=<branch>:<sha>
+  origin <branch>`, with `<sha>` the last SHA pushed (plain `-u origin <branch>` on the first
+  push): the merge gate refuses a `-C` push that names no remote and literal non-trunk refspec, and
+  its refusal reads as a permission error.
+- Every rebase brief says: run the full `make check` (all targets, clippy included) and any CI leg
+  that main added on the rebased head before the push.
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.
@@ -101,3 +101,6 @@ brief (5.2).
 - Brief every doc and rules-file edit to state what the code does without a cause clause
   (`because`, `which makes`, `as for any`) unless the cause was checked against the source; an
   unverified explanation is the next round's finding.
+- Every doc-trim brief requires an empty diff once comment and doc lines are stripped, a moved
+  list's new home that does not point back at the old one, and a re-read of the lead-in of every
+  list it shortens.

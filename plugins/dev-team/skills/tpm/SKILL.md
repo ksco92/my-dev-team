@@ -194,7 +194,8 @@ ${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <repo-key> <change-id> <gate> <PASS
 `<repo-key>` and `<change-id>` are what the process file's Repo key operation names. Gate names:
 `pr-reviewer code-health oss-reviewer security-review readme-writer`. `<model>` is the alias the
 gate ran on (`sonnet`/`opus`; under Pi the session's model), so the reviewer-tier rule is auditable
-from the ledger. A record at a new head resets the others; gates always re-run on a new head.
+from the ledger. A record at a new head resets the others; every gate is re-recorded at the new
+head, by a re-run or by the 5.2 carry proof.
 
 Gate a PR on its own diff. Repo-level findings a full-scope pass surfaces in files the PR never
 touched become a follow-up ticket (File a follow-up operation) with their own fix PR — otherwise
@@ -205,9 +206,11 @@ nothing merges until the whole repo is pristine and the nits-block policy deadlo
 Merge every gate's findings into one set. Any finding at any severity blocks — nits included. Send
 the whole set to the slice's implementer at its current tier as a fix brief quoting each
 `file:line` (prefer `SendMessage` to the same agent — it keeps its context — over relaunching).
-Re-run the gates on the new head. When a cycle's only prescribed change is mechanical (delete
-these lines, fix this PR body), a deterministic diff proof (`git diff -w old..new` shows exactly
-the prescribed edit) closes it without a full re-run; anything with semantic content re-runs.
+Re-run the gates on the new head. Two proofs carry every gate's verdict to the new head without a
+re-run: when a cycle's only prescribed change is mechanical (delete these lines, fix this PR
+body), a deterministic diff proof (`git diff -w old..new` shows exactly the prescribed edit); and
+for a clean rebase, per-path object-hash equality for every file the PR touches, onto a main that
+added no file or CI leg the PR must pass. Anything with semantic content re-runs every gate.
 
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof

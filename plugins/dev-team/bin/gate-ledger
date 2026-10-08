@@ -20,8 +20,9 @@
 #   <model>  alias the gate ran on (sonnet | opus | fable), or the local model name under Pi;
 #            recorded so the reviewer-tier rule is auditable after the fact
 #
-# A record at a different head than the ledger's current head resets the other gates: gates
-# always re-run on a new head, so verdicts from an older head must never count.
+# A record at a different head than the ledger's current head resets the other gates: every gate
+# is re-recorded at the new head, by a re-run or by the carry proof the tpm skill names, so
+# verdicts from an older head never count on their own.
 set -euo pipefail
 
 LEDGER_ROOT="${GATE_LEDGER_ROOT:-$HOME/.claude/gate-ledger}"
