@@ -80,4 +80,4 @@ the audit reports the brief names; cite file:line in the PR body only.
 
 ## Out of Scope
 The code-health skill, agent-baseline, rust-coding-guide, oss-reviewer catalog and readme-writer
-changes from the same audit (separate slices). Any change to the onix repository.
+changes from the same audit (separate slices). Any change to the audited repository.

@@ -236,8 +236,7 @@ def sum_nums(a: int, b: int) -> int:
   cannot show. No test evidence, no "confirmed against X", no rationale essays, no `:raises:` for
   an exception that cannot fire.
 - **No single-use one-statement helpers**: a private `_helper()` with one call site and one
-  statement (`if pred(x): raise`, a renamed stdlib call) is inlined at the call site, not written,
-  typed, and given a docstring longer than its body.
+  statement (`if pred(x): raise`, a renamed stdlib call) is inlined at the call site.
 - **Structure first**: a docstring that describes more than one step is a numbered list of what
   happens, with rationale at most one trailing clause per step; deep rationale belongs at the line
   it justifies or in the PR.
@@ -690,7 +689,14 @@ same commit. Verify by grepping the committed file, not the working tree.
 
 A repository with tracked `.py` files runs a linter and a format check over them in its merge gate
 (`make check` or the CI equivalent). `ruff check` plus `ruff format --check` is an accepted
-single-tool equivalent of the Black, isort and Flake8 set below.
+single-tool equivalent of the Black, isort and Flake8 set below. A rule in this guide that an
+available linter rule could enforce (the type-hint style, import order, an import below code) but
+the repository's configuration does not enable is reported as a finding against the merge gate, not
+only against the code that breaks it.
+
+Sphinx is the style for the docstrings that exist; the missing-docstring and missing-parameter or
+missing-return codes (pydocstyle `D1xx`, darglint `DAR101`/`DAR201`, or their ruff equivalents) stay
+disabled, so a tool never demands a docstring or line the Docstrings rules omit.
 
 The following linters are used and their rules must be followed:
 
@@ -800,6 +806,7 @@ All test functions must:
 ```python
 def test_list_files() -> None:
     # ... test code
+    ...
 ```
 
 ### Test Docstrings
@@ -1006,6 +1013,7 @@ def test_cpc_predictor_with_long_query_text() -> None:
 
 def test_cpc_predictor_successful_prediction() -> None:
     # ... test successful case
+    ...
 ```
 
 #### Coverage Threshold
@@ -1066,10 +1074,9 @@ Each test should be independent:
 - Don't share state between tests
 - Clean up any created resources
 - Never import a sibling test module; shared helpers are `conftest.py` fixtures or live in a support
-  module whose name does not start with `test_`. A test module that
-  imports a sibling inherits its module-level `importorskip` through the re-raised `Skipped`, its
-  skip line merges into the sibling's, and the file vanishes from interpreter-coverage accounting;
-  each file carries its own guard.
+  module whose name does not start with `test_`. An importing module inherits the sibling's
+  module-level `importorskip` through the re-raised `Skipped`, merges into its skip line and drops
+  out of interpreter-coverage accounting, so each file carries its own guard.
 
 ### Test Suite Structure
 
@@ -1086,7 +1093,7 @@ Each test should be independent:
 - Three or more keyword arguments forwarded unchanged through two or more functions become one
   frozen dataclass parameter.
 - Inline a module constant read once at its use, unless its name documents an external contract (a
-  vendor limit, a protocol value).
+  vendor limit, a protocol value); define one read two or more times at the module level.
 
 ### Environment Variables
 
@@ -1127,7 +1134,7 @@ mock_kb_response = [
 
 #### Test Constants
 
-Define a test constant read two or more times at the module level:
+Module-level test constants follow Test Suite Structure:
 
 ```python
 """Tests for the CPC predictor handler."""
@@ -1143,8 +1150,7 @@ TEST_MODEL_ID = "global.anthropic.claude-opus-4-5-20251101-v1:0"
 ### Key Principles
 
 1. **Type everything**: All parameters and return values must have type hints
-2. **Document the contract**: every module and class has a docstring; a function's follows the
-   three shapes in Docstrings
+2. **Document the contract**: a docstring follows the rules in Docstrings
 3. **Test everything**: Maintain 95%+ code coverage
 4. **Use modern Python**: Native types, union operator, `Self` type hint
 5. **Follow the formatters**: Don't fight black, isort, flake8, or ruff
@@ -1160,10 +1166,7 @@ These standards are enforced through:
 - **flake8**: Style checking (with plugins for docstrings, commas, multiline containers)
 - **mypy**: Type checking
 - **pytest**: Testing with 95% coverage requirement
-
-A rule in this guide that an available linter rule could enforce (the type-hint style, import order,
-an import below code) but the repository's configuration does not enable is reported as a finding
-against the merge gate, not only against the code that breaks it.
+- **ruff**: `ruff check` plus `ruff format --check` in place of black, isort and flake8
 
 ## Self-mutation rule
 
