@@ -65,7 +65,9 @@ string equality), adapted to house style:
 
 ToC required at ≥100 lines. Benchmarks, when present: only numbers from a
 committed, regenerable report (link it), with environment + date + methodology
-pointer — never hand-carried numbers (see §3).
+pointer — never hand-carried numbers (see §3). The Performance section carries
+the current release's numbers only; per-release deltas ("from X to Y since
+version N") belong in a changelog.
 
 **Audience rule.** Sections 1–7 are written for a *user of the published
 artifact*: someone deciding in thirty seconds whether to install it, then
@@ -80,7 +82,8 @@ section that installs a toolchain is contributor material, not Install.
 placed after Usage: one line per limitation, the detail behind a link. The
 value proposition and the status paragraph carry at most one caveat clause
 between them; a README whose second sentence is a boundary case has the order
-backwards.
+backwards. A limitation bullet states the boundary and its trigger, never how
+often it occurs ("rare in practice", "far beyond any real schema").
 
 **Length budget.** Target ≤250 lines. Exempt from the budget: user-facing
 API reference (the arceus pattern: every export documented with an example)
@@ -121,6 +124,22 @@ Rules, all reviewable:
   has caught the same stale-number drift repeatedly — 12.4-vs-12.799 class).
 - **The triple-match**: README one-liner == repo description (Repo description
   operation) == package manager description field. String-comparable; check all three.
+- **A section states facts, never its own trustworthiness.** Delete sentences
+  that vouch for a section's fidelity or process ("every figure here is copied
+  verbatim"); the committed report is the proof.
+- **Pointers.** A link never targets the section it sits in. "Above" and
+  "below" are same-document words and are false across a file boundary; name
+  the file or heading instead.
+- **Results documents** (RESULTS, MUTANTS and the like) hold one current table
+  per measured shape plus a method pointer. Before/after columns and
+  per-release sections are deleted once a newer run supersedes them, and the
+  Environment table names the version of every table the file holds.
+- **Derive, never enumerate.** A document does not list test or fixture cases
+  in prose: give a prefix-to-purpose table and point at the generator. A
+  hand-kept index paragraph that repeats the document's own headings is
+  replaced by the headings. No two headings in one file share text (a link to a
+  `-1`-suffixed anchor is the tell), and markdown never uses rustdoc
+  intra-doc link syntax (`` [`crate::item`] ``).
 
 ## 4. Badges — signal, not fruit salad
 
@@ -209,6 +228,9 @@ Checklist (each item is a concrete check):
 - [ ] Anti-drift sweep (§3): commands/flags exist; gate/CI tables match the
       Makefile/workflows; links resolve; numbers match generated reports;
       PR-diff vs README-claims cross-check
+- [ ] The §3 results-document and derive-never-enumerate rules apply to every
+      tracked `*.md` the diff touches that holds a measurement table, not only
+      README.md; re-count any numeral that summarises a list in another file
 - [ ] Triple-match: README one-liner == repo description == package description
 - [ ] Badges: all resolve, all truthful, count ≤7, assessment-class
 - [ ] LICENSE file exists and README names it (public repos: BLOCKER if not)
