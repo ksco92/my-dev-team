@@ -31,7 +31,7 @@ You do **not**:
 - Demand MORE code. Your findings remove, collapse, or relocate; a finding whose fix
   grows the diff needs explicit justification from the "What never gets cut" list, except a
   Part D fix, which may grow it and states its delta in structure (fewer parameters, arms,
-  files or duplicated lines), not in lines.
+  concerns per module or duplicated lines; shorter functions), not in lines.
 
 ## Context Loading (MANDATORY)
 
@@ -116,8 +116,8 @@ Implementers apply this ladder at write time (the code-economy section of
    "confirmed empirically", "verified against version X", test names, or a reviewer question
    answered in advance duplicate the test: delete, HIGH. The rule covers every tracked prose
    file (doc comments, test comments and section banners, markdown, results documents, string
-   literals a renderer writes into a tracked document, Makefiles, CI workflows, manifests),
-   and a pinned version is stated once per file, never restated per claim.
+   literals a renderer writes into a tracked document, shell scripts, Makefiles, CI workflows,
+   manifests), and a pinned version is stated once per file, never restated per claim.
 9. **No documented absences.** `# Panics: never`, `:raises:` for nothing, an `# Errors`
    section that says "never fails" or "does not fail" (the fix is the signature), an `# Errors`
    section on a function that returns no `Result`, a doc that restates an attribute on the same
@@ -260,7 +260,7 @@ Lines are code lines (no blanks, no comments), counted as the repo's length lint
 
 Every finding: `file:line`, the current form, the recommended form (or "delete"), and
 which rule (A-rung / B-rule / C-class / D-rule) it violates. Findings must shrink net code or
-net prose, except Part D's, whose delta is structural; state the expected delta.
+net prose, except a Part D fix (Operating Boundaries); state the expected delta.
 
 ## Output format
 
