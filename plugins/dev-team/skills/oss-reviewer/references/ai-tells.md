@@ -5,7 +5,7 @@ Each pattern: regex or structural rule + exclude list + severity + rationale.
 Self-mutation additions land HERE (see the numbering rule in SKILL.md): grep this
 file for the highest existing `### 4.N` and use N+1 — never reuse a number.
 
-Every pattern excludes this catalog's own quoted examples under `references/` and the skill text. Entries 4.1, 4.26, 4.36, 4.86, 4.87, 4.109, 4.110, 4.112, 4.114, 4.115, 4.118, 4.119, 4.122, 4.126, 4.131, 4.132 and 4.141 were widened on 2026-10-07.
+Every pattern excludes this catalog's own quoted examples under `references/` and the skill text.
 
 This is the core mandate. Grep the working tree for the patterns below. For each match, capture `<file>:<line>` + the matched snippet so the user can navigate.
 
@@ -3799,7 +3799,7 @@ Severity: CRITICAL when the project's conventions explicitly ban referencing the
 
 Added by: oss-reviewer on 2026-09-02 (onix PR #8): four new comments citing "slice-2"/"Slice 4" from the untracked plan, in run.rs, guard.rs ×2, and an example binary.
 
-Also match a short milestone tag in a comment or a cited filename; "temporary" and "interim" need no digit (§4.142). Exclude also identifiers, hardware names and units.
+Also match a short milestone tag in a comment or a cited filename; "interim" needs no digit (§4.142). Exclude also identifiers, hardware names and units.
 ```
 (^|[^A-Za-z0-9])[mM][0-9]+($|[^A-Za-z0-9])
 ```
@@ -4314,11 +4314,11 @@ envisioned", a private rule file named by basename ("the <name> convention"), or
 by file name. §4.1 and §4.119 catch the path and the short form; this entry catches the paraphrases.
 
 ```
-(this|the) harness's own (rule|design|principle|fairness rule)|per\s+(the\s+)?brief|nice-to-have, not required|originally (envisioned|suggested|anticipated)|[a-z]+-coding-guide(\.md)?
-for f in .claude/rules/*.md; do [ -e "$f" ] || continue; git grep -n -- "$(basename "$f" .md)"; done
+(this|the) harness's own (rule|design|principle|fairness rule)|nice-to-have, not required|originally (envisioned|suggested|anticipated)|[a-z]+-coding-guide(\.md)?
+for f in .claude/rules/*.md; do [ -e "$f" ] || continue; git grep -nw -- "$(basename "$f" .md)"; done
 ```
 
-Join lines first (`tr '\n' ' '`) for the first line; a generic basename needs each hit read. Case-insensitive. Exclude: a guide the repo
+The `per the brief` pattern is §4.1's. Single dictionary-word basenames (docs, tests, style) are skipped. Case-insensitive. Exclude: a guide the repo
 tracks and links; CONTRIBUTING text that names a tracked rule file.
 
 Severity: CRITICAL where the repo bans untracked-file references; HIGH otherwise.
@@ -4364,7 +4364,7 @@ Added by: oss-reviewer self-mutation on 2026-10-07 after observing perf/arrow/RE
 A tool config (`deny.toml`, `rustfmt.toml`, `.eslintrc`, `tsconfig.json`) keeps the commented-out
 output of the tool's `init` command, so comments outnumber settings. Threshold: more than 50% of
 non-blank lines are comments and those comments match the tool's `init` output. Cross-reference
-beyond-source §5.11, which states the same threshold.
+beyond-source §5.11.
 
 ```
 awk 'NF{n++} /^[[:space:]]*(#|\/\/)/{c++} END{if (n && c/n > 0.5) print FILENAME, c"/"n}' FILE
