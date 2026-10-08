@@ -131,15 +131,15 @@ Rules, all reviewable:
   report is the proof.
 - **Pointers.** A link never targets the section it sits in. "Above" and
   "below" are same-document words and are false across a file boundary; name
-  the file or heading instead. A numeral that summarises another file's list is
-  re-counted against that list.
+  the file or heading instead.
 - **Derive, never enumerate.** A document does not list test or fixture cases
   in prose: give a prefix-to-purpose table and point at the generator. A
   hand-kept index paragraph that repeats the document's own headings is
   replaced by the headings.
 - **Markdown hygiene.** No two headings in one file share text (a link to a
   `-1`-suffixed anchor shows it), and markdown never uses rustdoc intra-doc
-  link syntax (`` [`crate::item`] ``).
+  link syntax (`` [`crate::item`] ``). A numeral that summarises another file's
+  list is re-counted against that list.
 
 ## 4. Badges — signal, not fruit salad
 
@@ -233,7 +233,8 @@ Checklist (each item is a concrete check):
       sentence; no self-link and no "above"/"below" across files
 - [ ] The §3 results-document, enumeration and markdown-hygiene rules apply to
       every tracked `*.md` the diff touches that holds a measurement table, not
-      only README.md
+      only README.md; the re-count rule (§3 Markdown hygiene) covers every list
+      summary
 - [ ] Triple-match: README one-liner == repo description == package description
 - [ ] Badges: all resolve, all truthful, count ≤7, assessment-class
 - [ ] LICENSE file exists and README names it (public repos: BLOCKER if not)
