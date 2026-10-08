@@ -100,25 +100,32 @@ premature abstraction.
 
 ## Comment, docstring, and helper budget
 
-Language-agnostic; covers doc comments, docstrings, JSDoc, module headers, and inline comments.
+Language-agnostic; covers doc comments, docstrings, JSDoc, module headers, inline comments, test
+comments, and section banners.
 Prose is a cost every future reader pays, and the code, the types, the tests, and the PR record are
 the other homes for what you want to say. Most of it already lives in one of them.
 
 - A function or type doc states the contract in one to three lines: what it does or returns, plus
   at most one constraint the signature cannot show (an ordering guarantee, a unit, an equality rule
-  that differs from the language's). Most private helpers need none.
+  that differs from the language's). Most private helpers need none; no doc justifies its item by
+  the lint or tool it satisfies ("stays under the argument limit", "split out so it is testable").
 - A module doc is under ten lines: what the module is for, and one attribution line (upstream,
   version, license) when it ports or mirrors something. Design essays, "why this exists", and how
   the approach was chosen go in the PR body or a `docs/` page the repo already keeps.
-- Tests are the evidence. Never restate in prose what a test proves: no trial counts, fixture
-  descriptions, "confirmed empirically", "verified against version X", test names, or reviewer
-  questions answered in advance.
+- Tests are the evidence: never restate in prose what a test proves, so no trial counts, fixture
+  descriptions, "confirmed empirically", "verified against version X" (a pinned version is stated
+  once per file), test names, or reviewer questions answered in advance. A test comment states the
+  boundary its fixture sits on, never the mutant it kills or cannot kill, a mutation run, the
+  internal branch it reaches, a sibling test, or why the test lives where it does.
 - Never document an absence: no `# Panics: never`, no `:raises:` for nothing, no "this branch cannot
   be reached because". An assertion on an invariant carries its proof in its message string.
 - Cross-reference one hop, by name, only when the reader must go there. "See X's doc, which
-  explains Y" chained across three items is three homes for one fact.
+  explains Y" chained across three items is three homes for one fact, and a file points at a design
+  page once, from its module doc, never declaring itself the single home.
 - No adverbs of persuasion ("deliberately", "critically", "surprisingly", "faithful", "exactly
-  like") and no bold for emphasis. They address a reviewer, not a maintainer.
+  like"), no bold for emphasis, and no defenses ("not a gap", "faithfully reproduced", "rare in
+  practice"). They address a reviewer, not a maintainer: state a limit once and point at the
+  repository's compatibility or known-limitations doc.
 - Inline comments state a constraint the code cannot show. Never where a change came from, what the
   next line does, why the change is correct, or why a guard is unnecessary here.
 - A helper with one call site and one statement (`predicate + raise`, `x.expect(...)`, a renamed
@@ -127,7 +134,10 @@ the other homes for what you want to say. Most of it already lives in one of the
 - A reviewer's "why is this safe?" is answered with a test, a tighter type, or a one-line pointer
   to where the proof lives, never with a paragraph added to a doc comment. A fix round never adds
   prose without removing at least as much.
-- A hard-won debugging narrative lives in the PR body, in one place.
+- A hard-won debugging narrative, a benchmark timing or size figure, and the reasoning behind an
+  instrumentation design live in the PR body, in one place, like a trial count.
+- A README performance section and a tracked results document report the current release;
+  per-release before/after deltas go in the PR body, not the tracked document.
 
 Before opening the PR, check every file you touched: comment and doc lines well under code lines,
 or trim before pushing.
