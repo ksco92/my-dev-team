@@ -103,6 +103,21 @@ required check verbatim when the repo goes remote. All parts blocking:
   value fits in i64 is a review finding; rename or fix the value.
 - Property tests (proptest) for algebraic invariants (`diff(x,x)` is empty; every
   reported path resolves in its input) once the core API stabilizes.
+- **A property that claims to permute permutes.** It uses `prop_shuffle`, or asserts
+  that at least one generated case is a non-identity permutation (a full-length
+  `sample::subsequence` is always the identity). An order-independence test first
+  asserts that its two inputs iterate in different orders.
+- **An expected value is never the production expression.** A test whose expectation is
+  computed by the code under test, or `env!` compared with `env!`, is deleted.
+- **One proptest config constructor and one seed policy per repo**, in a shared
+  test-support module that every `proptest!` block uses.
+- **One suite per case.** The same case run through the in-process and the binary layer
+  with the same fixture and expected output lives in one suite; the other layer keeps only
+  what it alone can assert (exit code, stdio).
+- **Examples share code through one module.** Two examples anywhere in the workspace that
+  share more than 20 identical lines move them into one `#[path]`-included module.
+- **A hidden doctest line that only silences an unused import** (`# let _ = X;`) is
+  deleted together with the import.
 
 ## 5. Publish-Time Gates (parked until a crate ships)
 
@@ -126,20 +141,63 @@ required check verbatim when the repo goes remote. All parts blocking:
 - clippy pedantic promotes `float_cmp` and `format_push_string`; see §2/§3 for the
   sanctioned resolutions.
 
+## 7. Structure
+
+The code-health skill's Part D states the structure rules for every stack; this section
+is their Rust mechanism, plus the Rust-only rules.
+
+- **Length and nesting (Part D rule 1).** `clippy.toml` sets
+  `too-many-lines-threshold = 60` and `excessive-nesting-threshold = 4`, and
+  `[workspace.lints.clippy]` sets `excessive_nesting = "warn"`, a restriction lint the
+  threshold alone leaves off; it counts `mod`, `impl` and function-body blocks. The only
+  production `#[allow(clippy::too_many_lines)]` sits on a flat dispatch table, one arm per
+  line.
+- **Tests are exempt from the length threshold.** The library root carries
+  `#![cfg_attr(test, allow(clippy::too_many_lines))]`, which leaves the non-test build
+  linting every production function, and each `tests/` crate root carries
+  `#![allow(clippy::too_many_lines)]`.
+- **Parameter bags (Part D rule 3)** become one `#[derive(Clone, Copy)]` struct of
+  references, passed by value.
+- **Named fields (Part D rule 4)** cover tuple structs, `type` aliases over tuples and
+  tuple returns; `type_complexity` never flags a short tuple such as `(usize, usize, bool)`.
+- **Composition.** Two structs that share four or more fields with the same validation
+  compose, one containing the other. A method that does not read `self` is an associated
+  fn; pedantic `unused_self` skips `pub` methods under the default
+  `avoid-breaking-exported-api = true`, so check those by reading.
+- **No `expect` whose message restates an invariant the type could carry.** An `is_x()`
+  plus `as_x().expect()` pair becomes an enum or an `Option`-returning accessor, and an
+  `Option::take().expect()` inside a closure called once becomes an `FnOnce` closure.
+- **One `children()` iterator.** Explicit-stack walks over one recursive type that repeat
+  its child enumeration are a Part D rule 8 enumeration: the type exposes
+  `children()`, and each walk calls `stack.extend(node.children())`.
+- **`From` over repeated `map_err`.** Five or more `map_err` closures that map one foreign
+  error type to one variant become a `From` impl (a by-value mapping fn when the orphan
+  rule forbids `From`), and the variant's message fits every site.
+- **One mutex-poison policy per crate**; `unwrap_or_default()` on a lock result, which
+  silently drops the poisoned data, is a finding.
+- **Visibility.** A `pub` item in a workspace library crate with no use outside the crate
+  (grep sibling crates, `tests/`, `examples/`) is `pub(crate)` unless it is documented
+  API, and a `pub(crate)` item with no use outside its module is private. Enable rustc's
+  `unreachable_pub` and leave clippy's `redundant_pub_crate` off, since it demands `pub`
+  in a private module where `unreachable_pub` forbids it; the use counts stay a grep.
+- **`#[allow]` reasons.** The reason (`reason = "..."` or the justification comment of
+  §2) states why the code is right, never a coverage, mutation or tooling motive, and a
+  reason that covers two adjacent items is written once.
+
 ## Self-mutation rule
 
 Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
 even one instructed to read this file; a subagent that notices something worth adding reports it
 under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
 any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
-imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name,
-no "added after" tail), refine near-duplicates in place, keep the section under ~25 entries, and
-open a PR against the plugin repository (`ksco92/my-dev-team`).
+imperative bullet under the `## Learned patterns` sub-heading for its trigger (one sentence, two
+at most; no date, no repo name, no "added after" tail), refine near-duplicates in place, keep each
+sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92/my-dev-team`).
 
 ## Learned patterns
 
-- `let _ = (a, b);` silencing unused params hides a placeholder signature; remove the params or
-  underscore each with the milestone that re-adds it.
+### Stack safety and depth
+
 - A depth guard bounds total native stack only if a second recursion at the same frame (cloning a
   deep value into the output) checks the remaining budget, not a flat constant; derived
   `Clone`/`Drop`/`Serialize` on a recursive type are separate uncatchable overflow sinks.
@@ -150,77 +208,47 @@ open a PR against the plugin repository (`ksco92/my-dev-team`).
   `&mut Vec` down, push before recursing, pop after.
 - When push/recurse/pop repeats at three or more sites, extract a `scoped(buf, seg, f)` helper so
   the pop is structural; a leak regression test needs two or three siblings, not a loop.
-- Before removing or changing a transform, enumerate every property downstream code relies on it
-  for, and key structural invariants (dedup, identity) on the structural value, never a rendered
-  string.
 - In an explicit-stack rewrite, derive per-frame counters from a buffer already threaded through
   (`path.len()`) instead of storing them per frame.
 - A depth-budget counter on native recursion is a logic guard, not stack safety: make the walk
   iterative, or run it on a thread sized from a measured per-frame bound at the maximum budget.
-- When trimming a doc comment with intra-doc links, reuse the exact link forms that compiled;
-  `-D warnings` turns a broken link into a gate failure.
-- `serde_json::Value`'s `Map` allocates a fixed 11-slot leaf (~640 B) for any small map; measure
-  map memory by node count and prefer an exactly-sized sorted `Box<[(K, V)]>` when small maps
-  dominate.
-- Under `unsafe_code = "forbid"`, use a dev-dependency allocator (`stats_alloc`) instead of a
-  `#[global_allocator]`; measure net retained bytes over a region sized to tens of MB.
 - An iterative `Drop` on a recursive type is one door of several: check `PartialEq`, `Debug`,
   `Clone`, `Serialize`, and `Hash` on the same type against the same overflow.
-- Verify a rebuilt native extension by behavior, never by mtime; `uv cache clean` before trusting a
-  reinstall at an unchanged version.
+- Before calling a derived `Clone`/`Drop` on an external enum non-recursive because its nested
+  fields sit behind `Arc`, check every variant: one `Box`-based variant (Arrow's
+  `DataType::Dictionary(Box<DataType>, Box<DataType>)`) makes the recursion claim true for the
+  whole type.
+
+### Hashing, equality and memo keys
+
+- Before removing or changing a transform, enumerate every property downstream code relies on it
+  for, and key structural invariants (dedup, identity) on the structural value, never a rendered
+  string.
 - A hash table keyed by attacker-controlled content on a default path uses `RandomState` or an
   ordered map; FxHash only under a documented size cap, and drop the `Hash` derive on the key type
   so the fast table cannot come back silently.
 - An interned id standing in for a compared value needs equal value ⟹ equal id too, which any
   normalization on the value breaks; emulating an incumbent's per-node cache means two ids per node.
-- Reproduce a lone `cargo-mutants` TIMEOUT standalone before reading it as a hang; a perf fix that
-  swaps an iterative primitive for a recursive comparator re-runs the stack probe with inputs that
-  cannot short-circuit.
-- `cargo doc --no-deps` skips intra-doc links on private items; the gate also runs
-  `RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items -p <crate>`, under which a
-  public item's doc naming a private item in bracketed link syntax fails as
-  `private_intra_doc_links`; name private items from public docs in plain backticks.
 - A memoization key carries every quantity the memoized function reads; an order-insensitive key
   over a multiplicity-sensitive function is a collision no forward-only suite sees.
 - A `Hash` impl over user-controlled depth uses an explicit work stack, and `Hash`/`Eq`
   consistency is proven by a property test whose twin differs where `Eq` is coarser than structure
   (signed zero, shifted offset, integral floats), with the hash mutated to confirm the test has power.
-- Accept a strengthened property test only after running it at 20 to 100 times the committed case
-  count across several seeds and measuring the flake rate; guard a perturbation that feeds
-  canonicalization order by depth rather than `prop_assume!`.
-- Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
-  workspace crates and fingerprint sources.
 - Before adding a numeric normalization, grep the crate for the literal idiom (`+ 0.0`, `to_bits`,
   `total_cmp`); equality, ordering, and hashing share one `pub(crate)` helper.
-- A scratch file for untrusted data is `tempfile::tempfile()` re-read via `try_clone` and `seek`,
-  never `File::create` on a predictable name under `temp_dir()`.
 - Two consecutive `RandomState::new()` keys are correlated; a 128-bit hash uses one keyed SipHash
   (`siphasher::Hasher128`) with `getrandom` keys.
+- `f + 0.0` quiets a signaling NaN; a float fold reused for ordering or hashing special-cases
+  `is_nan()` first.
+
+### Arrow, buffers and spill files
+
+- A scratch file for untrusted data is `tempfile::tempfile()` re-read via `try_clone` and `seek`,
+  never `File::create` on a predictable name under `temp_dir()`.
 - `arrow_cast`'s `ArrayFormatter` under default `FormatOptions` writes `ERROR:` and `<invalid>` into
   output instead of failing; render untrusted values with `ValueFormatter::try_to_string`, durations
   from the raw integer and unit, and enforce render invariants with typed errors, never
   `debug_assert!`.
-- A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals
-  `unicodedata.unidata_version` on the test interpreter.
-- `f + 0.0` quiets a signaling NaN; a float fold reused for ordering or hashing special-cases
-  `is_nan()` first.
-- A test for a formula combining three or more terms holds every term non-zero and mutually
-  distinct and asserts the exact computed constant; a fixture with any term at zero cannot catch
-  a sign or operator flip on that term (two such mutants survived on a time-of-day formula).
-- A hand-written incremental decoder that replaces `str::chars()` must never call
-  `str::from_utf8` on the whole remaining slice per element: that is O(n²) even when the rare
-  branch is never taken. Decode from a byte cursor using the lead byte's width, and measure any
-  such replacement against the original at three sizes before trusting the diff.
-- When adding a rarely used variant to an enum that serves as a hot hash-table key or scalar
-  value, box the payload if it is larger than the existing arms: an unboxed large arm widens
-  every entry and shows up as a measurable regression on the hot path, not only as memory.
-- Clippy's `too_many_lines` counts physical lines including `#[cfg]`-gated ones, so feature-gated
-  instrumentation added to a near-limit function trips it in the un-instrumented build; make the
-  gating macro expand to the bare body when the feature is off and extract a helper rather than
-  add an `#[allow]`.
-- Re-run `cargo llvm-cov --show-missing-lines` yourself on any per-line coverage claim in a PR
-  body: inserting a match arm shifts line numbers, so the "new arm" cited as the sole gap is often
-  an adjacent pre-existing arm.
 - When a PR adds a spill, cache or shard partitioned by key, measure its on-disk or tmpfs peak at
   two or more partition counts, never once at the default: a zero-copy `take` or slice on a
   view- or buffer-sharing array type retains the source's full buffers, so each shard carries
@@ -240,19 +268,67 @@ open a PR against the plugin repository (`ksco92/my-dev-team`).
   width: i32 offsets cap one array at about 2 GiB and arrow panics past it, so a compaction on
   a default path targets the Large variant, and the probe is a few values of hundreds of MiB
   in one batch under an alarm and an RSS cap.
-- A per-pass profiler states which run each reported row comes from and computes closure (passes
-  against total) on the instrumented run itself, after a discarded warm-up; a warm run's passes
-  against a cold run's total misstate the residual, and per-row medians across processes need not
-  add up, which the method sentence says.
+
+### Docs and rustdoc
+
+- When trimming a doc comment with intra-doc links, reuse the exact link forms that compiled;
+  `-D warnings` turns a broken link into a gate failure.
+- `cargo doc --no-deps` skips intra-doc links on private items; the gate also runs
+  `RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items -p <crate>`, under which a
+  public item's doc naming a private item in bracketed link syntax fails as
+  `private_intra_doc_links`; name private items from public docs in plain backticks.
 - A `pub` item's rustdoc states its one constraint inline (the DoS bound an error exists for, the
   complexity a flag opts into); a repo-relative path to a design page renders as plain text in
   `cargo doc` and on docs.rs, so it supplements the sentence and never replaces it. `pub(crate)`
   items may point alone.
-- Before calling a derived `Clone`/`Drop` on an external enum non-recursive because its nested
-  fields sit behind `Arc`, check every variant: one `Box`-based variant (Arrow's
-  `DataType::Dictionary(Box<DataType>, Box<DataType>)`) makes the recursion claim true for the
-  whole type.
 - A doc comment on a `#[pyclass]` or `#[pymethods]` item ships verbatim as the Python
   `__doc__`, so it is written for a `pip install`ed reader with no checkout: complete sentences,
   no `crate::` paths, no rustdoc `[`...`]` link syntax, and a file pointer names the repository
   it lives in; verify on the built wheel with `help()`, not in `cargo doc`.
+
+### Tests, lints, CI and mutation
+
+- `let _ = (a, b);` silencing unused params hides a placeholder signature; remove the params or
+  underscore each with the milestone that re-adds it.
+- Verify a rebuilt native extension by behavior, never by mtime; `uv cache clean` before trusting a
+  reinstall at an unchanged version.
+- Reproduce a lone `cargo-mutants` TIMEOUT standalone before reading it as a hang; a perf fix that
+  swaps an iterative primitive for a recursive comparator re-runs the stack probe with inputs that
+  cannot short-circuit.
+- Accept a strengthened property test only after running it at 20 to 100 times the committed case
+  count across several seeds and measuring the flake rate; guard a perturbation that feeds
+  canonicalization order by depth rather than `prop_assume!`.
+- Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
+  workspace crates and fingerprint sources.
+- A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals
+  `unicodedata.unidata_version` on the test interpreter.
+- A test for a formula combining three or more terms holds every term non-zero and mutually
+  distinct and asserts the exact computed constant; a fixture with any term at zero cannot catch
+  a sign or operator flip on that term (two such mutants survived on a time-of-day formula).
+- Clippy's `too_many_lines` counts physical lines including `#[cfg]`-gated ones, so feature-gated
+  instrumentation added to a near-limit function trips it in the un-instrumented build; make the
+  gating macro expand to the bare body when the feature is off, and answer a remaining hit by
+  restructuring the caller (a context struct, a table, a split by concern), never with an
+  `#[allow]` or a helper extracted for the lint.
+- Re-run `cargo llvm-cov --show-missing-lines` yourself on any per-line coverage claim in a PR
+  body: inserting a match arm shifts line numbers, so the "new arm" cited as the sole gap is often
+  an adjacent pre-existing arm.
+
+### Performance and measurement
+
+- `serde_json::Value`'s `Map` allocates a fixed 11-slot leaf (~640 B) for any small map; measure
+  map memory by node count and prefer an exactly-sized sorted `Box<[(K, V)]>` when small maps
+  dominate.
+- Under `unsafe_code = "forbid"`, use a dev-dependency allocator (`stats_alloc`) instead of a
+  `#[global_allocator]`; measure net retained bytes over a region sized to tens of MB.
+- A hand-written incremental decoder that replaces `str::chars()` must never call
+  `str::from_utf8` on the whole remaining slice per element: that is O(n²) even when the rare
+  branch is never taken. Decode from a byte cursor using the lead byte's width, and measure any
+  such replacement against the original at three sizes before trusting the diff.
+- When adding a rarely used variant to an enum that serves as a hot hash-table key or scalar
+  value, box the payload if it is larger than the existing arms: an unboxed large arm widens
+  every entry and shows up as a measurable regression on the hot path, not only as memory.
+- A per-pass profiler states which run each reported row comes from and computes closure (passes
+  against total) on the instrumented run itself, after a discarded warm-up; a warm run's passes
+  against a cold run's total misstate the residual, and per-row medians across processes need not
+  add up, which the method sentence says.
