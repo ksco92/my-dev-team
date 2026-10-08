@@ -65,7 +65,9 @@ string equality), adapted to house style:
 
 ToC required at ≥100 lines. Benchmarks, when present: only numbers from a
 committed, regenerable report (link it), with environment + date + methodology
-pointer — never hand-carried numbers (see §3).
+pointer — never hand-carried numbers (see §3). The Performance section carries
+the current release's numbers only; per-release deltas ("from X to Y since
+version N") belong in a changelog.
 
 **Audience rule.** Sections 1–7 are written for a *user of the published
 artifact*: someone deciding in thirty seconds whether to install it, then
@@ -80,7 +82,8 @@ section that installs a toolchain is contributor material, not Install.
 placed after Usage: one line per limitation, the detail behind a link. The
 value proposition and the status paragraph carry at most one caveat clause
 between them; a README whose second sentence is a boundary case has the order
-backwards.
+backwards. A limitation bullet states the boundary and its trigger, never how
+often it occurs ("rare in practice").
 
 **Length budget.** Target ≤250 lines. Exempt from the budget: user-facing
 API reference (the arceus pattern: every export documented with an example)
@@ -116,11 +119,27 @@ Rules, all reviewable:
   runs python/sh blocks in CI. When the ecosystem supports it and the example is
   stable, WIRE IT; when not wired, the review must manually run the quickstart.
 - **Numbers only from generated artifacts.** Perf/coverage/count claims cite the
-  committed generated report (RESULTS.md-style) and match it exactly. A number
-  that matches nothing in the repo record is a HIGH finding (this repo family
-  has caught the same stale-number drift repeatedly — 12.4-vs-12.799 class).
+  committed generated report and match it exactly; a number that matches nothing
+  in the repo record is a HIGH finding. A results document (RESULTS, MUTANTS)
+  holds one current table per measured shape plus a method pointer, no
+  before/after columns, drops sections a newer run supersedes, and its
+  Environment table names each table's version.
 - **The triple-match**: README one-liner == repo description (Repo description
   operation) == package manager description field. String-comparable; check all three.
+- **A section states facts, never its own trustworthiness.** Delete sentences
+  that vouch for a section's fidelity or process ("copied verbatim"); the committed
+  report is the proof.
+- **Pointers.** A link never targets the section it sits in. "Above" and
+  "below" are same-document words and are false across a file boundary; name
+  the file or heading instead.
+- **Derive, never enumerate.** A document does not list test or fixture cases
+  in prose: give a prefix-to-purpose table and point at the generator. A
+  hand-kept index paragraph that repeats the document's own headings is
+  replaced by the headings.
+- **Markdown hygiene.** No two headings in one file share text (a link to a
+  `-1`-suffixed anchor shows it), and markdown never uses rustdoc intra-doc
+  link syntax (`` [`crate::item`] ``). A numeral that summarises another file's
+  list is re-counted against that list.
 
 ## 4. Badges — signal, not fruit salad
 
@@ -209,6 +228,10 @@ Checklist (each item is a concrete check):
 - [ ] Anti-drift sweep (§3): commands/flags exist; gate/CI tables match the
       Makefile/workflows; links resolve; numbers match generated reports;
       PR-diff vs README-claims cross-check
+- [ ] §2 Performance and Limitations rules and §3 Self-vouching and Pointers bullets hold.
+- [ ] The §3 results-document, enumeration and Markdown hygiene rules apply to
+      every tracked `*.md` the diff touches that holds a measurement table, not
+      only README.md.
 - [ ] Triple-match: README one-liner == repo description == package description
 - [ ] Badges: all resolve, all truthful, count ≤7, assessment-class
 - [ ] LICENSE file exists and README names it (public repos: BLOCKER if not)
