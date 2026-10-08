@@ -694,9 +694,9 @@ available linter rule could enforce (the type-hint style, import order, an impor
 the repository's configuration does not enable is reported as a finding against the merge gate, not
 only against the code that breaks it.
 
-Sphinx is the style for the docstrings that exist; the missing-docstring and missing-parameter or
-missing-return codes (pydocstyle `D1xx`, darglint `DAR101`/`DAR201`, or their ruff equivalents) stay
-disabled, so a tool never demands a docstring or line the Docstrings rules omit.
+The missing-docstring, missing-parameter, missing-return and missing-raises codes (pydocstyle
+`D1xx`, darglint `DAR101`/`DAR201`/`DAR401`, pydoclint `DOC501` under ruff, or their equivalents)
+stay disabled, so a tool never demands a docstring or line the Docstrings rules omit.
 
 The following linters are used and their rules must be followed:
 
@@ -1166,7 +1166,7 @@ These standards are enforced through:
 - **flake8**: Style checking (with plugins for docstrings, commas, multiline containers)
 - **mypy**: Type checking
 - **pytest**: Testing with 95% coverage requirement
-- **ruff**: `ruff check` plus `ruff format --check` in place of black, isort and flake8
+- **ruff**: check and format
 
 ## Self-mutation rule
 
