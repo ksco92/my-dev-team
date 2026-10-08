@@ -116,8 +116,6 @@ required check verbatim when the repo goes remote. All parts blocking:
   what it alone can assert (exit code, stdio).
 - **Examples share code through one module.** Two examples anywhere in the workspace that
   share more than 20 identical lines move them into one `#[path]`-included module.
-- **A hidden doctest line that only silences an unused import** (`# let _ = X;`) is
-  deleted together with the import.
 
 ## 5. Publish-Time Gates (parked until a crate ships)
 
@@ -147,23 +145,19 @@ The code-health skill's Part D states the structure rules for every stack; this 
 is their Rust mechanism, plus the Rust-only rules.
 
 - **Length and nesting (Part D rule 1).** `clippy.toml` sets
-  `too-many-lines-threshold = 60` and `excessive-nesting-threshold = 4`, and
-  `[workspace.lints.clippy]` sets `excessive_nesting = "warn"`, a restriction lint the
-  threshold alone leaves off; it counts `mod`, `impl` and function-body blocks. The only
-  production `#[allow(clippy::too_many_lines)]` sits on a flat dispatch table, one arm per
-  line.
-- **Tests are exempt from the length threshold.** The library root carries
-  `#![cfg_attr(test, allow(clippy::too_many_lines))]`, which leaves the non-test build
-  linting every production function, and each `tests/` crate root carries
-  `#![allow(clippy::too_many_lines)]`.
+  `excessive-nesting-threshold = 4`, which enables the lint (the default 0 leaves it off)
+  and counts `mod`, `impl` and function-body blocks; the length lint keeps its 100-line
+  ceiling and Part D's 60-line soft line is judged in review. A flat dispatch table, one
+  arm per line, is the only production `too_many_lines` allow, and tests are exempt
+  through `#![cfg_attr(test, allow(clippy::too_many_lines))]` at the library root and an
+  allow at each `tests/` crate root.
 - **Parameter bags (Part D rule 3)** become one `#[derive(Clone, Copy)]` struct of
   references, passed by value.
 - **Named fields (Part D rule 4)** cover tuple structs, `type` aliases over tuples and
-  tuple returns; `type_complexity` never flags a short tuple such as `(usize, usize, bool)`.
+  tuple returns; `type_complexity` does not flag `(usize, usize, bool)`.
 - **Composition.** Two structs that share four or more fields with the same validation
   compose, one containing the other. A method that does not read `self` is an associated
-  fn; pedantic `unused_self` skips `pub` methods under the default
-  `avoid-breaking-exported-api = true`, so check those by reading.
+  fn.
 - **No `expect` whose message restates an invariant the type could carry.** An `is_x()`
   plus `as_x().expect()` pair becomes an enum or an `Option`-returning accessor, and an
   `Option::take().expect()` inside a closure called once becomes an `FnOnce` closure.
@@ -175,14 +169,12 @@ is their Rust mechanism, plus the Rust-only rules.
   rule forbids `From`), and the variant's message fits every site.
 - **One mutex-poison policy per crate**; `unwrap_or_default()` on a lock result, which
   silently drops the poisoned data, is a finding.
-- **Visibility.** A `pub` item in a workspace library crate with no use outside the crate
-  (grep sibling crates, `tests/`, `examples/`) is `pub(crate)` unless it is documented
-  API, and a `pub(crate)` item with no use outside its module is private. Enable rustc's
-  `unreachable_pub` and leave clippy's `redundant_pub_crate` off, since it demands `pub`
-  in a private module where `unreachable_pub` forbids it; the use counts stay a grep.
-- **`#[allow]` reasons.** The reason (`reason = "..."` or the justification comment of
-  §2) states why the code is right, never a coverage, mutation or tooling motive, and a
-  reason that covers two adjacent items is written once.
+- **Visibility.** A `pub` item in a workspace library crate with zero uses outside the
+  crate is `pub(crate)` unless it is documented API, and a `pub(crate)` item with zero uses
+  outside its module is private. Enable rustc `unreachable_pub` and leave clippy
+  `redundant_pub_crate` off, since the two contradict inside a private module.
+- **`#[allow]` reasons.** A reason states why the code is right, and one reason serves two
+  adjacent items; the baseline's comment budget covers the rest.
 
 ## Self-mutation rule
 
@@ -288,8 +280,9 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
 
 ### Tests, lints, CI and mutation
 
-- `let _ = (a, b);` silencing unused params hides a placeholder signature; remove the params or
-  underscore each with the milestone that re-adds it.
+- `let _ = (a, b);` silencing unused params hides a placeholder signature and a hidden doctest line
+  `# let _ = X;` hides an unused import; remove the params or underscore each with the milestone
+  that re-adds it, and delete the doctest line with the import.
 - Verify a rebuilt native extension by behavior, never by mtime; `uv cache clean` before trusting a
   reinstall at an unchanged version.
 - Reproduce a lone `cargo-mutants` TIMEOUT standalone before reading it as a hang; a perf fix that
@@ -304,12 +297,11 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
   `unicodedata.unidata_version` on the test interpreter.
 - A test for a formula combining three or more terms holds every term non-zero and mutually
   distinct and asserts the exact computed constant; a fixture with any term at zero cannot catch
-  a sign or operator flip on that term (two such mutants survived on a time-of-day formula).
+  a sign or operator flip on that term.
 - Clippy's `too_many_lines` counts physical lines including `#[cfg]`-gated ones, so feature-gated
   instrumentation added to a near-limit function trips it in the un-instrumented build; make the
-  gating macro expand to the bare body when the feature is off, and answer a remaining hit by
-  restructuring the caller (a context struct, a table, a split by concern), never with an
-  `#[allow]` or a helper extracted for the lint.
+  gating macro expand to the bare body when the feature is off, and see the code-health skill's
+  Part D rule 2.
 - Re-run `cargo llvm-cov --show-missing-lines` yourself on any per-line coverage claim in a PR
   body: inserting a match arm shifts line numbers, so the "new arm" cited as the sole gap is often
   an adjacent pre-existing arm.

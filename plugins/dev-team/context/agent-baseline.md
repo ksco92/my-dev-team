@@ -112,12 +112,12 @@ the other homes for what you want to say. Most of it already lives in one of the
 - A module doc is under ten lines: what the module is for, and one attribution line (upstream,
   version, license) when it ports or mirrors something. Design essays, "why this exists", and how
   the approach was chosen go in the PR body or a `docs/` page the repo already keeps.
-- Tests are the evidence. Never restate in prose what a test proves: no trial counts, fixture
+- Tests are the evidence: never restate in prose what a test proves, so no trial counts, fixture
   descriptions, "confirmed empirically", "verified against version X" (a pinned version is stated
   once per file), test names, or reviewer questions answered in advance. A test comment states the
   boundary its fixture sits on, never the mutant it kills or cannot kill, a mutation run, the
-  internal branch it reaches, a sibling test, or why the test lives where it does; rationale shared
-  by a group of tests goes once, on the section banner.
+  internal branch it reaches, a sibling test, or why the test lives where it does.
+- Rationale shared by a group of tests goes once, on the section banner.
 - Never document an absence: no `# Panics: never`, no `:raises:` for nothing, no "this branch cannot
   be reached because". An assertion on an invariant carries its proof in its message string.
 - Cross-reference one hop, by name, only when the reader must go there. "See X's doc, which
