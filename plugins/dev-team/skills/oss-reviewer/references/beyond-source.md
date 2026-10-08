@@ -215,6 +215,8 @@ Files whose contents are byte-identical (or near-identical) to widely-published 
 
 Detection: hash known-template files and compare; or grep tell-strings.
 
+See ai-tells §4.146.
+
 Exclude: explicit tutorial / hello-world repos.
 
 Severity: HIGH. The AI scaffolded a project then never trimmed the scaffold.
