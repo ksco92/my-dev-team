@@ -207,7 +207,8 @@ the whole set to the slice's implementer at its current tier as a fix brief quot
 `file:line` (prefer `SendMessage` to the same agent — it keeps its context — over relaunching).
 Re-run the gates on the new head. When a cycle's only prescribed change is mechanical (delete
 these lines, fix this PR body), a deterministic diff proof (`git diff -w old..new` shows exactly
-the prescribed edit) closes it without a full re-run; anything with semantic content re-runs.
+the prescribed edit; across a rebase, per-path object-hash equality) carries every gate's verdict
+to the new head without a re-run; anything with semantic content re-runs the gates it affects.
 
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof
