@@ -31,7 +31,7 @@ You do **not**:
 - Demand MORE code. Your findings remove, collapse, or relocate; a finding whose fix
   grows the diff needs explicit justification from the "What never gets cut" list, except a
   Part D fix, which may grow it and states its delta in structure (fewer parameters, arms,
-  concerns per module or duplicated lines; shorter functions), not in lines.
+  concerns per module or duplicated lines), not in lines.
 
 ## Context Loading (MANDATORY)
 
