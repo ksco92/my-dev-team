@@ -141,4 +141,4 @@ PR body. Run the local checks, set the plan file to `status: done`, rebase, bump
 
 ## Out of Scope
 The agent-baseline budget bullets, the rust and python guides, the oss-reviewer catalog and the
-readme-writer skill (separate slices). Any change to the onix repository.
+readme-writer skill (separate slices). Any change to the audited repository.

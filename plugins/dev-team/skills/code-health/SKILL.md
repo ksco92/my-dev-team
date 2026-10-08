@@ -29,7 +29,9 @@ You do **not**:
   (oss-reviewer's job). If you trip over a bug or a tell, note it in one line and
   point at the owning reviewer — do not expand into their mandate.
 - Demand MORE code. Your findings remove, collapse, or relocate; a finding whose fix
-  grows the diff needs explicit justification from the "What never gets cut" list.
+  grows the diff needs explicit justification from the "What never gets cut" list, except a
+  Part D fix, which may grow it and states its delta in structure (fewer parameters, arms,
+  files or duplicated lines), not in lines.
 
 ## Context Loading (MANDATORY)
 
@@ -134,8 +136,8 @@ Implementers apply this ladder at write time (the code-economy section of
     comment and doc lines exceed 40% of non-blank lines is HIGH; state the current and target
     ratio. Doctest fence bodies are not comment lines (state the prose-only ratio for a file
     with doctests), while a string literal over five lines that interpolates no data and is
-    written into a tracked document is. Shell scripts, Makefiles, CI workflows and manifests
-    are in scope: two lines of purpose per target or key, mechanism in CONTRIBUTING.
+    written into a tracked document is. The B8 file kinds are in scope: two lines of purpose
+    per target or key, mechanism in CONTRIBUTING.
 13. **Pointers resolve.** Every file name, `crate::` or `Type::Variant` path, test name, "the
     doctest/table/test below", "Step N" or lettered "(a)" label, and "see X's doc for
     <reason>" pointer in prose resolves to the named artifact, and the target of a "for why"
@@ -182,17 +184,14 @@ guard, not no guard.
 
 ## Part D — Structure (followability)
 
-A reader follows a change by its functions, parameters and modules; these rules bound each. Lines
-are code lines (no blanks, no comments), counted as the repo's length lint counts them; the stack
-guides name the lint and the setting that measure each threshold.
+Lines are code lines (no blanks, no comments), counted as the repo's length lint counts them.
 
 1. **Function length and nesting.** A production function over 60 code lines names its split
    point in the PR body or is a flat dispatch table, one arm per line. A function within 10
    lines of the repo's hard length ceiling is a finding, and so is block nesting deeper than 4.
 2. **No lint-dodge structure.** A struct, helper or split whose own doc says it exists to
    satisfy a lint threshold is a finding: the lint found a missing context struct or a
-   duplicated shape, and the extraction hid it. A comment explaining why code is copied rather
-   than imported is the same finding; fix the import and delete both.
+   duplicated shape, and the extraction hid it.
 3. **Parameter bags.** Two or more parameters passed unchanged through five or more functions
    become one context struct; a module keeps at most one per-run context, and a field present
    in three or more context structs moves into it.
@@ -204,10 +203,10 @@ guides name the lint and the setting that measure each threshold.
    or two functions, and a parameter every caller fills from a field of another argument is
    removed.
 6. **Module size and cohesion.** A production module over 1,200 code lines or holding three or
-   more independent concerns splits by concern, and a source file over 3,000 total lines moves
-   its in-file tests to a per-concern test directory. An item reached on the default path does
-   not live in a module named for an opt-in feature, and a type named for a feature holds only
-   that feature's state.
+   more independent concerns splits by concern (rung 7's fewest files yields here), and a
+   source file over 3,000 total lines moves its in-file tests to a per-concern test directory.
+   An item reached on the default path does not live in a module named for an opt-in feature,
+   and a type named for a feature holds only that feature's state.
 7. **Match arms.** Two or more arms that are special cases of a sibling arm collapse into it; a
    guard repeated identically in three or more arms is hoisted into one arm; a variant set
    listed in three or more patterns with an unreachable split becomes a nested enum.
@@ -255,13 +254,13 @@ guides name the lint and the setting that measure each threshold.
   over the 40% comment ratio.
 - **MEDIUM** — review-fear or self-defense guards (removal recommended); alias-for-
   comment; unrequested abstraction with a concrete simpler form; a Part D finding, unless it is
-  a second renderer (D9), a second worker pool (D10), a lint-dodge structure (D2), or a function
-  within 10 lines of the length ceiling (D1), which are HIGH.
+  a second renderer (D9), a second worker pool (D10), a lint-dodge structure (D2), or a D1
+  ceiling function, which are HIGH.
 - **INFO** — style-level compression opportunities; drift-channel literals; wording.
 
 Every finding: `file:line`, the current form, the recommended form (or "delete"), and
 which rule (A-rung / B-rule / C-class / D-rule) it violates. Findings must shrink net code or
-net prose; state the expected delta.
+net prose, except Part D's, whose delta is structural; state the expected delta.
 
 ## Output format
 
@@ -281,7 +280,7 @@ net prose; state the expected delta.
 ## Provenance table (Part C, guards touched)
 | guard | origin | class | verdict |
 
-## Structure table (Part D; full mode, or a diff that adds a function over 60 code lines)
+## Structure table (Part D; full mode, or a diff that adds a function over D1's line)
 | function | code lines | max nesting | parameters (bag) | split point or verdict |
 
 ## Out-of-hunk ledger (diff mode, non-blocking)
@@ -319,10 +318,10 @@ The reviewed repo is read-only.
   mocked derivation test and delete the live recomputation.
 - When an edit strips a literal from a sizing-rationale comment, re-check tense so the comment no
   longer asserts an invariant the code stopped maintaining.
-- On a toolchain swap, a component rename, a heading rename, or a file-to-directory module split,
-  grep the whole tree for the old name; stale prose hides in comments, CLAUDE.md, and build scripts
-  the diff never touches. When a package starts accepting a value class it refused, grep design
-  pages and sibling packages for "unlike <package>" the same way.
+- On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, or a
+  package that starts accepting a value class it refused, grep the whole tree for the old name (for
+  the last, "unlike <package>"); stale prose hides in comments, CLAUDE.md, design pages, and build
+  scripts the diff never touches.
 - Diff a new type's field docs against its own implementation in the same PR; a fresh type and its
   writer disagree on day one more often than they drift later.
 - When a PR changes a documented default, grep CLAUDE.md and README for the old value.
