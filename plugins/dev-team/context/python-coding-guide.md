@@ -688,6 +688,10 @@ same commit. Verify by grepping the committed file, not the working tree.
 
 ### Linter Configuration
 
+A repository with tracked `.py` files runs a linter and a format check over them in its merge gate
+(`make check` or the CI equivalent). `ruff check` plus `ruff format --check` is an accepted
+single-tool equivalent of the Black, isort and Flake8 set below.
+
 The following linters are used and their rules must be followed:
 
 #### Black (Code Formatter)
@@ -1143,7 +1147,7 @@ TEST_MODEL_ID = "global.anthropic.claude-opus-4-5-20251101-v1:0"
    three shapes in Docstrings
 3. **Test everything**: Maintain 95%+ code coverage
 4. **Use modern Python**: Native types, union operator, `Self` type hint
-5. **Follow the formatters**: Don't fight black, isort, or flake8
+5. **Follow the formatters**: Don't fight black, isort, flake8, or ruff
 6. **Be consistent**: Follow established patterns in the codebase
 7. **Be explicit**: Clear names, clear error messages, clear documentation
 
@@ -1156,6 +1160,10 @@ These standards are enforced through:
 - **flake8**: Style checking (with plugins for docstrings, commas, multiline containers)
 - **mypy**: Type checking
 - **pytest**: Testing with 95% coverage requirement
+
+A rule in this guide that an available linter rule could enforce (the type-hint style, import order,
+an import below code) but the repository's configuration does not enable is reported as a finding
+against the merge gate, not only against the code that breaks it.
 
 ## Self-mutation rule
 
