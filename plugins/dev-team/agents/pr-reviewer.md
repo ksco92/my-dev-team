@@ -152,6 +152,7 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
   uses one column type per side can produce one.
 - After a fix round is replayed as one squashed commit, re-diff the PR body and commit message
   against the new content: a stale test count or a "pending rebase" note is a finding on its own.
+  A commit message that states a measured property is checked at that commit, not only at the head.
 - Hostile values for a resource knob (threads, partitions, buffer or batch sizes, depth) start at
   two to four times the machine's real limit, never `2**31`: an unbounded knob is proven by the
   first absurd-but-survivable value, and a giant one takes the machine down with the finding
@@ -169,7 +170,9 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
 - When a fixture or test claims to cover "every type X supports", enumerate the real dispatch
   (match arms, enum variants) and diff it against the fixture on every pass, not only against
   the types the previous finding named; the issue and the PR can under-specify the same list,
-  and only the source dispatch is ground truth.
+  and only the source dispatch is ground truth. When a step of a function that mirrors a
+  dispatcher becomes fallible, find the guard (a class or type check) the real dispatcher passes
+  before that step and require generated inputs on both sides of it, subclasses included.
 - When a PR body cites an item by number ("item 13 has no automated test"), locate that number
   inside the PR itself (body, comments, linked issue, repo) before accepting it; a bare index that
   resolves nowhere public is an internal checklist leaking into permanent content, invisible to a

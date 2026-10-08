@@ -4375,3 +4375,36 @@ Exclude: a config whose comments are repo-specific rationale; generated lockfile
 Severity: HIGH. Scaffold left untrimmed; the settings that matter are buried.
 
 Added by: oss-reviewer self-mutation on 2026-10-07 after observing deny.toml:198 of 248 lines.
+
+### 4.147 Section rewrite leaves an orphaned remainder of the old section (HIGH)
+
+A rewrite of a doc section keeps pieces of the version it replaced: a fenced tree or list that
+lost its last entry while that entry's continuation lines stay under the new last entry, or a
+paragraph under a heading the same rewrite created that restates the heading. For each Markdown
+hunk that rewrites a fenced block or a list, compare its entries and every trailing indented line
+with the base version; for each new heading, compare the first paragraph under it with the heading
+text. Distinct from §4.120, where lazy continuation absorbs a following sentence.
+
+Exclude: a continuation line that belongs to the entry it now follows; an intro paragraph that
+adds a scope or a pointer the heading lacks.
+
+Severity: HIGH. The reader gets a truncated structure or the same statement twice, and neither a
+renderer nor a link check notices.
+
+### 4.148 Doc trim turns a normalizing action into a participle on the input (HIGH)
+
+A trimmed doc rewrites "builds the object, sorting entries by key" as "builds the object from
+entries in sorted key order": the participle now describes the argument, which reads as a
+precondition the caller must meet, so the contract is inverted while every word stays true of the
+output. Diff the old and new doc for an action (sort, deduplicate, normalize, validate) that
+became an adjective on a parameter, then read the function body: a body that performs the step
+is documented with the step as an action.
+
+```
+\b(from|given|takes|accepts)\b[^.]{0,40}\b(sorted|normali[sz]ed|deduplicated|unique|validated|canonical)\b
+```
+
+Exclude: a function that requires the property and checks or asserts it rather than producing it.
+
+Severity: HIGH. A caller pre-sorts input the function already sorts, or trusts that unsorted input
+is rejected when it is accepted.
