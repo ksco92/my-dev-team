@@ -89,13 +89,7 @@ All function parameters and return types must have type hints.
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
-    """
-    Run a SQL query in Athena.
-    
-    :param query: Variable definition.
-    :param fetch_size: Variable definition.
-    :return: A list of dictionaries with the results.
-    """
+    """Run a SQL query in Athena."""
     pass
 ```
 
@@ -161,7 +155,15 @@ def initialize_job() -> tuple[
 
 #### Function and Method Docstrings
 
-Use Sphinx-style docstrings for all functions and methods.
+A function is public when its name has no leading underscore and it lives outside a test module;
+every function in a test module follows the private rule.
+
+- **`:param:`, `:return:` and `:raises:` lines appear only on a public function or method of more
+  than three statements**, in the Sphinx form below.
+- **A `_private` helper, or any function of three or fewer statements**, takes a one-line docstring
+  or none.
+- **No docstring is longer, in physical lines, than the body it documents.** When the Sphinx form
+  would be, keep the summary line and only the lines that state a constraint the signature cannot.
 
 **Format**:
 
@@ -171,18 +173,19 @@ Use Sphinx-style docstrings for all functions and methods.
 - Return description (if not None)
 - Raises descriptions (if applicable)
 
-**With Parameters and Return Value**:
+The bodies below are elided; each stands for more than three statements and outruns its docstring.
+
+**With Parameters and Return Value** (no `:param query:`: it would paraphrase the name):
 
 ```python
-def sum_nums(a: int, b: int) -> int:
+def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
     """
-    Sum two numbers.
+    Run a SQL query in Athena and return every row.
 
-    :param a: First number.
-    :param b: Second number.
-    :return: Sum of the two numbers.
+    :param fetch_size: Rows requested per page; Athena caps it at 1000.
+    :return: One dictionary per row, keyed by column name.
     """
-    return a + b
+    ...
 ```
 
 **With Optional Parameters**:
@@ -197,11 +200,10 @@ def __init__(
     """
     Create the client.
 
-    :param workgroup_name: Name of the workgroup to run the queries with.
-    :param catalog_name: Name of the AWS catalog to use.
-    :param profile_name: Name of the credentials profile to use.
+    :param workgroup_name: Workgroup to run queries in; None uses the account's primary workgroup.
+    :param profile_name: Credentials profile; None uses the default credential chain.
     """
-    pass
+    ...
 ```
 
 **With Raises**:
@@ -209,22 +211,20 @@ def __init__(
 ```python
 def download_files(self: Self, bucket_name: str, prefix: str, local_path: str) -> None:
     """
-    Download the contents of an S3 key to a local directory.
+    Download every object under a key prefix to a local directory.
 
-    :param bucket_name: Name of the bucket to download files from.
-    :param prefix: Prefix to download files from.
-    :param local_path: Local path to put the files in.
-    :raises ValueError: When the local file doesn't exist.
+    :param local_path: Directory to write into; it must already exist.
+    :raises ValueError: When local_path does not exist.
     """
-    pass
+    ...
 ```
 
-**Simple Functions (No Parameters, Returns None)**:
+**Three or Fewer Statements, or Private**:
 
 ```python
-def some_function() -> None:
-    """Brief description of what the function does."""
-    pass
+def sum_nums(a: int, b: int) -> int:
+    """Sum two numbers."""
+    return a + b
 ```
 
 #### Docstring Rules
@@ -238,12 +238,15 @@ def some_function() -> None:
 - **No single-use one-statement helpers**: a private `_helper()` with one call site and one
   statement (`if pred(x): raise`, a renamed stdlib call) is inlined at the call site, not written,
   typed, and given a docstring longer than its body.
-- **Structure first**: a docstring is a numbered list of what happens, with rationale at most one
-  trailing clause per step; deep rationale belongs at the line it justifies or in the PR.
-- **Document all parameters, even obvious ones**
-- **Document return values unless returning None**
-- **Document exceptions that can be raised**: only the exceptions a function raises with a
-  literal `raise` statement in its own body. Don't tag exceptions that merely propagate
+- **Structure first**: a docstring that describes more than one step is a numbered list of what
+  happens, with rationale at most one trailing clause per step; deep rationale belongs at the line
+  it justifies or in the PR.
+- **A `:param:` line carries what the name and type hint cannot** (a unit, an accepted range, what
+  `None` means); omit it when it would paraphrase the name, as `:param bucket_name: Name of the
+  bucket.` does.
+- **In the Sphinx form, document the return value unless it is None**
+- **In the Sphinx form, document exceptions that can be raised**: only the exceptions a function
+  raises with a literal `raise` statement in its own body. Don't tag exceptions that merely propagate
   from a function it calls (e.g. a thin wrapper around a call that itself raises) — that
   reading would eventually require `:raises:` on most functions in the codebase, since
   exceptions propagate by default. Document propagation-only cases, if ever needed, at the
@@ -270,11 +273,7 @@ Initialize all instance attributes in `__init__` for clarity:
 
 ```python
 def __init__(self: Self, workgroup_name: str | None = None) -> None:
-    """
-    Create the client.
-
-    :param workgroup_name: Name of the workgroup to run the queries with.
-    """
+    """Create the client for one Athena workgroup."""
     self.workgroup_name = workgroup_name
     self.catalog_name = "AwsDataCatalog"
     self.profile_name = None
@@ -569,7 +568,8 @@ logging.info(f"Downloaded {len(all_keys)} files!")
 
 - Use `None` for optional parameters that need validation
 - Use meaningful defaults when appropriate
-- Document default values in docstrings
+- A docstring states what a default means when the value alone does not (`None` meaning the default
+  credential chain); it never restates a value the signature shows
 
 **Example**:
 
@@ -769,17 +769,14 @@ test/
 
 ```python
 def test_init() -> None:
-    """Test the initialization of the AthenaClient."""
     pass
 
 
 def test_create_cursor_with_profile() -> None:
-    """Test the _create_cursor method when using a profile."""
     pass
 
 
 def test_run_query_empty() -> None:
-    """Test the run_query method with an empty result set."""
     pass
 ```
 
@@ -788,41 +785,33 @@ def test_run_query_empty() -> None:
 All test functions must:
 
 - Have a return type hint of `-> None`
-- Have a docstring
 - Not be grouped into classes (use module-level functions)
 
 **Example**:
 
 ```python
 def test_list_files() -> None:
-    """Test listing files in a bucket and prefix."""
     # ... test code
 ```
 
 ### Test Docstrings
 
-#### Simple Test Docstrings
+A test's docstring carries only what its name cannot, such as the boundary its input sits on; omit
+it when it would paraphrase the name. A test never documents its fixtures as `:param:` lines.
 
-For tests without parameters, use a single-line docstring:
+**No docstring** (the name says everything):
 
 ```python
-def test_init() -> None:
-    """Test the initialization of the AthenaClient."""
-    assert True
+def test_run_query_returns_an_empty_list_for_an_empty_result(athena_client: AthenaClient) -> None:
+    ...
 ```
 
-#### Test Docstrings with Fixtures
-
-For tests with fixtures, use Sphinx-style docstrings:
+**A docstring that states a boundary the name cannot**:
 
 ```python
-def test_init(athena_client: AthenaClient) -> None:
-    """
-    Test the initialization of the AthenaClient.
-
-    :param athena_client: The AthenaClient instance to test.
-    """
-    assert athena_client.workgroup_name == "test_workgroup"
+def test_run_query_reads_past_the_first_page(athena_client: AthenaClient) -> None:
+    """1,001 rows: Athena pages at 1,000, so this is the smallest two-page result."""
+    ...
 ```
 
 ### Fixtures
@@ -834,11 +823,6 @@ Use `@pytest.fixture` decorator for reusable test objects:
 ```python
 @pytest.fixture
 def athena_client() -> AthenaClient:
-    """
-    Fixture to create an AthenaClient instance for testing.
-
-    :return: An AthenaClient instance.
-    """
     return AthenaClient(workgroup_name="test_workgroup", catalog_name="test_catalog")
 ```
 
@@ -848,7 +832,6 @@ Pass fixtures as function parameters:
 
 ```python
 def test_init(athena_client: AthenaClient) -> None:
-    """Test the initialization of the AthenaClient."""
     assert athena_client.workgroup_name == "test_workgroup"
 ```
 
@@ -868,7 +851,6 @@ from unittest.mock import MagicMock, patch
 
 ```python
 def test_create_cursor() -> None:
-    """Test the _create_cursor method."""
     with patch("utils.aws.athena.athena_client.connect") as mock_connect:
         mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
@@ -882,7 +864,6 @@ For multiple patches, use tuple syntax to avoid deep indentation:
 
 ```python
 def test_create_cursor_with_profile() -> None:
-    """Test the _create_cursor method when using a profile."""
     with (
         patch("utils.aws.athena.athena_client.connect") as mock_connect,
         patch("utils.aws.athena.athena_client.boto3.Session") as mock_session,
@@ -904,15 +885,7 @@ def boto3_mock_make_api_call(
         operation_name: str,
         kwarg: dict,
 ) -> dict:
-    """
-    Mock the boto3 make_api_call function.
-
-    :param self: The boto3 client.
-    :param operation_name: The name of the operation.
-    :param kwarg: The keyword arguments.
-    :raises ValueError: If the mock API call is not implemented.
-    :return: The response.
-    """
+    """Answer ListObjectsV2 and GetObject; raise on any other operation."""
     if operation_name == "ListObjectsV2":
         return {
             "Contents": [
@@ -927,7 +900,6 @@ def boto3_mock_make_api_call(
 
 
 def test_list_files() -> None:
-    """Test listing files in a bucket and prefix."""
     with patch("botocore.client.BaseClient._make_api_call", new=boto3_mock_make_api_call):
         s3_client = S3Client()
         response = s3_client.list_files(bucket_name="test_bucket", prefix="prefix/")
@@ -947,7 +919,6 @@ Use clear, specific assertions:
 
 ```python
 def test_init(athena_client: AthenaClient) -> None:
-    """Test the initialization of the AthenaClient."""
     assert athena_client.workgroup_name == "test_workgroup"
     assert athena_client.catalog_name == "test_catalog"
     assert athena_client.profile_name is None
@@ -959,7 +930,6 @@ Use `pytest.raises` for exception testing:
 
 ```python
 def test_cpc_predictor_with_none_query_text() -> None:
-    """Test that ValueError is raised when query_text is None."""
     with pytest.raises(ValueError, match="query_text is None."):
         cpc_predictor(query_text=None)
 ```
@@ -970,7 +940,6 @@ Verify mocks were called correctly:
 
 ```python
 def test_run_query(athena_client: AthenaClient) -> None:
-    """Test the run_query method."""
     with patch("utils.aws.athena.athena_client.connect") as mock_connect:
         mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
@@ -988,7 +957,6 @@ from unittest.mock import ANY
 
 
 def test_cpc_predictor_successful_prediction() -> None:
-    """Test successful CPC code prediction flow."""
     with patch("cpc_predictor.cpc_predictor_handler.BedrockClient") as mock_bedrock_class:
         mock_bedrock = MagicMock()
         mock_bedrock_class.return_value = mock_bedrock
@@ -1018,20 +986,17 @@ def test_cpc_predictor_successful_prediction() -> None:
 
 ```python
 def test_cpc_predictor_with_none_query_text() -> None:
-    """Test that ValueError is raised when query_text is None."""
     with pytest.raises(ValueError, match="query_text is None."):
         cpc_predictor(query_text=None)
 
 
 def test_cpc_predictor_with_long_query_text() -> None:
-    """Test that ValueError is raised when query_text exceeds 1000 characters."""
     long_query = "a" * 1001
     with pytest.raises(ValueError, match="query_text is too long"):
         cpc_predictor(query_text=long_query)
 
 
 def test_cpc_predictor_successful_prediction() -> None:
-    """Test successful CPC code prediction flow."""
     # ... test successful case
 ```
 
@@ -1055,40 +1020,33 @@ Group related tests together in the file:
 
 # Initialization tests
 def test_init_default() -> None:
-    """Test default initialization."""
     pass
 
 
 def test_init_with_credentials() -> None:
-    """Test initialization with credentials."""
     pass
 
 
 # List operations tests
 def test_list_files() -> None:
-    """Test listing files."""
     pass
 
 
 # Download operations tests
 def test_download_file() -> None:
-    """Test downloading a file."""
     pass
 
 
 def test_download_files() -> None:
-    """Test downloading multiple files."""
     pass
 
 
 def test_download_files_invalid_path() -> None:
-    """Test downloading files with invalid path."""
     pass
 
 
 # Upload operations tests
 def test_upload_file() -> None:
-    """Test uploading a file."""
     pass
 ```
 
@@ -1112,7 +1070,6 @@ Set environment variables within the test:
 
 ```python
 def test_cpc_predictor_successful_prediction() -> None:
-    """Test successful CPC code prediction flow."""
     os.environ["sensitive_info_guardrail_arn"] = "gr_arn"
     os.environ["sensitive_info_guardrail_version"] = "1"
 
@@ -1160,7 +1117,8 @@ TEST_MODEL_ID = "global.anthropic.claude-opus-4-5-20251101-v1:0"
 ### Key Principles
 
 1. **Type everything**: All parameters and return values must have type hints
-2. **Document everything**: All modules, classes, and functions must have docstrings
+2. **Document the contract**: every module and class has a docstring; a function's follows the
+   three shapes in Docstrings
 3. **Test everything**: Maintain 95%+ code coverage
 4. **Use modern Python**: Native types, union operator, `Self` type hint
 5. **Follow the formatters**: Don't fight black, isort, or flake8
