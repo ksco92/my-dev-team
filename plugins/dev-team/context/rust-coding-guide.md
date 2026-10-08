@@ -298,8 +298,8 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
   count across several seeds and measuring the flake rate; guard a perturbation that feeds
   canonicalization order by depth rather than `prop_assume!`. A case-count claim names the form
   the test runs under, since the `proptest!` macro applies `PROPTEST_CASES` over its config while a
-  direct `TestRunner::new(config)` ignores it, and its proof is the observed run count or runtime,
-  not the config value.
+  direct `TestRunner::new` with an explicitly set `cases` ignores it, and its proof is the observed
+  run count or runtime, not the config value.
 - Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
   workspace crates and fingerprint sources.
 - A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals

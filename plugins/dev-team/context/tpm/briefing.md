@@ -50,7 +50,8 @@ brief (5.2).
   derive the file checklist from the previous instance's actual commit (`git show <sha> --stat`),
   never from the documented convention alone; the precedent commit shows every real touch-point.
 - When prescribing a doc reword, give the exact old and new text so the round closes on a diff
-  proof; the new text states the rule only, never "pinned by <test>".
+  proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
+  <version>".
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is
@@ -71,6 +72,8 @@ brief (5.2).
   origin <branch>`, with `<sha>` the last SHA pushed (plain `-u origin <branch>` on the first
   push): the merge gate refuses a `-C` push that names no remote and literal non-trunk refspec, and
   its refusal reads as a permission error.
+- Every rebase brief says: run the full `make check` (all targets, clippy included) and any CI leg
+  main added on the rebased head before the push.
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead
   deletes the guarded code on an equivalence argument, treat the deletion as a design change that
   needs its own gate round, not as the test fix; two gates disproved one such argument in a round.

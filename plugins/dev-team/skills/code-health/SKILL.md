@@ -321,8 +321,8 @@ The reviewed repo is read-only.
   longer asserts an invariant the code stopped maintaining.
 - On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, a
   fix round that removes a word, or a package that starts accepting a value class it refused, grep
-  the whole tree for the old word; stale prose hides in comments, CLAUDE.md, design pages, and
-  build scripts the diff never touches.
+  the whole tree for the old word (for the last, "unlike <package>"); stale prose hides in
+  comments, CLAUDE.md, design pages, and build scripts the diff never touches.
 - Diff a new type's field docs against its own implementation in the same PR, and grep the PR's
   new tests for values built by hand the way a helper the PR adds builds them (A2); a fresh type
   and its writer disagree on day one more often than they drift later.
