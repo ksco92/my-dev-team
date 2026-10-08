@@ -4401,7 +4401,7 @@ became an adjective on a parameter, then read the function body: a body that per
 is documented with the step as an action.
 
 ```
-\b(from|given|takes|accepts)\b[^.]{0,40}\b(sorted|normali[sz]ed|deduplicated|unique|validated|canonical)\b
+(from|given)[^.]{0,40}sorted (key )?(order|input|entries)
 ```
 
 Exclude: a function that requires the property and checks or asserts it rather than producing it.

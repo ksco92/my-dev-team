@@ -41,22 +41,19 @@ Read before the first gate of a run.
 - When a CI failure is fixed by pinning at the root, do not also brief graceful degradation for the
   unpinned case; verify a new test path by running the project's own command and checking for
   unexpected SKIPs.
-- A rebase that merges textually can still fail to compile: tests merged in from main
-  construct a type the branch just wrapped. Every rebase brief says "run the full `make check`
-  (all targets, clippy included) on the rebased head before pushing", and the reviewer's per-path
-  object-hash proof does not cover files main added.
 - GitHub host: a PR with no CI run and `mergeable: CONFLICTING` needs a rebase, not a retrigger:
   GitHub runs no `pull_request` workflow when it cannot build the merge ref. Brief the rebase to
   re-run gates on the rebased head, because the conflict resolution is new review surface.
 - Concurrent gates that each `uv sync`/`maturin develop` share `~/.cache/uv` and stall on its
   lock for an hour; brief a light venv with a private `UV_CACHE_DIR` for test-only PRs, and accept
   CI's fresh run at the pinned head when it runs the same command sequence the local gate would.
-- Brief the implementer to rebase onto main before opening the PR and before the first gate round
-  whenever main moved during the slice, so gates run once at the final head and a CI leg main
-  added runs locally first. When branch protection requires the branch up to date with main,
-  every PR also rebases before its merge and after every sibling merge, and verdicts carry across
-  a clean rebase by per-path object-hash proof (`git rev-parse <head>:<path>` equal for every PR
-  file), never by re-review or a two-dot diff.
+- Brief the implementer to rebase onto main before opening the PR and before the first gate round,
+  so the gates run once at the final head.
+- A rebase under branch protection (before the merge and after every sibling merge) carries
+  verdicts only by per-path object-hash equality (`git rev-parse <head>:<path>` for every PR file),
+  never by re-review or a two-dot diff, and the rebased head runs the full `make check` and any CI
+  leg that main added before the push, since tests merged in from main can construct a type the
+  branch just wrapped and the hash proof does not cover files main added.
 - A PR body's own preservation or fix checklist is not proof: reproduce it from the diff (every
   number-plus-unit token, every named symbol) before recording a verdict; the checklist lists what
   the author remembered to check.

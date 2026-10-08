@@ -296,9 +296,10 @@ sub-list under ~25 entries, and open a PR against the plugin repository (`ksco92
   cannot short-circuit.
 - Accept a strengthened property test only after running it at 20 to 100 times the committed case
   count across several seeds and measuring the flake rate; guard a perturbation that feeds
-  canonicalization order by depth rather than `prop_assume!`. Raise the count by editing the
-  source's `ProptestConfig::with_cases`, which `PROPTEST_CASES` does not override, and confirm the
-  runtime grew.
+  canonicalization order by depth rather than `prop_assume!`. A case-count claim names the form
+  the test runs under, since the `proptest!` macro applies `PROPTEST_CASES` over its config while a
+  direct `TestRunner::new(config)` ignores it, and its proof is the observed run count or runtime,
+  not the config value.
 - Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
   workspace crates and fingerprint sources.
 - A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals
