@@ -437,6 +437,10 @@ comment every future reader carries forward:
 **Do**: drop the comment — the two-line call is self-explanatory, and the trade-off lives
 in the PR description.
 
+A comment or docstring explaining why code is copied rather than imported is itself the finding:
+fix the import path (a `pythonpath` entry, a shared module) and delete both the copy and the
+explanation.
+
 #### Comment Style
 
 - Use `#` for inline comments
@@ -1057,10 +1061,28 @@ Each test should be independent:
 - Don't rely on test execution order
 - Don't share state between tests
 - Clean up any created resources
-- Never import a sibling test module; shared helpers live in `conftest.py`. A test module that
+- Never import a sibling test module; shared helpers are `conftest.py` fixtures or live in a support
+  module whose name does not start with `test_`. A test module that
   imports a sibling inherits its module-level `importorskip` through the re-raised `Skipped`, its
   skip line merges into the sibling's, and the file vanishes from interpreter-coverage accounting;
   each file carries its own guard.
+
+### Test Suite Structure
+
+- Three or more test functions, in one module or across the suite, whose bodies are identical after
+  replacing literal constants are one `pytest.mark.parametrize` test. A test that loops over a
+  literal list of independent cases with an `assert` inside the loop is parametrized the same way.
+- Split a test module over about 500 lines that covers more than one feature into one module per
+  feature; a `# noqa: E402` import below a test function is the tell.
+- A deterministic, read-only artifact built identically by three or more tests in one module is a
+  module-scoped fixture (`scope="module"`, with `tmp_path_factory` for files).
+- A `_underscored` name imported by another module is renamed public. Replace `from conftest import`
+  with a fixture or with a support module whose name does not start with `test_`.
+- A duplicate-test-name guard compares names across the whole suite, not per module.
+- Three or more keyword arguments forwarded unchanged through two or more functions become one
+  frozen dataclass parameter.
+- Inline a module constant read once at its use, unless its name documents an external contract (a
+  vendor limit, a protocol value).
 
 ### Environment Variables
 
@@ -1101,7 +1123,7 @@ mock_kb_response = [
 
 #### Test Constants
 
-Define test constants at the module level:
+Define a test constant read two or more times at the module level:
 
 ```python
 """Tests for the CPC predictor handler."""
