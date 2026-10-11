@@ -5,9 +5,8 @@ status: done
 ---
 
 ## Context
-A skills-research run gated agent-instruction files whose legal claims carried a verified tag.
-Two correctness findings recurred: an unverified clause sat under a tag written for its
-neighbour, and a quoted statutory exemption omitted the statute's carve-out.
+A verified tag covers every clause beside the one it was written for, and a quoted exemption
+without its carve-outs overstates the rule; the correctness gate checks both.
 
 ## Requirements
 - [ ] The pr-reviewer agent's learned patterns gain one bullet covering both checks.
