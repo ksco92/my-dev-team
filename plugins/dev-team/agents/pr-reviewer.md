@@ -195,3 +195,6 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
 - When a PR body narrates "this number changed across a rebase", diff the cited old-version
   figure against `git show <branch-point>:<same file>` before accepting it; a rebase note is
   where a contended or mis-transcribed pre-rebase sample gets baked into permanent docs.
+- When a doc tags a claim as verified against a cited source, trace every clause under the tag to
+  that source, not only the clause the tag was written for. When it quotes a statutory or policy
+  exemption, read the source's carve-outs to that exemption and require the doc to state them.
