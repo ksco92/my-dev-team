@@ -21,6 +21,10 @@ Or from a local clone, kept current with `git pull`:
 claude plugin marketplace add /path/to/clone
 ```
 
+For a Claude Code cloud environment, where neither command persists on its own, paste
+`docs/cloud-environment/setup.sh` into the environment's setup script; `docs/cloud-environment/README.md`
+says what it installs.
+
 ## DEV_PROCESS.md
 
 `DEV_PROCESS.md` holds every tracker, code-host, and workspace command the skills and agents run;

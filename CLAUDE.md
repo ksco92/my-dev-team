@@ -20,6 +20,8 @@ See the root README for what this repo is.
 - `plugins/dev-team/README.md`, the plugin's README.
 - `.github/workflows/ci.yml`, the validation CI workflow.
 - `docs/examples/`, example `DEV_PROCESS.md` files; the plugin never reads them.
+- `docs/cloud-environment/`, the cloud environment setup script for the psyduck repositories; the
+  plugin never reads it.
 - `DEV_PROCESS.md`, this repository's own development process.
 
 ## Local checks
