@@ -38,3 +38,8 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
 - Brief every subagent to re-read a PR body immediately before editing it.
 - Brief scratch-file writes as a heredoc (`cat > f <<'EOF'`); a bare `cat > f` waits on stdin and
   leaves a shell running.
+- GitHub host with a worktree workspace: when `gh pr merge --delete-branch` cannot delete, or
+  leaves, the local branch because the implementer's worktree still holds it, the merge has landed.
+  Confirm `gh pr view <n>` reports MERGED, run the Remove workspace operation, then
+  `git branch -D <branch>` (a squash leaves the branch unmerged for `-d`) and, if the remote branch
+  remains, `git push origin --delete <branch>`; never re-run the merge.
