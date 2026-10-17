@@ -43,3 +43,7 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   Confirm `gh pr view <n>` reports MERGED, run the Remove workspace operation, then
   `git branch -D <branch>` (a squash leaves the branch unmerged for `-d`) and, if the remote branch
   remains, `git push origin --delete <branch>`; never re-run the merge.
+- On macOS, brief in-place edits as `sed -i '' -e` or `perl -pi -e`, with a `git diff` check that
+  the edit landed before the commit.
+- In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
+  write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
