@@ -34,10 +34,11 @@ brief (5.2).
 - When a required gate command outlasts a subagent's foreground cap, brief the hand-back up front
   (return pid and log path; the orchestrator watches and resumes with fast-ops-only instructions)
   instead of demanding a foreground run that cannot happen.
-- A fix commit is new review surface: re-run gates on the fix delta and brief against
-  review-pipeline vocabulary leaking into comments and PR bodies. Fix briefs describe defects by
-  content, never by round or finding number; implementers copy the brief's words into public
-  content.
+- A fix commit is new review surface: re-run gates on the fix delta, brief against
+  review-pipeline and ticket-referential wording ("as the ticket requires", "the six required
+  cases") leaking into comments and PR bodies, and have a brief that widens a test case rename
+  identifiers that fit only the old case. Fix briefs describe defects by content, never by round
+  or finding number; implementers copy the brief's words into public content.
 - Never write `\b` into an acceptance grep; specify substrings with plain `grep -rniE` and have the
   reviewer re-run the command as written.
 - When the permission classifier denies a subagent the same benign edit three times, hand the step

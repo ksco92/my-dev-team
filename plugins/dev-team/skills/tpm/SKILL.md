@@ -110,6 +110,15 @@ the path left open, because over-specifying wastes the reasoning you routed it t
 Plan documents you write under a repo's `docs/` are untracked scratch until committed through a
 PR; never link them from tickets or shipped docs as if readers can reach them.
 
+A slice that creates or restructures a README carries the README gate's checklist in its ticket: a
+dated status line, the license as the last section, a first sentence identical to the package
+description and the host's repo description, and the Node or runtime floor stated once with its
+source. Without it the first gate round is spent on those items.
+
+A recipe's test list covers each operand of a compound guard on its own, so a mutant that swaps
+the operator fails; a thrown message it prescribes names the remedy as well as the condition; and
+it prescribes no assertion the type system already guarantees.
+
 ## Phase 4 — Delegation
 
 Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
