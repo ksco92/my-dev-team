@@ -43,6 +43,9 @@ brief (5.2).
   reviewer re-run the command as written.
 - When the permission classifier denies a subagent the same benign edit three times, hand the step
   to a fresh implementer in the same workspace; never let the blocked agent route around the denial.
+  When a guard hook refuses an operation the brief requires (a trunk push in an experiment-mode
+  repo), the agent stops that step, finishes everything else, and hands back the exact command for
+  the owner to run from that repo's own working directory; no other form of the operation is tried.
 - Fix-loop validation scales to the delta: each round re-runs the fast suite plus mutants on touched
   files; the full mutation run, the largest parity case, and memory measurements run once on the
   merging head. Never hold a push for pending verdicts; reviewers verify the final head once. No
