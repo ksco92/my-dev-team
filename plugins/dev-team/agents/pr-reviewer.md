@@ -198,3 +198,6 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
 - When a doc tags a claim as verified against a cited source, trace every clause under the tag to
   that source, not only the clause the tag was written for. When it quotes a statutory or policy
   exemption, read the source's carve-outs to that exemption and require the doc to state them.
+- When a factory forwards a parameter into a nested factory call and its tests use one value of
+  it, hardcode that value at the inner call and run the suite; the outer "flows through" test
+  usually pins only the outer resource's name.

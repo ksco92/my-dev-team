@@ -352,8 +352,13 @@ plugin repository (`ksco92/my-dev-team`).
   dimension keys, not values. Glue catalog objects and LakeFormation permissions are not taggable;
   `Tags.of()` skips them silently.
 - The `aws-cloudtrail` L2 `Trail` with a customer-managed key does not grant the CloudTrail service
-  principal on the key; add the KMS resource-policy grant yourself with a `formatArn`-built trail
-  ARN (not `trail.trailArn`, which cycles) and assert it in a template test.
+  principal on the key, and the two statements it adds to a passed-in bucket carry no
+  `aws:SourceArn`; add the KMS grant yourself with a `formatArn`-built trail ARN (not
+  `trail.trailArn`, which cycles) plus a bucket Deny for that principal when `aws:SourceArn` is not
+  that ARN, and assert both in template tests.
+- A `Trail` with `managementEvents: ALL` plus `logAllS3DataEvents()` and `logAllLambdaDataEvents()`
+  deploys as three selectors; pin the synthesized selectors with `Match.exact`, since the data
+  selectors leave `IncludeManagementEvents` unset while the live API reports it `true`.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
   re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an

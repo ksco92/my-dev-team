@@ -96,3 +96,6 @@ on. Read before writing the issue for such a slice and again before its gates.
   level, with data that makes each nested object non-null and each list non-empty, and checks each
   documented alternative against the caller that should receive it; top-level keys, a null, an
   empty list and overlapping alternatives all let drift pass.
+- When a PR body offers one object or timestamp as live proof that delivery still works after a
+  policy change, list the live resource read-only and require several later objects with no
+  delivery error; one sample can predate the change under a window-based naming scheme.

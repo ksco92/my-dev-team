@@ -114,7 +114,8 @@ A slice that creates or restructures a README carries the `readme-writer` skill'
 ticket, plus the runtime floor stated once with its source.
 
 A recipe's test list covers each operand of a compound guard on its own and varies every
-pass-through parameter at least once, so a literal in place of the parameter fails a test; a
+pass-through parameter at least once at every call that forwards it, a nested factory included,
+so a literal in place of the parameter fails a test; a
 thrown message it prescribes names the remedy as well as the condition; and it prescribes no
 assertion the type system already guarantees.
 
