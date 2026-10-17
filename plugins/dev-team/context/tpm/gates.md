@@ -69,8 +69,9 @@ Read before the first gate of a run.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
   not a contradiction for the owner: the repo rule decides, the orchestrator amends the issue's
   constraint with the reason, and the gate that cited the old constraint re-issues its verdict. A
-  ticket-mandated sentence or figure likewise outranks a gate's style preference, while a gate
-  that shows ticket text false outranks the ticket, which is amended to the claim that holds.
+  ticket-mandated sentence, figure, or verbatim copy of a named reference file likewise outranks a
+  gate's style preference, while a gate that shows ticket text false outranks the ticket, which is
+  amended to the claim that holds.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
 - When a gate finding rests on a default heuristic with an "unless justified" clause and the

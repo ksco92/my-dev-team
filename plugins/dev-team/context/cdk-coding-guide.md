@@ -359,3 +359,6 @@ plugin repository (`ksco92/my-dev-team`).
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.
+- From TypeScript 6.0, `types` defaults to an empty list instead of every `@types/*` package; a dev
+  tsconfig that ts-jest reads needs an explicit `"types": ["jest", "node"]`, or every test file
+  fails with TS2593 (`Cannot find name 'describe'`).
