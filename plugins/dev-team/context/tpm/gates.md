@@ -27,10 +27,10 @@ Read before the first gate of a run.
   evaluates a compound line before any part of it runs, so a record chained onto the merge with
   `&&` is refused because the ledger does not yet hold that verdict (the hook reports that gate
   MISSING, no ledger, or a ledger at another head).
-- Grep-verify a gate's decisive factual claims against the head before dispatching a fix round, and
-  verify a PR body's root-cause narrative with `git log --follow`; the duty runs both ways, and an
-  overruled finding is recorded with its evidence, which goes into every gate's next brief rather
-  than to the implementer.
+- Grep-verify a gate's decisive factual claims against the head before dispatching a fix round;
+  grep-verify a gate's proposed repo rule against the repo it describes before prescribing it; run
+  `git log --follow` on a PR body's root-cause narrative. An overrule of a gate's finding needs the
+  same evidence, recorded and put into every gate's next brief, never the implementer's.
 - Every gate brief on a PR whose base has moved names the diff form (the Diff operation, or
   three-dot `origin/main...HEAD`); a two-dot diff attributes base commits to the PR. For a fix-round
   delta across a rebase, diff the two heads restricted to the PR's own paths (`git diff <old> <new>
