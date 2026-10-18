@@ -1,7 +1,7 @@
 # tpm operations rules
 
-Binding rules for processes, workspaces, and the shared machine: background runs, resuming
-subagents, and heavy jobs. Read with `briefing.md` before the first brief of a run.
+Binding rules for processes, workspaces, shell environment, and the shared machine: background
+runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the first brief of a run.
 
 - Never pipe a backgrounded command through `tail`/`head` — the pipe reports the filter's exit,
   not the command's. Redirect to a file, echo `EXIT=$?`, and read that line first; success lines
@@ -47,3 +47,9 @@ subagents, and heavy jobs. Read with `briefing.md` before the first brief of a r
   the edit landed before the commit.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
+- Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
+  set it empty; an empty `AWS_PROFILE=` fails every AWS CLI call with "The config profile () could
+  not be found" before the step under test runs.
+- When a guard hook refuses an operation a brief requires (a trunk push in an experiment-mode
+  repo), the agent stops that step, finishes everything else, and hands back the exact command for
+  the owner to run from that repo's own working directory; no other form of the operation is tried.
