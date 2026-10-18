@@ -113,9 +113,11 @@ PR; never link them from tickets or shipped docs as if readers can reach them.
 A slice that creates or restructures a README carries the `readme-writer` skill's checklist in its
 ticket, plus the runtime floor stated once with its source.
 
-A recipe's test list covers each operand of a compound guard on its own; a thrown message it
-prescribes names the remedy as well as the condition; and it prescribes no assertion the type
-system already guarantees.
+A recipe's test list covers each operand of a compound guard on its own and varies every
+pass-through parameter at least once at every call that forwards it, a nested factory included,
+so a literal in place of the parameter fails a test; a thrown message it prescribes names the
+remedy as well as the condition; and it prescribes no assertion the type system already
+guarantees.
 
 ## Phase 4 — Delegation
 
@@ -164,7 +166,8 @@ of the baseline explicitly; a `low` slice is where an over-build is cheapest to 
 
 ## Phase 5 — Gates, fix loop, merge
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md` before the first gate of a run; re-read
+Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md` and
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run; re-read
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` before each fix brief.
 
 You drive this for every PR, including a local branch→main merge in a repo with no remote — that
@@ -271,10 +274,10 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: *would this be true in a different repo?*
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `verification`, `operations`) or the relevant agent file, as a rule (imperative, one
-  sentence, two at most; no date, repo, or PR name, no incident narrative — the git log keeps the
-  archaeology). A change to the procedure itself goes into the phase text of this file, and a
-  rule already stated there is never repeated as a bullet.
+  `gates`, `review-probes`, `verification`, `operations`) or the relevant agent file, as a rule
+  (imperative, one sentence, two at most; no date, repo, or PR name, no incident narrative — the
+  git log keeps the archaeology). A change to the procedure itself goes into the phase text of
+  this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or
   the agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the

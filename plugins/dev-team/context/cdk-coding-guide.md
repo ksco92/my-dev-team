@@ -342,7 +342,9 @@ plugin repository (`ksco92/my-dev-team`).
   `name-${account}` pattern.
 - A caret range on an `@aws-cdk/aws-*-alpha` prerelease only matches the same `major.minor.patch`
   tuple; pin the alpha to the construct's exact alpha line, let stable `aws-cdk-lib` float, and
-  install all three in one `npm install`. Before raising an alpha floor, run
+  install all three in one `npm install`; a consumer of a library that peers on the alpha settles
+  the same pin with an `npm install` in a temp dir before the slice is written. Before raising an
+  alpha floor, run
   `npm view <pkg>@<version> stability` across the bump range; a `stability` of `deprecated` means
   the module graduated into `aws-cdk-lib`.
 - When swapping an alpha L2 for its stable counterpart, diff the constructors' defaults as well as
@@ -353,13 +355,38 @@ plugin repository (`ksco92/my-dev-team`).
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
   an untouched field keeps its id, any change makes a new field with a never-used id.
+- A construct that promises files stay under one location rejects the Iceberg properties that
+  relocate data or metadata (`write.*.path`, `write.location-provider.impl`).
 - A CloudWatch `Dashboard` body is an `Fn::Join` with region tokens and L2 dimensions render as
   `Ref`s; in template tests join the parts with a placeholder for intrinsics, parse, and assert
   dimension keys, not values. Glue catalog objects and LakeFormation permissions are not taggable;
   `Tags.of()` skips them silently.
 - The `aws-cloudtrail` L2 `Trail` with a customer-managed key does not grant the CloudTrail service
-  principal on the key; add the KMS resource-policy grant yourself with a `formatArn`-built trail
-  ARN (not `trail.trailArn`, which cycles) and assert it in a template test.
+  principal on the key, and the two statements it adds to a passed-in bucket carry no
+  `aws:SourceArn`; add the KMS grant yourself with a `formatArn`-built trail ARN (not
+  `trail.trailArn`, which cycles) plus a bucket Deny for that principal when `aws:SourceArn` is not
+  that ARN, and assert both in template tests.
+- A `Trail` with `managementEvents: ALL` plus `logAllS3DataEvents()` and `logAllLambdaDataEvents()`
+  deploys as three selectors; pin the synthesized selectors with `Match.exact`, since the data
+  selectors leave `IncludeManagementEvents` unset while the live API reports it `true`.
+- Registering an S3 location with the Lake Formation service-linked role makes Lake Formation add
+  the S3 actions to that role's own inline policy (`LakeFormationDataAccessPolicyForS3`); grant the
+  role only `kms:Decrypt` and `kms:GenerateDataKey*` on the bucket key, no bucket-policy statement
+  (`grantReadWrite` adds `DeleteObjectVersion` and retention actions) and no `aws:SourceArn`.
+- Lake Formation-only access needs `hybridAccessEnabled: false` on the registration and no
+  `IAM_ALLOWED_PRINCIPALS` grant on the construct's databases and tables: an empty
+  `CreateTableDefaultPermissions` on each database, asserted in a template test, and an empty
+  `CreateDatabaseDefaultPermissions` in the account's `DataLakeSettings`, which is a deployment
+  precondition proved by a read-only `list-permissions` on the database, not by a template test.
+- Lake Formation gives the principal that creates a table (the CloudFormation execution role) its
+  own permissions on it, so a "no grant to the execution role" criterion is judged on the templates,
+  never on `list-permissions`.
+- An L1 property left unset still takes the service default on the live resource (an Athena
+  workgroup without `enforceWorkGroupConfiguration` enforces); docs say the property is unset, never
+  what the service then does.
+- A jsii library whose entry point exports nothing builds an empty assembly and type-checks none of
+  its deep-imported interfaces; to prove new interfaces jsii-legal, export them from the entry point
+  in a throwaway build, read the `.jsii` `types`, and revert.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
   re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an

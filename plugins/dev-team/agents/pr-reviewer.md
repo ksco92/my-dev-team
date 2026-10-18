@@ -198,3 +198,7 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
 - When a doc tags a claim as verified against a cited source, trace every clause under the tag to
   that source, not only the clause the tag was written for. When it quotes a statutory or policy
   exemption, read the source's carve-outs to that exemption and require the doc to state them.
+- When a fix swaps a helper that tolerated an absent optional member (`bucket.grantReadWrite`) for
+  a direct call on that member (`bucket.encryptionKey!.grant`), drive the absent case; and when a
+  guard's message names what the member stands for, list every option that leaves it unset (an
+  AWS-managed key is a KMS key without an `encryptionKey`).
