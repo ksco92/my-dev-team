@@ -22,6 +22,11 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   per-client permission dialog (Postgres.app on macOS), so it fails only on requests that open a
   connection; start it with the tool's own background mode, and ask the owner to approve the
   interpreter binary once rather than editing the app's preferences from a probe.
+- When no owner is present to approve a client, `initdb` a new cluster in the session's own
+  scratch directory with password authentication and a password made up for that run, start it
+  from the app's own binaries on another port with `listen_addresses=127.0.0.1` and no unix
+  socket, and point only the workspaces' `.env` at it; it holds test databases and never an
+  existing cluster. Stop it by the pid recorded at start when the run ends.
 - When a probe or implementer mutation-tests a file that carries uncommitted edits, it reverts the
   mutant from a copy saved beforehand, never with `git checkout -- <file>`, which discards the
   edit under test along with the mutant.
@@ -53,3 +58,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - When a guard hook refuses an operation a brief requires (a trunk push in an experiment-mode
   repo), the agent stops that step, finishes everything else, and hands back the exact command for
   the owner to run from that repo's own working directory; no other form of the operation is tried.
+- GitHub host: renaming a PR's branch through the API closes the PR, and the closed PR cannot be
+  reopened; open a new PR from the renamed branch and close the old one with a pointer to it.
+- Before taking over a PR another session opened, message that session and wait for its
+  acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
+  workspace is removed.

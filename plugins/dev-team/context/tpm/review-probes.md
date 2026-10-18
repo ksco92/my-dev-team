@@ -32,3 +32,11 @@ first gate of a run.
   needs accept fixtures in both input orders; a one-sided mutant false-positives in one order only.
 - When a props value flows through several layers, grep the validation call across them to see a
   validator exported from the props file at every layer.
+- When a guide names a setting as required for a security mode, read the service's own page for
+  that mode and require every setting it lists, each attached to the resource that carries it; a
+  setting that lives in account state is stated as a deployment precondition with a live check.
+- When a PR enforces a safety rule on model or user text with a list of banned words, drive the
+  check with invisible characters, look-alike letters from another alphabet, and the claim's other
+  phrasings (affixless, category label, substitution) before trusting its tests.
+- A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
+  inside itself, not by a fixture that carries it once.
