@@ -342,7 +342,13 @@ plugin repository (`ksco92/my-dev-team`).
   `name-${account}` pattern.
 - A caret range on an `@aws-cdk/aws-*-alpha` prerelease only matches the same `major.minor.patch`
   tuple; pin the alpha to the construct's exact alpha line, let stable `aws-cdk-lib` float, and
-  install all three in one `npm install`.
+  install all three in one `npm install`. Before raising an alpha floor, run
+  `npm view <pkg>@<version> stability` across the bump range; a `stability` of `deprecated` means
+  the module graduated into `aws-cdk-lib`.
+- When swapping an alpha L2 for its stable counterpart, diff the constructors' defaults as well as
+  the typings by synthesizing both against the base; a stable promotion can flip a default (a
+  removal policy gaining RETAIN) on a fixed-name resource that destroy-then-redeploy then trips
+  over.
 - `cdk-glue-iceberg-table` ≥ 0.5.0 requires explicit top-level `IcebergColumn.id` and allocates
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
@@ -359,6 +365,7 @@ plugin repository (`ksco92/my-dev-team`).
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.
-- From TypeScript 6.0, `types` defaults to an empty list instead of every `@types/*` package; a dev
-  tsconfig that ts-jest reads needs an explicit `"types": ["jest", "node"]`, or every test file
-  fails with TS2593 (`Cannot find name 'describe'`).
+- From TypeScript 6.0, `types` defaults to an empty list instead of every `@types/*` package; list
+  `node` and `jest` explicitly in every tsconfig that compiles tests or reads ambient globals,
+  including the `tsconfig.dev.json` a jsii package keeps for ts-jest, or the tests fail with TS2593
+  (`Cannot find name 'describe'`) and scripts with TS2591 (`Cannot find name 'process'`).
