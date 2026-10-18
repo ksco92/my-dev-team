@@ -89,6 +89,9 @@ Read before the first gate of a run.
   the behaviour, because the criterion is the contract and the next gate will fail its absence.
   Then re-apply the mutation the test used to catch and require another test to fail before the
   deletion or fold is briefed.
+- Before briefing a test for an uncovered branch behind a guard, list the guard's callers and what
+  each passes; a branch no caller reaches is deleted with its guard, never covered through an
+  `@internal` import, and the ticket is amended to the deletion.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
