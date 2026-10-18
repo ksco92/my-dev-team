@@ -286,14 +286,17 @@ learned yourself. One test decides the home: *would this be true in a different 
 Global files are shipped by the `dev-team` plugin; the orchestrating session lands changes
 through a PR in its repository (`ksco92/my-dev-team`). Refine an existing entry rather than
 adding a near-duplicate; keep this file under ~350 lines and each topic file under ~30 entries,
-and when a topic file grows past that, split it by trigger rather than trimming rules. Verify a
-subagent's substance before landing it, and after any large delegation batch check `git log` in
-every repo a subagent could have touched, including the plugin repo; verify an unauthorized
-commit's substance before reverting it.
+and when a topic file grows past that, split it by trigger rather than trimming rules. A fold into
+an existing bullet keeps that bullet's trigger phrase; widening the trigger to admit a new rule is
+a split by trigger, not a fold. Re-read each fragment of a split bullet alone; a leftover purpose
+clause becomes a false claim. Verify a subagent's substance before landing it, and after any large
+delegation batch check `git log` in every repo a subagent could have touched, including the plugin
+repo; verify an unauthorized commit's substance before reverting it.
 
 A proposal lands only with the evidence it came from (a command, a transcript line, or a gate
-finding); drop one without it. For each survivor, grep the target section for the same lesson,
-edit at bullet level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump
-the patch version and open one lesson PR for the session's batch. On a machine that cannot push to
-the plugin repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and
-drain it from a machine that can.
+finding); drop one without it, and run a command a proposal prescribes against the case it cites
+before landing it. For each survivor, grep the target section for the same lesson, edit at bullet
+level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump the patch
+version and open one lesson PR for the session's batch. On a machine that cannot push to the
+plugin repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and drain
+it from a machine that can.
