@@ -21,7 +21,8 @@ on. Read before writing the issue for such a slice and again before its gates.
   restore any dirtied lockfile, then `npm ci`/`uv sync` — a stale `node_modules` synthesizes the
   old behavior with a green exit. A `file:` dependency reinstalled at an unchanged version keeps
   the old copy: delete the installed package first and grep its `dist` for the change before the
-  deploy.
+  deploy; `npm install` also never refreshes the lockfile's `version` for an existing `file:` entry, so
+  delete that `node_modules/<pkg>` entry from the lockfile and reinstall.
 - Never derive a deploy's grant-principal list from the local identity alone; reconcile against
   the standing deployed list and abort on any `replace` of a permission resource in the diff.
 - Validate a verify script's API assertions against the live API response, not the synthesized
@@ -101,3 +102,6 @@ on. Read before writing the issue for such a slice and again before its gates.
 - When a PR body offers one object or timestamp as live proof that delivery still works after a
   policy change, list the live resource read-only and require several later objects with no
   delivery error.
+- A dependency swap that claims no behaviour change is proved by synthesizing base and head in
+  separate `git archive` copies, each with its own `npm ci`, and diffing the sorted JSON of every
+  template and asset file; an empty diff settles shape, grants, `DependsOn` and "no new IAM" at once.

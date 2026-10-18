@@ -388,7 +388,15 @@ plugin repository (`ksco92/my-dev-team`).
   its deep-imported interfaces; to prove new interfaces jsii-legal, export them from the entry point
   in a throwaway build, read the `.jsii` `types`, and revert.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
-  re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
+  re-derives `CDK_DEFAULT_REGION` from the SDK default and `CDK_DEFAULT_ACCOUNT` from the active
+  credentials (one STS call) and overrides exported values; a credential-free review synth builds the
+  `App` in a test or hides the credentials (`AWS_CONFIG_FILE=/dev/null`, keys unset).
+- A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the preset
+  is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and prove it
+  with a `debugger;` probe file that lint must report.
+- `cdk diff` run with flags that change what is synthesized (`--no-version-reporting`, `--strict`) is
+  not evidence for a deploy decision; diff with the deploy's own flags (a `CDKMetadata destroy` appears
+  only under the flag).
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.

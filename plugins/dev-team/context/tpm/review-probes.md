@@ -40,3 +40,7 @@ first gate of a run.
   phrasings (affixless, category label, substitution) before trusting its tests.
 - A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
   inside itself, not by a fixture that carries it once.
+- Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each character class, each path group); a
+  one-row happy path pins about half of them, and a mutant "caught" because the message changed failed
+  on text, not behaviour.

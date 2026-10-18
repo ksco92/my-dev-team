@@ -63,3 +63,7 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
+- A reviewer probe of a repo with a `file:../x` dependency cannot `npm ci` in place (the path resolves
+  beside the probe); stage a `git archive` of the head plus a sibling symlink to the real `x` inside the
+  gate's own `mktemp -d`, never beside the live checkout or in the shared temp folder (a symlink dropped
+  in the repo's own directory shows up as an untracked file).
