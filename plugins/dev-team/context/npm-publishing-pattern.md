@@ -152,3 +152,6 @@ plugin repository (`ksco92/my-dev-team`).
   `https://` URL with no `git+` prefix; jsii-pacmak copies it into the wheel's `Project-URL` and
   PyPI rejects `git+` with a 400 while npm accepts it. Fix at the same version: npm skips, PyPI
   publishes, the per-registry version gate keeps them aligned.
+- At intake of a dependency upgrade, run `npm view <pkg>@<target> deprecated stability` for every
+  package whose range moves; a `deprecated` message or a `stability` of `deprecated` turns the
+  bump into a migration and changes the slice's scope before the first gate finds it.

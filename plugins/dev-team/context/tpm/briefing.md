@@ -52,7 +52,8 @@ brief (5.2).
   never from the documented convention alone; the precedent commit shows every real touch-point.
 - When prescribing a doc reword, give the exact old and new text so the round closes on a diff
   proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
-  <version>".
+  <version>", and any observed state it asserts (a package list, a count) is reproduced at the
+  head first, not typed from the previous head.
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is
