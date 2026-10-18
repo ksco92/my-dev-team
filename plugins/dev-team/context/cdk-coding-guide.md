@@ -397,6 +397,14 @@ plugin repository (`ksco92/my-dev-team`).
 - `cdk diff` run with flags that change what is synthesized (`--no-version-reporting`, `--strict`) is
   not evidence for a deploy decision; diff with the deploy's own flags (a `CDKMetadata destroy` appears
   only under the flag).
+- A Glue Data Quality evaluation run on a Lake Formation-only Iceberg table is denied at `GetDataAccess`
+  (`LakeFormationTrustedCallerInvocation: true`) even with `AllowFullTableExternalDataAccess`, external
+  data filtering with the account allow-listed, and `ALL` on the table, while Athena's cell-filtered calls
+  pass; treat such evaluations as unproven until the engine's access path is designed, and record the
+  settings a spike turned on as accepted risks with a removal trigger.
+- A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
+  `DataLakeSettings`) is checked against the property's documented update behaviour before deploying,
+  and the stack events are read for the same physical id and no delete afterwards.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.
