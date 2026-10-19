@@ -397,11 +397,12 @@ plugin repository (`ksco92/my-dev-team`).
 - `cdk diff` run with flags that change what is synthesized (`--no-version-reporting`, `--strict`) is
   not evidence for a deploy decision; diff with the deploy's own flags (a `CDKMetadata destroy` appears
   only under the flag).
-- A Glue Data Quality evaluation run on a Lake Formation-only Iceberg table is denied at `GetDataAccess`
-  (`LakeFormationTrustedCallerInvocation: true`) even with `AllowFullTableExternalDataAccess`, external
-  data filtering with the account allow-listed, and `ALL` on the table, while Athena's cell-filtered calls
-  pass; treat such evaluations as unproven until the engine's access path is designed, and record the
-  settings a spike turned on as accepted risks with a removal trigger.
+- Register Lake Formation locations with a user-defined role (trust `lakeformation.amazonaws.com` for
+  `sts:AssumeRole` and `sts:SetContext`, S3 read/write on the location, KMS on its key), never the
+  service-linked role: Lake Formation vends no credentials from a service-linked registration to external
+  engines (Glue Data Quality, EMR; `requesterService: UNKNOWN`), and `GetDataAccess` answers
+  `Access is not allowed.` whatever the grants or data-lake settings, while Athena still passes. Before
+  turning on a data-lake setting to cure a denial, check the registration role first.
 - A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
   `DataLakeSettings`) is checked against the property's documented update behaviour before deploying,
   and the stack events are read for the same physical id and no delete afterwards.
