@@ -110,3 +110,6 @@ brief (5.2).
   list's new home that does not point back at the old one, and a re-read of the lead-in of every
   list it shortens; a brief that adds rule sentences to a README states each rule once, in the
   section that owns the type, with pointer bullets elsewhere.
+- When an acceptance grep over the test tree must return nothing for a name that a test has to prove
+  absent from the output, brief the test to match a distinctive substring the grep pattern misses;
+  otherwise the test file itself fails the grep.

@@ -403,6 +403,13 @@ plugin repository (`ksco92/my-dev-team`).
   engines (Glue Data Quality, EMR; `requesterService: UNKNOWN`), and `GetDataAccess` answers
   `Access is not allowed.` whatever the grants or data-lake settings, while Athena still passes. Before
   turning on a data-lake setting to cure a denial, check the registration role first.
+- A test that a principal is named in no resource policy stringifies the whole candidate resources
+  (`findResources` for the key and bucket policies) and asserts `not.toContain(logicalId)`, with one
+  `resourceCountIs` as the non-vacuity guard; extracting `Principal` fields misses a grant to
+  `AnyPrincipal` conditioned on `aws:PrincipalArn`, so the probe includes that mutation.
+- When a CDK property override targets an array index (`AssumeRolePolicyDocument.Statement.0.Action`),
+  the test compares the resource's whole `Properties` with `toEqual`, so an override that lands on the
+  wrong index or adds a statement fails instead of passing `hasResourceProperties`.
 - A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
   `DataLakeSettings`) is checked against the property's documented update behaviour before deploying,
   and the stack events are read for the same physical id and no delete afterwards.
