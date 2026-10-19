@@ -52,6 +52,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   the edit landed before the commit.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
+- In zsh, an unquoted `$V` holding newlines reaches a CLI as one newline-joined argument; pass a list
+  probe as an array, or a validation error reads as the limit being enforced.
 - Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
   set it empty; an empty `AWS_PROFILE=` fails every AWS CLI call with "The config profile () could
   not be found" before the step under test runs.

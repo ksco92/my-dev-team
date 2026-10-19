@@ -40,3 +40,6 @@ first gate of a run.
   phrasings (affixless, category label, substitution) before trusting its tests.
 - A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
   inside itself, not by a fixture that carries it once.
+- When a PR validates input against a character-class pattern, delete each class from the regex one at a
+  time and require a test to fail for each; a fixture with one sample of every allowed character usually
+  leaves out a class.

@@ -110,3 +110,5 @@ brief (5.2).
   list's new home that does not point back at the old one, and a re-read of the lead-in of every
   list it shortens; a brief that adds rule sentences to a README states each rule once, in the
   section that owns the type, with pointer bullets elsewhere.
+- When a fix brief lets the implementer choose between two forms, name the file's existing shape as the
+  tie-breaker, never a line count; the shorter form with a side effect is the next round's finding.

@@ -396,3 +396,5 @@ plugin repository (`ksco92/my-dev-team`).
   `node` and `jest` explicitly in every tsconfig that compiles tests or reads ambient globals,
   including the `tsconfig.dev.json` a jsii package keeps for ts-jest, or the tests fail with TS2593
   (`Cannot find name 'describe'`) and scripts with TS2591 (`Cannot find name 'process'`).
+- Lake Formation caps LF-tag keys and values at 50 characters and compares both ignoring case, whatever
+  the API reference's limits say; validate keys and values at 50 and reject values that differ only in case.
