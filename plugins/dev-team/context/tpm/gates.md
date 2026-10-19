@@ -92,3 +92,7 @@ Read before the first gate of a run.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
+- A full-repository gate run on a repo whose lint or build config was copied from a sibling checks
+  the sibling for the same defect in the same round and files its follow-up at once.
+- A gate reads a ticket or issue body whole (`gh issue view`, no `head -N`); a truncated read reported a
+  recorded accepted risk as missing.

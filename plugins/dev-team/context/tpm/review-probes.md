@@ -40,3 +40,15 @@ first gate of a run.
   phrasings (affixless, category label, substitution) before trusting its tests.
 - A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
   inside itself, not by a fixture that carries it once.
+- Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each character class, each path group); a
+  one-row happy path pins about half of them, and a mutant "caught" because the message changed failed
+  on text, not behaviour.
+- A name built by joining two consumer names with a separator either may contain (`dq_${db}_${table}`
+  with `_` legal in both) is probed with two pairs that split at different points (`a_b`+`c` and
+  `a`+`b_c`); uniqueness per pair is not uniqueness across the set.
+- When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules, not
+  only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote (DQDL
+  `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
+- When a PR adds properties to a resource whose builder's doc comment lists the resulting state, compare
+  that list with the property block at the head; README edits land, the API doc beside the code drifts.

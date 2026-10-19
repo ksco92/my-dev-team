@@ -50,8 +50,9 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   remains, `git push origin --delete <branch>`; never re-run the merge.
 - On macOS, brief in-place edits as `sed -i '' -e` or `perl -pi -e`, with a `git diff` check that
   the edit landed before the commit.
-- In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
-  write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
+- In zsh, `$VAR:<text>` applies a history modifier when the text starts with a modifier letter
+  (`$SHA:lib/...`, `$ACCT:role/...` loses `:r`); brace every expansion a colon follows, in `git show
+  <rev>:<path>` proofs and in every ARN built from a variable.
 - Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
   set it empty; an empty `AWS_PROFILE=` fails every AWS CLI call with "The config profile () could
   not be found" before the step under test runs.
@@ -63,3 +64,7 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
+- A reviewer probe of a repo with a `file:../x` dependency cannot `npm ci` in place (the path resolves
+  beside the probe); stage a `git archive` of the head plus a sibling symlink to the real `x` inside the
+  gate's own `mktemp -d`, never beside the live checkout or in the shared temp folder (a symlink dropped
+  in the repo's own directory shows up as an untracked file).

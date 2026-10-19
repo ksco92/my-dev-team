@@ -19,9 +19,12 @@ on. Read before writing the issue for such a slice and again before its gates.
   `COUNT(DISTINCT <full composite key>)`.
 - Before a deploy that follows a merged dependency bump, `git pull` (verify it advanced),
   restore any dirtied lockfile, then `npm ci`/`uv sync` — a stale `node_modules` synthesizes the
-  old behavior with a green exit. A `file:` dependency reinstalled at an unchanged version keeps
-  the old copy: delete the installed package first and grep its `dist` for the change before the
-  deploy.
+  old behavior with a green exit. A `file:` dependency reinstalled at an unchanged version keeps the
+  old copy (delete the installed package first and grep its `dist` for the change), `npm install`
+  never refreshes the lockfile's `version` for an existing `file:` entry (delete that
+  `node_modules/<pkg>` entry and reinstall), and a `file:../<lib>` entry takes the sibling checkout's
+  version, so a lockfile at an unmerged branch version is made in a scratch copy whose `../<lib>`
+  symlinks the worktree, with `npm install --package-lock-only`, and copied back.
 - Never derive a deploy's grant-principal list from the local identity alone; reconcile against
   the standing deployed list and abort on any `replace` of a permission resource in the diff.
 - Validate a verify script's API assertions against the live API response, not the synthesized
@@ -101,3 +104,9 @@ on. Read before writing the issue for such a slice and again before its gates.
 - When a PR body offers one object or timestamp as live proof that delivery still works after a
   policy change, list the live resource read-only and require several later objects with no
   delivery error.
+- A dependency swap that claims no behaviour change is proved by synthesizing base and head in
+  separate `git archive` copies, each with its own `npm ci`, and diffing the sorted JSON of every
+  template and asset file; an empty diff settles shape, grants, `DependsOn` and "no new IAM" at once.
+- When a cloud call fails with a vague authorization error, pull the denied event from the audit log and
+  compare its request parameters and caller context with a call that succeeded; and when changing the
+  grant leaves the request and the denial identical, stop varying grants, the denial is not from the grant.
