@@ -52,8 +52,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   the edit landed before the commit.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
-- In zsh, an unquoted `$V` holding newlines reaches a CLI as one newline-joined argument; pass a list
-  probe as an array, or a validation error reads as the limit being enforced.
+- In zsh, an unquoted `$V` holding newlines reaches a CLI as one newline-joined argument; pass a
+  list probe as an array, or a validation error reads as the limit being enforced.
 - Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
   set it empty; an empty `AWS_PROFILE=` fails every AWS CLI call with "The config profile () could
   not be found" before the step under test runs.
@@ -65,6 +65,7 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
-- Brief multi-line source edits as the Edit tool or a Python `str.replace` guarded by `assert old in text`,
-  never chained BSD `sed -i` with `\n` in the replacement, which fails with "extra characters at the end of l
-  command" and leaves later chained edits unapplied while the step reports success.
+- Brief multi-line source edits as the Edit tool or a Python `str.replace` guarded by
+  `assert old in text`, never chained BSD `sed -i` with `\n` in the replacement, which fails with
+  "extra characters at the end of l command" and leaves later chained edits unapplied while the
+  step reports success.
