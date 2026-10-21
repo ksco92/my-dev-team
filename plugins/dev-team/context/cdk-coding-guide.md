@@ -400,7 +400,7 @@ plugin repository (`ksco92/my-dev-team`).
   whatever the API reference's limits say; validate keys and values at 50 and reject values that
   differ only in case.
 - Before declaring a non-jsii runtime dependency in a jsii library, install the built package into a
-  scratch consumer the way real consumers install it: jsii refuses the package under `dependencies`
-  or `peerDependencies` unless it is also in `bundledDependencies`, and npm installs nothing for a
-  bundled dependency of a `file:` package under `install-links=true`, which leaves
-  `optionalDependencies` (declared again by the consumer) as the form that both builds and installs.
+  scratch consumer first: `dependencies` and `peerDependencies` fail the jsii build without
+  `bundledDependencies`, a bundled dependency of a `file:` package installs nothing under
+  `install-links=true`, and `optionalDependencies`, declared again by the consumer, both builds and
+  installs.

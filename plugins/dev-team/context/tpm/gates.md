@@ -93,9 +93,9 @@ Read before the first gate of a run.
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
 - When a PR folds a child process's stderr into an error message, brief the correctness gate to
-  trigger one real failure of the actual child, never a fake: a crashing Node child's piped stderr
-  is cut at 8192 bytes on macOS and a bundled library's uncaught error prints its minified source
-  line first, so the real error never reaches the message.
+  trigger one real failure of the actual child, never a fake: a real crash's piped stderr can
+  arrive truncated, with a bundled library's minified source line first, so only the real text
+  shows what the message carries.
 - When a PR adds a shared validator that a construct calls, grep that construct's constructor for an
   older call checking the same inputs; two layers checking one value is the finding, and the fix
   validates at one layer.

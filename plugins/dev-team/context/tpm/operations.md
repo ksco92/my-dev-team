@@ -49,7 +49,9 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   `git branch -D <branch>` (a squash leaves the branch unmerged for `-d`) and, if the remote branch
   remains, `git push origin --delete <branch>`; never re-run the merge.
 - On macOS, brief in-place edits as `sed -i '' -e` or `perl -pi -e`, with a `git diff` check that
-  the edit landed before the commit.
+  the edit landed before the commit; a bare `-i` takes the next argument as the backup suffix, and
+  a multi-line edit goes through the Edit tool or a Python `str.replace` guarded by
+  `assert old in text`.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
 - In zsh, an unquoted `$V` holding newlines reaches a CLI as one newline-joined argument; pass a
@@ -65,7 +67,3 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
-- Brief multi-line source edits as the Edit tool or a Python `str.replace` guarded by
-  `assert old in text`, never chained BSD `sed -i` with `\n` in the replacement, which fails with
-  "extra characters at the end of l command" and leaves later chained edits unapplied while the
-  step reports success.
