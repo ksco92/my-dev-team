@@ -92,3 +92,9 @@ Read before the first gate of a run.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
+- When a PR folds a child process's stderr into an error message, brief the correctness gate to trigger one
+  real failure of the actual child, never a fake: a crashing Node child's piped stderr is cut at 8192 bytes
+  on macOS and a bundled library's uncaught error prints its minified source line first, so the real error
+  never reaches the message.
+- When a PR adds a shared validator that a construct calls, grep that construct's constructor for an older call
+  checking the same inputs; two layers checking one value is the finding, and the fix validates at one layer.

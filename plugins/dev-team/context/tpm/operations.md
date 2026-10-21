@@ -65,3 +65,6 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
+- Brief multi-line source edits as the Edit tool or a Python `str.replace` guarded by `assert old in text`,
+  never chained BSD `sed -i` with `\n` in the replacement, which fails with "extra characters at the end of l
+  command" and leaves later chained edits unapplied while the step reports success.
