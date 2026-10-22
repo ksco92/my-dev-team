@@ -350,7 +350,7 @@ plugin repository (`ksco92/my-dev-team`).
 - When swapping an alpha L2 for its stable counterpart, diff the constructors' defaults as well as
   the typings by synthesizing both against the base; a stable promotion can flip a default (a
   removal policy gaining RETAIN) on a fixed-name resource that destroy-then-redeploy then trips
-  over.
+  over; strip `aws:asset:path` metadata, a per-synth temp directory, before comparing.
 - `cdk-glue-iceberg-table` ≥ 0.5.0 requires explicit top-level `IcebergColumn.id` and allocates
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
