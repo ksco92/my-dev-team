@@ -2,9 +2,9 @@
 
 Evidence rules for slices whose deliverable is a live claim: deploys and data loads, post-publish
 installs, interruption handling, CI floors and legs, broad UI-suite failures, tool flags a skill
-relies on, live runs and their recorded inputs, live-proof claims after a policy change, response-
-schema tests, and test counts and mutations. Read before writing the issue for such a slice and
-again before its gates.
+relies on, live runs and their recorded inputs, live-proof claims after a policy change,
+response-schema tests, and test counts and mutations. Read before writing the issue for such a slice
+and again before its gates.
 
 - A tool's preview/verify/dry-run flag is not assumed to produce the real run's side effects;
   verify against the tool's code path, and give a skill's central promised artifact a

@@ -123,11 +123,13 @@ guarantees.
 
 Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice involves a
-deploy, publish or data load, a live run or its recorded input, interruption handling, a CI floor or
-new CI leg, a tool flag a skill relies on, or a broadly failing UI suite, also read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or
-published number, a performance or complexity claim, or a port or parity target, also read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each before writing its issue and its briefs.
+deploy or data load, a post-publish install, interruption handling, a CI floor or new CI leg, a
+broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
+live-proof claim after a policy change, a response-schema test, or a test count or mutation, also
+read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
+number, a performance or complexity fix, a profile, a port or parity target, or an output-comparison
+harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each before writing its issue
+and its briefs.
 
 | Difficulty | Implementer | Mechanism |
 | --- | --- | --- |
