@@ -43,3 +43,5 @@ first gate of a run.
 - When a PR validates input against a character-class pattern, delete each class from the regex one
   at a time and require a test to fail for each; a fixture with one sample of every allowed
   character usually leaves out a class.
+- When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
+  mutate each field out of the check in turn and require a test to fail for each.

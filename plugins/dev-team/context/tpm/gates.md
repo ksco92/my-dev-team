@@ -99,3 +99,5 @@ Read before the first gate of a run.
 - When a PR adds a shared validator that a construct calls, grep that construct's constructor for an
   older call checking the same inputs; two layers checking one value is the finding, and the fix
   validates at one layer.
+- Re-run every grep-shaped acceptance criterion of the ticket at each fix head before dispatching
+  gates.

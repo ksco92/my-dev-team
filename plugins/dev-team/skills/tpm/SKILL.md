@@ -123,9 +123,13 @@ guarantees.
 
 Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice involves a
-benchmark or published number, a performance or complexity claim, a port or parity target, a
-deploy or data load, interruption handling, a CI floor or new CI leg, or a broadly failing UI
-suite, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md` before writing its issue and its briefs.
+deploy or data load, a post-publish install, interruption handling, a CI floor or new CI leg, a
+broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
+live-proof claim after a policy change, a response-schema test, or a test count or mutation, also
+read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
+number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
+layer, or an output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`;
+each before writing its issue and its briefs.
 
 | Difficulty | Implementer | Mechanism |
 | --- | --- | --- |
@@ -274,10 +278,10 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: *would this be true in a different repo?*
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `review-probes`, `verification`, `operations`) or the relevant agent file, as a rule
-  (imperative, one sentence, two at most; no date, repo, or PR name, no incident narrative — the
-  git log keeps the archaeology). A change to the procedure itself goes into the phase text of
-  this file, and a rule already stated there is never repeated as a bullet.
+  `gates`, `review-probes`, `verification`, `measurements`, `operations`) or the relevant agent file,
+  as a rule (imperative, one sentence, two at most; no date, repo, or PR name, no incident
+  narrative — the git log keeps the archaeology). A change to the procedure itself goes into the
+  phase text of this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or
   the agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the
