@@ -404,3 +404,17 @@ plugin repository (`ksco92/my-dev-team`).
   `bundledDependencies`, a bundled dependency of a `file:` package installs nothing under
   `install-links=true`, and `optionalDependencies`, declared again by the consumer, both builds and
   installs.
+- Before encoding a Glue DQDL rule type's NULL or filter behaviour, run it in a throwaway Data Catalog
+  ruleset against a negative-control row (a NULL and an unmatched value); `ReferentialIntegrity`
+  counts a NULL local value as missing and accepts no `where` clause, so an optional column needs a
+  `CustomSql` anti-join instead.
+- A Data Catalog `ReferentialIntegrity` rule written `"<db>.<table>.<col>"` resolves from the catalog
+  with no `AdditionalDataSources`, while an `AdditionalDataSources` key may not contain `.` or `-` and
+  `CustomSql` can read a reference table only through such a key; the run record copies the primary
+  source's `AdditionalOptions` onto every reference entry, whatever the caller sent.
+- A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002); return nested
+  `{ [key: string]: ... }` string maps instead, and type-check an exported free function by wrapping
+  it in a throwaway static method, since free functions never reach the assembly.
+- When two props files import each other, every field that reads the other file's const is a getter
+  on both sides, with a test that loads the modules in the opposite order from the entry point's; a
+  one-sided getter fixes only the order the current entry point uses.

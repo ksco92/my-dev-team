@@ -26,6 +26,9 @@ on. Read before writing the issue for such a slice and again before its gates.
   the standing deployed list and abort on any `replace` of a permission resource in the diff.
 - Validate a verify script's API assertions against the live API response, not the synthesized
   template — read APIs normalize shapes.
+- When a PR body says a live run used a helper's or script's exact output, read the request CloudTrail
+  recorded (`requestParameters`) and compare it field by field with that output; a service's run
+  record can copy or normalize fields the caller never sent, so it proves neither claim.
 - When a benchmark or results deliverable is gated, check its headline metric against the spec's
   own stats rules (medians, N runs, same inputs) and that numbers trace to committed raw data.
 - On a "faithful port" slice, require seeded differential fuzzing against the real reference and
