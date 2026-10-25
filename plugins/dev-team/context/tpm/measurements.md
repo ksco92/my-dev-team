@@ -38,10 +38,10 @@ harnesses. Read before writing the issue for such a slice and again before its g
   enumeration's shape for the measure corrupts distance-based pairing without any parity test
   noticing until the fuzz batch does.
 - Before starting reviews on a benchmark PR, check which main the measured wheel was built from, and
-  rebase and re-measure when the branch was cut before a performance merge (it reports the old
-  engine's numbers under the new version's name). Inside a PR, a table relabeled to a new version or
-  head without a re-run after a code change is a finding, and a fix round that changes the measured
-  path re-runs every table the README cites, not only the shapes the fix targeted.
+  rebase and re-measure when the branch was cut before a performance merge. Inside a PR, a table
+  relabeled to a new version or head without a re-run after a code change is a finding, and a fix
+  round that changes the measured path re-runs every table the README cites, not only the shapes the
+  fix targeted.
 - When a fix adds a threshold-triggered compaction or cleanup, drive the input that leaves the
   live count near zero after each pass, so the trigger fires on every new event, and time it at
   three sizes against the pre-fix build: a ratio-based trigger amortizes only when the scan

@@ -1,9 +1,10 @@
 # tpm verification rules
 
-Evidence rules for slices whose deliverable is a live claim: deploys and data loads, interruption
-handling, CI floors and legs, broad UI-suite failures, tool flags a skill relies on, live runs and
-their recorded inputs, and test counts and mutations. Read before writing the issue for such a slice
-and again before its gates. Benchmarks, performance and parity claims are in `measurements.md`.
+Evidence rules for slices whose deliverable is a live claim: deploys and data loads, post-publish
+installs, interruption handling, CI floors and legs, broad UI-suite failures, tool flags a skill
+relies on, live runs and their recorded inputs, live-proof claims after a policy change, response-
+schema tests, and test counts and mutations. Read before writing the issue for such a slice and
+again before its gates.
 
 - A tool's preview/verify/dry-run flag is not assumed to produce the real run's side effects;
   verify against the tool's code path, and give a skill's central promised artifact a
@@ -26,7 +27,7 @@ and again before its gates. Benchmarks, performance and parity claims are in `me
   the standing deployed list and abort on any `replace` of a permission resource in the diff.
 - Validate a verify script's API assertions against the live API response, not the synthesized
   template — read APIs normalize shapes.
-- When a PR body says a live run used a helper's exact output, compare the request CloudTrail
+- When a PR body says a live run used any tool's exact output, compare the request CloudTrail
   recorded (`requestParameters`) field by field with that output, never the service's run record,
   which can copy or normalize fields the caller never sent. That proves the input only; a field
   absent from an event marked truncated or redacted proves nothing, and the result is still read
