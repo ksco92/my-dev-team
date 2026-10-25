@@ -414,5 +414,10 @@ plugin repository (`ksco92/my-dev-team`).
   names, `^[A-Za-z0-9_]+$` for columns); never quote-escape.
 - A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002);
   return nested `{ [key: string]: ... }` string maps instead.
-- When two props files import each other, every field that reads the other file's const is a getter
-  on both sides, with a test that loads the modules in the opposite order from the entry point's.
+- A reference between declared resources (a dependency, a foreign key) puts its target upstream:
+  synth rejects a cycle through every reference kind together, and lint rejects a circular import
+  between props files (`import-x/no-cycle`).
+- A reference to a const inside its own initializer (a self-reference, not a mutual import) is the
+  one reference declared as a getter; a reference to another file's const is a plain value.
+- `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
+  `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
