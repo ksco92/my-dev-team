@@ -127,9 +127,9 @@ deploy or data load, a post-publish install, interruption handling, a CI floor o
 broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
 live-proof claim after a policy change, a response-schema test, or a test count or mutation, also
 read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
-number, a performance or complexity fix, a profile, a port or parity target, or an output-comparison
-harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each before writing its issue
-and its briefs.
+number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
+layer, or an output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`;
+each before writing its issue and its briefs.
 
 | Difficulty | Implementer | Mechanism |
 | --- | --- | --- |

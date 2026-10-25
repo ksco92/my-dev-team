@@ -1,8 +1,9 @@
 # tpm measurement rules
 
 Evidence rules for slices whose deliverable is a number or a parity claim: benchmarks and published
-numbers, performance or complexity fixes, profiles, ports and parity targets, and output-comparison
-harnesses. Read before writing the issue for such a slice and again before its gates.
+numbers, performance or complexity fixes, profiles, ports and parity targets, new bindings or FFI
+layers, and output-comparison harnesses. Read before writing the issue for such a slice and again
+before its gates.
 
 - When a benchmark or results deliverable is gated, check its headline metric against the spec's
   own stats rules (medians, N runs, same inputs) and that numbers trace to committed raw data.
