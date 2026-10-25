@@ -52,9 +52,8 @@ When an issue rests on a claim about an external system (an API's error semantic
 window, a rate weight), write it as an ASSUMPTION the implementer verifies against the live source
 before building on it. A premise stated as fact gets encoded into mocks and tests at 100% coverage.
 
-A workaround an implementer needs only to make the declared model load or validate (a getter around
-a mutual import, a lazy reference, a disabled check) is evidence the model is wrong; put the model to
-the owner before briefing the workaround.
+A workaround needed only to make the declared model load or validate is a sign the model may be
+wrong; put the model to the owner before briefing the workaround.
 
 When a criterion is a universal negative ("must never leak", "never loses a row"), write the
 acceptance at intake as a closed list of the inputs it covers and have the slice record the

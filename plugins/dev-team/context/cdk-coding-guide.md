@@ -414,9 +414,10 @@ plugin repository (`ksco92/my-dev-team`).
   names, `^[A-Za-z0-9_]+$` for columns); never quote-escape.
 - A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002);
   return nested `{ [key: string]: ... }` string maps instead.
-- A table that references another through a foreign key is downstream of it: reject at synth any
-  cycle through dependency and foreign-key edges together, and fail lint on a circular import between
-  props files (`import-x/no-cycle`). A key to the file's own const is the one field declared as a getter.
-- `eslint-plugin-import-x` `no-cycle` stays silent on `.ts` files, with no error, unless
-  `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too; prove a
-  new lint guard by introducing the real defect in a scratch edit and watching the rule fire.
+- A reference between declared resources (a dependency, a foreign key) puts its target upstream:
+  reject a cycle through every reference kind together at synth, and fail lint on a circular import
+  between props files (`import-x/no-cycle`).
+- A reference to a const inside its own initializer (a self-reference, not a mutual import) is the
+  one reference declared as a getter; a reference to another file's const is a plain value.
+- `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
+  `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
