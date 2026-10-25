@@ -415,7 +415,7 @@ plugin repository (`ksco92/my-dev-team`).
 - A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002);
   return nested `{ [key: string]: ... }` string maps instead.
 - A reference between declared resources (a dependency, a foreign key) puts its target upstream:
-  reject a cycle through every reference kind together at synth, and fail lint on a circular import
+  synth rejects a cycle through every reference kind together, and lint rejects a circular import
   between props files (`import-x/no-cycle`).
 - A reference to a const inside its own initializer (a self-reference, not a mutual import) is the
   one reference declared as a getter; a reference to another file's const is a plain value.

@@ -152,8 +152,8 @@ test that fails on the pre-fix code — prove it by running the test against the
 Boundaries: zero, one, many, empty, null, max, negative, overflow, unicode. Mock external services
 at the HTTP boundary; never mock the thing under test. Fixtures that fake a system tool's output
 copy the real output shape from a live run. Anything that pins a constant or boundary is verified
-by mutation: flip the constant or comparison and confirm the suite goes red, and a new lint rule is
-proved the same way, by a scratch edit that introduces the defect it guards.
+by mutation: flip the constant or comparison and confirm the suite goes red, and prove a new lint
+rule with a scratch edit that introduces the defect it guards.
 
 For tests that must observe interruption (Ctrl-C, SIGINT), generate the signal from a real pty
 (Python `pty.fork()` writing `\x03`) — `kill -INT` bypasses terminal routing and makes a broken
