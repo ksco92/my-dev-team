@@ -100,4 +100,4 @@ Read before the first gate of a run.
   older call checking the same inputs; two layers checking one value is the finding, and the fix
   validates at one layer.
 - Re-run every grep-shaped acceptance criterion of the ticket at each fix head before dispatching
-  gates; a doc trim made for the comment budget is where the word a criterion greps for disappears.
+  gates.

@@ -386,7 +386,8 @@ plugin repository (`ksco92/my-dev-team`).
   what the service then does.
 - A jsii library whose entry point exports nothing builds an empty assembly and type-checks none of
   its deep-imported interfaces; to prove new interfaces jsii-legal, export them from the entry point
-  in a throwaway build, read the `.jsii` `types`, and revert.
+  in a throwaway build, read the `.jsii` `types`, and revert; wrap an exported free function in a
+  throwaway static method to type-check it.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
   re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
@@ -404,17 +405,14 @@ plugin repository (`ksco92/my-dev-team`).
   `bundledDependencies`, a bundled dependency of a `file:` package installs nothing under
   `install-links=true`, and `optionalDependencies`, declared again by the consumer, both builds and
   installs.
-- Before encoding a Glue DQDL rule type's NULL or filter behaviour, run it in a throwaway Data Catalog
-  ruleset against a negative-control row (a NULL and an unmatched value); `ReferentialIntegrity`
-  counts a NULL local value as missing and accepts no `where` clause, so an optional column needs a
-  `CustomSql` anti-join instead.
-- A Data Catalog `ReferentialIntegrity` rule written `"<db>.<table>.<col>"` resolves from the catalog
-  with no `AdditionalDataSources`, while an `AdditionalDataSources` key may not contain `.` or `-` and
-  `CustomSql` can read a reference table only through such a key; the run record copies the primary
-  source's `AdditionalOptions` onto every reference entry, whatever the caller sent.
-- A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002); return nested
-  `{ [key: string]: ... }` string maps instead, and type-check an exported free function by wrapping
-  it in a throwaway static method, since free functions never reach the assembly.
+- A Data Catalog `ReferentialIntegrity` rule counts a NULL local value as missing and accepts no
+  `where` clause; an optional column needs a `CustomSql` anti-join instead.
+- A Data Catalog `ReferentialIntegrity` rule written `"<db>.<table>.<col>"` needs no
+  `AdditionalDataSources`; an `AdditionalDataSources` key may not contain `.` or `-`, and
+  `CustomSql` reads a reference table only through such a key. Every identifier interpolated into
+  DQDL or `CustomSql` text passes an allow-list at synth (`^[a-z0-9_]+$` for Glue database and table
+  names, `^[A-Za-z0-9_]+$` for columns); never quote-escape.
+- A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002);
+  return nested `{ [key: string]: ... }` string maps instead.
 - When two props files import each other, every field that reads the other file's const is a getter
-  on both sides, with a test that loads the modules in the opposite order from the entry point's; a
-  one-sided getter fixes only the order the current entry point uses.
+  on both sides, with a test that loads the modules in the opposite order from the entry point's.
