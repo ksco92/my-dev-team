@@ -44,6 +44,10 @@ Read before the first gate of a run.
 - GitHub host: a PR with no CI run and `mergeable: CONFLICTING` needs a rebase, not a retrigger:
   GitHub runs no `pull_request` workflow when it cannot build the merge ref. Brief the rebase to
   re-run gates on the rebased head, because the conflict resolution is new review surface.
+- GitHub host: a gated workflow under a `concurrency` group that cancels in-progress runs keeps
+  one running and one pending run and cancels every older pending one, so the orchestrator alone
+  triggers it, one PR at a time with at most one run pending, and every brief says never to add
+  the trigger label or watch the run; a sibling PR's trigger otherwise cancels the run under wait.
 - Concurrent gates that each `uv sync`/`maturin develop` share `~/.cache/uv` and stall on its
   lock for an hour; brief a light venv with a private `UV_CACHE_DIR` for test-only PRs, and accept
   CI's fresh run at the pinned head when it runs the same command sequence the local gate would.

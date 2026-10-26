@@ -381,6 +381,10 @@ plugin repository (`ksco92/my-dev-team`).
 - Lake Formation gives the principal that creates a table (the CloudFormation execution role) its
   own permissions on it, so a "no grant to the execution role" criterion is judged on the templates,
   never on `list-permissions`.
+- Lake Formation admin status grants no `CREATE_TABLE` on a database, so an engine's
+  `CREATE TABLE` through the Glue catalog fails with `Required Create Table on <database>` even
+  for an admin principal; create integration tables through the construct's own stack and grant
+  the test principal on them.
 - An L1 property left unset still takes the service default on the live resource (an Athena
   workgroup without `enforceWorkGroupConfiguration` enforces); docs say the property is unset, never
   what the service then does.
