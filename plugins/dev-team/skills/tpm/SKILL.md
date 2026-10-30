@@ -120,7 +120,9 @@ A recipe's test list covers each operand of a compound guard on its own and vari
 pass-through parameter at least once at every call that forwards it, a nested factory included,
 so a literal in place of the parameter fails a test; a thrown message it prescribes names the
 remedy as well as the condition; and it prescribes no assertion the type system already
-guarantees.
+guarantees. A ticket that names a library helper and also lists the output it must produce
+derives that list from the helper's source, and a ticket that says a consumer needs no change
+for a removed or retyped field greps the consumer for the field first.
 
 ## Phase 4 — Delegation
 
