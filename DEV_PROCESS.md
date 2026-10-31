@@ -71,7 +71,6 @@ status: open
 | Merge | Orchestrator only: `gh pr merge <n> --repo ksco92/my-dev-team --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; the hook also refuses it unless the ledger check passes and `gh pr checks` reports every check passed or skipped |
 | After merge | Confirm the plan file reads `status: done` on `origin/main` (Tracker above); remove the workspace (below) |
 | Repo description | `gh repo view --json description -q .description`; set with `gh repo edit --description "<text>"` |
-| Experiment mode | Only when the user says so: one branch, direct commits, no change request and no gates; never merged to `main` without going through the normal path |
 
 Change request body template:
 
@@ -94,6 +93,20 @@ Change request body template:
 ## Notes
 [Non-obvious trade-offs, assumptions made, follow-ups found]
 ```
+
+## Experiment
+
+| Operation | Command / rule |
+| --- | --- |
+| Enter | Only when the owner says so; record it once in the session |
+| Branch name | `experiment/<topic>` |
+| Slice branch | `exp/<slice>`, cut from the experiment branch |
+| Integrate | With the experiment worktree as the working directory (`cd` is its own command, since the hook refuses a merge combined with `cd`), `git merge exp/<slice>` or `git cherry-pick <sha>` |
+| Skipped | Tickets, change requests, the five gates, tests, lint, CI, the version bump |
+| Required | Live verification with its evidence, small commits, no attribution lines, a push of the experiment branch |
+| Results | Raw data under `results/<machine-slug>/raw/`, logs gitignored, the report at `results/RESULTS.md`, and a `run_*.sh` entry point that reruns on another machine without code changes |
+| Exit | One change from the experiment branch to the trunk, tagged at the highest slice difficulty, through every gate |
+
 
 ## Workspace: git worktree
 

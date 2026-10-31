@@ -48,13 +48,26 @@ Ticket body template:
 | Merge | | orchestrator-only merge command using `merge_method`; runs only after `gate-ledger check` passes and the CI status is terminal-green |
 | After merge | | confirmation and cleanup steps |
 | Repo description | | command reading and setting the one-line description |
-| Experiment mode | | whether allowed, and what it skips |
 
 Change body template:
 
 ```markdown
 <the body every change carries: summary, tickets closed, test results, skipped, notes>
 ```
+
+## Experiment
+
+| Operation | Command / rule | Hint |
+| --- | --- | --- |
+| Enter |  | how the owner's statement enters the mode, or "Not allowed" |
+| Branch name |  | pattern of the experiment branch |
+| Slice branch |  | pattern of a slice branch and where it is cut from |
+| Integrate |  | merge or cherry-pick of a slice branch into the experiment branch |
+| Skipped |  | what the mode skips |
+| Required |  | what the mode still requires |
+| Results |  | where raw data, logs, the report, and the rerun script live |
+| Exit |  | how the work re-enters the trunk through the gates |
+
 
 ## Workspace: <name>
 

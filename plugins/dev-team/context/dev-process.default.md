@@ -73,7 +73,6 @@ status: open
 | Merge | Orchestrator only, as two separate commands because the hook reads the current branch before the command runs: `git checkout main`, then `git merge --no-ff <branch> -F "$(git rev-parse --git-common-dir)/changes/<branch>.md"` with the branch as the first non-option argument, only after `gate-ledger check <repo-path> <branch> <head>` passes and every CI status command recorded for the head passed; the hook also refuses it unless the ledger check passes |
 | After merge | Confirm the ticket file reads `status: done` on `main`; delete the change body file; remove the workspace (below) |
 | Repo description | Not applicable; the README's opening line is the only description |
-| Experiment mode | Only when the user says so: one branch, direct commits, no change body and no gates; never merged to `main` without going through the normal path |
 
 Change body template:
 
@@ -96,6 +95,20 @@ Change body template:
 ## Notes
 [Non-obvious trade-offs, assumptions made, follow-ups found]
 ```
+
+## Experiment
+
+| Operation | Command / rule |
+| --- | --- |
+| Enter | Only when the owner says so; record it once in the session |
+| Branch name | `experiment/<topic>` |
+| Slice branch | `exp/<slice>`, cut from the experiment branch |
+| Integrate | With the experiment branch checked out (the checkout is its own command), `git merge exp/<slice>` or `git cherry-pick <sha>` |
+| Skipped | Tickets, change bodies, the five gates, tests, lint, CI, the version bump |
+| Required | Live verification with its evidence, small commits, no attribution lines, a push of the experiment branch |
+| Results | Raw data under `results/<machine-slug>/raw/`, logs gitignored, the report at `results/RESULTS.md`, and a `run_*.sh` entry point that reruns on another machine without code changes |
+| Exit | One change from the experiment branch to the trunk, tagged at the highest slice difficulty, through every gate |
+
 
 ## Workspace: branch-in-place
 
