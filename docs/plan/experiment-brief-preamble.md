@@ -7,7 +7,7 @@ status: done
 ## Context
 Every implementer brief in an experiment run carried hand-written text about what to skip, and the
 implementer agents read a baseline whose Testing section contradicts it. This ticket gives the
-preamble one home the `tpm` skill pastes from, and tells the agent files that the mode exists.
+preamble one home the `tpm` skill pastes from, and points the baseline's Testing section at it.
 
 ## Requirements
 - [ ] New file `plugins/dev-team/context/tpm/experiment.md`, titled `# tpm experiment mode`, with:
@@ -30,11 +30,11 @@ preamble one home the `tpm` skill pastes from, and tells the agent files that th
 
       The Integrate and verify prose states: change directory to the experiment worktree as its own
       command, then `git merge exp/<slice>` as the next command; never cherry-pick, since the hook
-      gates a merge into `main` or `master` on the ledger and does not gate forms that change the
-      trunk without `git merge`, such as a cherry-pick; rerun the `run_*.sh` entry point and record
-      the output in `results/RESULTS.md`; push by name with `git push origin experiment/<topic>`; no
-      ledger record is written; the exit path is one change from the experiment branch to the trunk
-      through every gate.
+      gates a merge into `main` or `master` on the ledger and does not gate trunk updates with no
+      merge or push, such as a cherry-pick; rerun the `run_*.sh` entry point and record the output
+      in `results/RESULTS.md`; push by name with `git push origin experiment/<topic>`; no ledger
+      record is written; the exit path is one change from the experiment branch to the trunk through
+      every gate.
 - [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence, and
       the agent files are not edited (every implementer reads the baseline as its binding contract):
       "In experiment mode, declared by the preamble from
