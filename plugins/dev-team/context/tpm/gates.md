@@ -14,10 +14,9 @@ Read before the first gate of a run.
   and finish with `gate-ledger show` counting five PASS.
 - A green CI run is evidence only if it built the PR: with an unchanged lockfile and a cached
   `target/`, check the log for a `Compiling <crate>` line and a test count matching the branch.
-- Never pre-assign versions to open PRs: an open PR carries main's current version plus one step
-  and is retitled at every rebase, and takes its final value in the merge-time rebase (lockfile
-  regenerated in the same commit); a number that assumes a sibling's merge reads as a downgrade or
-  a jump to every gate. A branch cut before a new required workflow merged must rebase to run it.
+- Never pre-assign versions to open PRs; a PR takes its version in the final rebase before its
+  merge (main's plus one step, lockfile regenerated in the same commit). A branch cut before a new
+  required workflow merged must rebase to run it.
 - Two open PRs that both wrote the same next version rebase without a conflict and the second lands
   a zero bump, so the rebase brief names the new version as an edit to make; the proof that only
   the version files moved is per-path object-hash equality for every other PR file plus a three-dot

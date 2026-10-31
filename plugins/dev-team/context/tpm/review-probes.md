@@ -50,4 +50,5 @@ first gate of a run.
   after the input moved.
 - When a matcher turns newlines into separators before matching, probe every gated form with a
   backslash line continuation between the command's options and its subcommand; the shell joins
-  the lines and the matcher sees two commands.
+  the lines and the matcher sees two commands, and a form the contract lists as not gated is
+  recorded, not filed.

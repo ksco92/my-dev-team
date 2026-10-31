@@ -67,6 +67,6 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Before taking over a PR another session opened, message that session and wait for its
   acknowledgement that its workspace holds no unpushed edits; tell it when the PR is merged and the
   workspace is removed.
-- When the tool under edit is a live command hook, write edit scripts, commit messages, and change
-  bodies through a file tool and pass them by path; a quoted guarded phrase in a shell command
-  trips the hook.
+- When the tool under edit is a live command hook, write edit scripts, commit messages, and bodies
+  through a file tool and pass them by path, not a heredoc; a quoted guarded phrase in a shell
+  command trips the hook.
