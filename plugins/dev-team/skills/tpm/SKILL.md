@@ -262,7 +262,7 @@ auto-merge, stop at a green ledger and hand back the URL.
 
 ## Experiment mode
 
-A process file whose Experiment section is absent or reads "Not allowed" means the pipeline applies
+A process file whose Experiment section is absent or reads `Not allowed.` means the pipeline applies
 and none of this does. Otherwise, once the Enter operation has recorded the owner's statement,
 Phase 1 is done and the later phases change as follows.
 
@@ -297,9 +297,9 @@ learned yourself. One test decides the home: *would this be true in a different 
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
   `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
-  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name, no incident
-  narrative — the git log keeps the archaeology). A change to the procedure itself goes into the
-  phase text of this file, and a rule already stated there is never repeated as a bullet.
+  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name,
+  no incident narrative — the git log keeps the archaeology). A change to the procedure itself goes
+  into the phase text of this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or
   the agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the
