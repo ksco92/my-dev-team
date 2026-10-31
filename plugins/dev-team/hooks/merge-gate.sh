@@ -9,18 +9,17 @@
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
 #   git -C <dir> merge <branch>                    gated as a merge run in <dir>; denied when <dir>
 #                                                  is no repo, -C repeats, or an option is unparsed
-#   git pull on main                               only from a remote trunk; anything else denied
+#   git pull on main                               only from a remote's main or master; else denied
 #   git merge/pull after cd, pushd, worktree add,  always denied; the hook reads the branch before
 #     a switch to main, -, @{-N}, a rebase onto    the command runs, so it cannot gate these
 #     main, a --git-dir/--work-tree/GIT_DIR/
 #     env -C redirect, or in a subshell
 #   git -C <dir> pull                              always denied
 #   git push in any of those forms or with -C      allowed only with a remote and literal refspecs
-#                                                  with a source and a destination other than the
-#                                                  trunk or HEAD/@, no delete, --all, or --mirror
+#                                                  with a source and a destination other than main,
+#                                                  master, or HEAD/@, no delete, --all, or --mirror
 #   two merge/pull/push segments, a merge of two   always denied
-#     branches, a merge whose directory (the cwd,
-#     or -C <dir>) is no repository
+#     branches, a merge without -C from a cwd that is no repo
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --mirror, :main, a force or delete    always denied; long options match by prefix
 #     of main, a forced --all, a bare force on main,
@@ -32,10 +31,11 @@
 # redirections (fd numbers, &N, &>, >&, >!, {fd}) are dropped with their targets before matching and
 # again when a subcommand's arguments are read.
 # Not gated: git reached through shell constructs the matcher does not expand (quoting, escapes,
-# variables, `eval`, `bash -c`, backticks, aliases, config, split strings, `xargs`/`find -exec`),
-# git or gh named other than as the bare lowercase word (a path to the binary, a wrapper under
-# another name, a case variant that a case-insensitive filesystem still runs), and trunk updates
-# with no merge or push. The tpm's Check ledger and CI status step is the backstop.
+# line continuations, variables, `eval`, `bash -c`, backticks, aliases, config, split strings,
+# `xargs`/`find -exec`), git or gh named other than as the bare lowercase word (a path to the
+# binary, a wrapper under another name, a case variant that a case-insensitive filesystem still
+# runs), and updates of main or master with no merge or push. The tpm's Check ledger and CI status
+# step is the backstop.
 #
 # Owner-only bypass: create $GATE_LEDGER_ROOT/.bypass, default ~/.claude/gate-ledger/.bypass
 # (delete it afterwards). The model has no reason to touch that file; if it does, that is itself
@@ -104,7 +104,8 @@ combined() {
 redirected_push=0
 redir='--git-dir|--work-tree'
 (( is_git_push || is_redirected )) && combined push "-C|$redir" && redirected_push=1
-if (( is_git_merge || is_git_pull || is_redirected )) && { combined merge "$redir" || combined pull "-C|$redir"; }; then
+if (( is_git_merge || is_git_pull || is_redirected )) &&
+  { combined merge "$redir" || combined pull "-C|$redir"; }; then
   deny "merge-gate: run the merge or pull as its own command, from the repository's working directory (or, for a merge, with git -C <repository>), on the branch already checked out there; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, env -C, or (for a pull) -C, or run in a subshell or command substitution, is not accepted."
 fi
 
@@ -195,7 +196,7 @@ if (( is_git_pull && on_trunk )); then
     || ! grep -Eqx "$MAIN" <<<"${pull_ops[1]}"; then
     pull_ok=0
   fi
-  (( pull_ok )) || deny "merge-gate: on $current, pull only its remote trunk (git pull with a remote-trunk upstream, or git pull <remote> $current); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
+  (( pull_ok )) || deny "merge-gate: on $current, pull only a remote's main or master (git pull with a remote main or master upstream, or git pull <remote> $current); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
 fi
 
 if (( is_git_push )); then
@@ -225,14 +226,14 @@ if (( is_git_push )); then
     [[ "$tok" != *:*:* ]] || deny "merge-gate: a refspec takes one colon at most; '$tok' is refused."
   done
   if (( redirected_push )); then
-    # Another directory's current branch is unknown, so only literal non-trunk branches may be pushed.
+    # Another directory's current branch is unknown, so only literal branches other than main or master may be pushed.
     ok=$(( !delete && !all && ${#push_ops[@]} > 1 ))
     for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
       tok="${tok#+}"; dst="${tok##*:}"
       [[ -n "${tok%:*}" && "$dst" != HEAD && "$dst" != @ ]] \
         && ! grep -Eqx "$PUSH_MAIN" <<<"$dst" || ok=0
     done
-    (( ok )) || deny "merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither the trunk nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
+    (( ok )) || deny "merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither main, master, nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
   fi
   (( force && all )) && deny "merge-gate: a forced push --all includes main; name the branch to push."
   (( force && on_trunk && ${#push_ops[@]} <= 1 )) \
