@@ -45,3 +45,10 @@ first gate of a run.
   character usually leaves out a class.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
+- When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial
+  message and every always-refuses sentence for the old source's name; they keep describing it
+  after the input moved.
+- When a matcher turns newlines into separators before matching, probe every gated form with a
+  backslash line continuation between the command's options and its subcommand; the shell joins
+  the lines and the matcher sees two commands, and a form the contract lists as not gated is
+  recorded, not filed.
