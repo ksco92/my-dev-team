@@ -152,7 +152,8 @@ fi
 current="$(git -C "$repo_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)" || current=""
 on_trunk=0; [[ "$current" == "main" || "$current" == "master" ]] && on_trunk=1
 upstream_is_remote_trunk() {
-  git -C "$repo_dir" rev-parse --symbolic-full-name '@{upstream}' 2>/dev/null | grep -Eqx 'refs/remotes/[^/]+/(main|master)'
+  git -C "$repo_dir" rev-parse --symbolic-full-name '@{upstream}' 2>/dev/null \
+    | grep -Eqx 'refs/remotes/[^/]+/(main|master)'
 }
 
 if (( is_git_merge )); then
@@ -196,7 +197,7 @@ if (( is_git_pull && on_trunk )); then
     || ! grep -Eqx "$MAIN" <<<"${pull_ops[1]}"; then
     pull_ok=0
   fi
-  (( pull_ok )) || deny "merge-gate: on $current, pull only a remote's main or master (git pull with a remote main or master upstream, or git pull <remote> $current); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
+  (( pull_ok )) || deny "merge-gate: on $current, pull only a remote's main or master (git pull with such an upstream, or git pull <remote> $current); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
 fi
 
 if (( is_git_push )); then
@@ -226,7 +227,7 @@ if (( is_git_push )); then
     [[ "$tok" != *:*:* ]] || deny "merge-gate: a refspec takes one colon at most; '$tok' is refused."
   done
   if (( redirected_push )); then
-    # Another directory's current branch is unknown, so only literal branches other than main or master may be pushed.
+    # Another directory's branch is unknown: push only literal branches other than main or master.
     ok=$(( !delete && !all && ${#push_ops[@]} > 1 ))
     for tok in "${push_ops[@]:1:${#push_ops[@]}}"; do
       tok="${tok#+}"; dst="${tok##*:}"

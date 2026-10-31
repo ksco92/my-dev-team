@@ -194,7 +194,7 @@ check "a bare merge&& with a local upstream is denied" "$(gate 'git merge&&true'
 upstream origin/main
 check "a bare merge with a remote main upstream is allowed" "$(gate 'git merge&&true' "$on_main")" "0 "
 
-pull_denied="2 merge-gate: on main, pull only a remote's main or master (git pull with a remote main or master upstream, or git pull <remote> main); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
+pull_denied="2 merge-gate: on main, pull only a remote's main or master (git pull with such an upstream, or git pull <remote> main); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
 for cmd in 'git pull' 'git pull --ff-only' 'git pull --rebase' 'git pull --no-rebase' 'git pull -X theirs'; do
   check "bare '$cmd' with a remote main upstream is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done

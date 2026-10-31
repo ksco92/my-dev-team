@@ -84,37 +84,37 @@ reports no checks as passing. It refuses `git merge` into `main` or `master` unl
 passes for the merged branch (`-` is the previous branch); a bare `git merge` there passes only when
 the upstream is a remote's `main` or `master`. A `git -C <dir> merge` is gated the same way on the
 branch checked out in `<dir>` (a relative `<dir>` resolves from the working directory), and is
-refused when `<dir>` is not inside a git repository, when `-C` is given more than once, or when the
-git options before `merge` cannot be parsed. On `main` or `master` it allows only a bare `git pull`
-whose `@{upstream}` is a remote's `main` or `master`, or `git pull <remote> main|master`
-(`refs/heads/main` counts as `main`), either form with or without `--ff-only`, `--rebase`,
-`--no-rebase`, or a strategy option given as a separate word (`-X theirs`), and denies any other
-pull. It always refuses a command with more than one `git merge`, `git pull`, or `git push`, a
-GraphQL `mergePullRequest`, a `git merge` without `-C` from a working directory that is not a
-repository, a merge of two branches, and a `git merge` or `git pull` in the same command as a `cd`,
-`pushd`, `git worktree add`, a checkout or switch to `main`, `master`, `-`, or `@{-N}`, or a
-`rebase <branch> main`, or redirected with `--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`,
-or `env -C` (a pull also with `-C`), or run in a subshell or `$(...)`. A `git push` in any of those
-forms or with `-C` passes only when it names its remote and literal refspecs whose destination is
-neither `main`, `master`, nor `HEAD`/`@`, with a non-empty source and no delete, `--all`, or
-`--mirror` (force is allowed); one with no refspec is denied, since the other directory's branch
-cannot be read. Push accepts only literal refspecs (a branch or `<src>:<dst>`, one colon at most),
-refusing a pattern (`*`) or matching (`:`, `+:`) refspec; it matches long options from the shortest
-prefix git accepts (`--prune` counts as a delete). Shell redirections (fd numbers, `&N`, `&>`, `>&`,
-`>!`, `{fd}`) are dropped with their targets wherever they sit, including between `git` and its
-subcommand, and again when a subcommand's arguments are read, which covers one inside `$(...)`. It
-refuses a push of `<src>:main` (`heads/main` and `refs/heads/main` included) unless `<src>` is main
-itself, and always refuses `--mirror`, an empty source onto main, a force or delete of main (a bare
-`HEAD` or `@` resolved first), a forced `--all`, and a force push without a refspec from `main` or
-`master`. Not gated: git reached through shell constructs the matcher does not expand (quoting,
-escapes, line continuations, variables, `eval`, `bash -c`, backticks, aliases, git config, split
-strings, argument-supplying commands such as `xargs`, `find -exec`, `parallel`), git or gh named
-other than as the bare lowercase word (a path to the binary, a wrapper under another name, a case
-variant that a case-insensitive filesystem still runs), and an update of `main` or `master` with no
-merge or push (`reset --hard`, `update-ref`). The hook checks CI for some forms only and passes a PR
-with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI status
-operations before every Merge, including any form outside those, and the file's Merge row states
-that its command runs only after both.
+refused when `<dir>`, read literally with no `~` or variable expansion, is not inside a git
+repository, when `-C` is given more than once, or when the git options before `merge` cannot be
+parsed. On `main` or `master` it allows only a bare `git pull` whose `@{upstream}` is a remote's
+`main` or `master`, or `git pull <remote> main|master` (`refs/heads/main` counts as `main`), either
+form with or without `--ff-only`, `--rebase`, `--no-rebase`, or a strategy option given as a
+separate word (`-X theirs`), and denies any other pull. It always refuses a command with more than
+one `git merge`, `git pull`, or `git push`, a GraphQL `mergePullRequest`, a `git merge` without `-C`
+from a working directory that is not a repository, a merge of two branches, and a `git merge` or
+`git pull` in the same command as a `cd`, `pushd`, `git worktree add`, a checkout or switch to
+`main`, `master`, `-`, or `@{-N}`, or a `rebase <branch> main`, or redirected with `--git-dir`,
+`--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or `env -C` (a pull also with `-C`), or run in a subshell
+or `$(...)`. A `git push` in any of those forms or with `-C` passes only when it names its remote
+and literal refspecs whose destination is neither `main`, `master`, nor `HEAD`/`@`, with a non-empty
+source and no delete, `--all`, or `--mirror` (force is allowed); one with no refspec is denied,
+since the other directory's branch cannot be read. Push accepts only literal refspecs (a branch or
+`<src>:<dst>`, one colon at most), refusing a pattern (`*`) or matching (`:`, `+:`) refspec; it
+matches long options from the shortest prefix git accepts (`--prune` counts as a delete). Shell
+redirections (fd numbers, `&N`, `&>`, `>&`, `>!`, `{fd}`) are dropped with their targets wherever
+they sit, including between `git` and its subcommand, and again when a subcommand's arguments are
+read, which covers one inside `$(...)`. It refuses a push of `<src>:main` (`heads/main` and
+`refs/heads/main` included) unless `<src>` is main itself, and always refuses `--mirror`, an empty
+source onto main, a force or delete of main (a bare `HEAD` or `@` resolved first), a forced `--all`,
+and a force push without a refspec from `main` or `master`. Not gated: git reached through shell
+constructs the matcher does not expand (quoting, escapes, line continuations, variables, `eval`,
+`bash -c`, backticks, aliases, git config, split strings, argument-supplying commands such as
+`xargs`, `find -exec`, `parallel`), git or gh named other than as the bare lowercase word (a path to
+the binary, a wrapper under another name, a case variant that a case-insensitive filesystem still
+runs), and an update of `main` or `master` with no merge or push (`reset --hard`, `update-ref`). The
+hook checks CI for some forms only and passes a PR with no reported checks or with skipped checks,
+so the tpm runs the Check ledger and CI status operations before every Merge, including any form
+outside those, and the file's Merge row states that its command runs only after both.
 
 ## Experiment
 
