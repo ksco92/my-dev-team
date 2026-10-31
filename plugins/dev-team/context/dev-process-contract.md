@@ -22,7 +22,7 @@ hook puts the resolved file in every session's context. A blank file to copy is
 
 ## Format
 
-YAML frontmatter with four keys, then seven `## ` sections in the order below. A heading starts
+YAML frontmatter with four keys, then eight `## ` sections in the order below. A heading starts
 with its section's first word (`## Tracker: Asana`, `## Code host: GitHub`), which is what
 `dev-process show <word>` matches.
 
@@ -37,8 +37,8 @@ Any adapter name is valid as long as every operation in its section has a comman
 name is a label. `none` is the one built-in meaning: for `tracker`, tickets are files in the
 repository; for `host`, a change is a local branch merged into the trunk with `git merge`.
 
-The Tracker, Code host, and Workspace sections are tables whose first column is the operation
-name exactly as listed here and whose second is the command or rule; further columns are
+The Tracker, Code host, Experiment, and Workspace sections are tables whose first column is the
+operation name exactly as listed here and whose second is the command or rule; further columns are
 ignored. An operation the process does not use keeps its row and says "Not used" or "Not
 applicable" with where that concern lives instead. The other four sections are prose or a table
 that states every rule listed for them. Values the owner fills in are written `<...>`. The Tracker
@@ -77,7 +77,6 @@ and replaces a longer file with a pointer to `dev-process show`.
 | Merge | tpm only | change id | the command, using `merge_method` |
 | After merge | tpm | change id | the confirmation and cleanup steps |
 | Repo description | readme-reviewer, tpm | text | the command that reads and sets the one-line description, or "Not applicable" |
-| Experiment mode | tpm, Phase 1 | none | whether it is allowed and what it skips |
 
 The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoint unless the ledger
 passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
@@ -112,6 +111,22 @@ a case-insensitive filesystem still runs), and a trunk update with no merge or p
 with no reported checks or with skipped checks, so the tpm runs the Check ledger and CI status
 operations before every Merge, including any form outside those, and the file's Merge row states
 that its command runs only after both.
+
+## Experiment
+
+A process file whose Experiment section is absent, or is the single line `Not allowed.`, turns the
+mode off.
+
+| Operation | Called by | Inputs | The file states |
+| --- | --- | --- | --- |
+| Enter | tpm, Phase 1 | the owner's statement | that the statement enters the mode, recorded once in the session, or "Not allowed" |
+| Branch name | tpm | topic | the experiment branch's pattern |
+| Slice branch | tpm, implementer | slice | the pattern, cut from the experiment branch |
+| Integrate | tpm | slice branch | the merge or cherry-pick into the experiment branch, run with the experiment worktree as the working directory; the directory change is its own command, since the hook refuses a merge combined with `cd` |
+| Skipped | every role | none | what the mode skips: tickets, change requests, the five gates, tests, lint, CI, the version bump |
+| Required | every role | none | live verification with its evidence, small commits, no attribution lines, a push of the experiment branch |
+| Results | implementer | none | where raw data, logs, the report, and the rerun script live, so another machine reruns without code changes |
+| Exit | tpm | experiment branch | one change from the experiment branch to the trunk, tagged at the highest slice difficulty, through every gate |
 
 ## Workspace
 
