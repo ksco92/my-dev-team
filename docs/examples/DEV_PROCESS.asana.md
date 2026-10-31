@@ -88,7 +88,6 @@ Out of Scope
 | Merge | Orchestrator only: `gh pr merge <n> --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; the hook also refuses it unless the ledger check passes and `gh pr checks` reports every check passed or skipped |
 | After merge | Complete the task (Tracker above); remove the workspace (below) |
 | Repo description | `gh repo view --json description -q .description`; set with `gh repo edit --description "<text>"` |
-| Experiment mode | Only when the user says so: one branch, direct commits, no PR and no gates; never merged to `main` outside the normal path |
 
 Change body template:
 
@@ -110,6 +109,10 @@ Change body template:
 ## Notes
 [Non-obvious trade-offs, assumptions made, follow-ups found]
 ```
+
+## Experiment
+
+Not allowed.
 
 ## Workspace: branch-in-place
 
