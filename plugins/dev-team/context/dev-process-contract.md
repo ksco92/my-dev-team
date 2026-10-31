@@ -82,16 +82,20 @@ The merge hook refuses `gh pr merge` and a `gh api` call to a PR's merge endpoin
 passes at the head and `gh pr checks` reports every check passed or skipped, treating a PR that
 reports no checks as passing. It refuses `git merge` into `main` or `master` unless the ledger
 passes for the merged branch (`-` is the previous branch); a bare `git merge` there passes only when
-the upstream is a remote trunk. On the trunk it allows only a bare `git pull` whose `@{upstream}` is
+the upstream is a remote trunk. A `git -C <dir> merge` is gated the same way on the branch checked
+out in `<dir>` (a relative `<dir>` resolves from the working directory, an unquoted leading `~` or
+`~/` from `$HOME`), and is refused when `<dir>` contains a `$` or a backtick or is not inside a git
+repository, or when `-C` is given more than once. On the trunk it allows only a bare `git pull` whose `@{upstream}` is
 a remote's `main` or `master`, or `git pull <remote> main|master` (`refs/heads/main` counts as the
 trunk), either form with or without `--ff-only`, `--rebase`, `--no-rebase`, or a strategy option
 given as a separate word (`-X theirs`), and denies any other pull. It always refuses a command with
 more than one `git merge`, `git pull`, or `git push`, a GraphQL `mergePullRequest`, a `git merge`
 from a working directory that is not a repository, a merge of two branches, and a `git merge` or
 `git pull` in the same command as a `cd`, `pushd`, `git worktree add`, a checkout or switch to
-`main`, `master`, `-`, or `@{-N}`, or a `rebase <branch> main`, or redirected with `-C`,
-`--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or `env -C`, or run in a subshell or
-`$(...)`. A `git push` in any of those forms passes only when it names its remote and literal
+`main`, `master`, `-`, or `@{-N}`, or a `rebase <branch> main`, or redirected with `--git-dir`,
+`--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, or `env -C` (a pull also with `-C`), or run in a
+subshell or `$(...)`. A `git push` in any of those forms or with `-C` passes only when it names its
+remote and literal
 refspecs whose destination is neither the trunk nor `HEAD`/`@`, with a non-empty source and no
 delete, `--all`, or `--mirror` (force is allowed); one with no refspec is denied, since the other
 directory's branch cannot be read. Push accepts only literal refspecs (a branch or `<src>:<dst>`,
