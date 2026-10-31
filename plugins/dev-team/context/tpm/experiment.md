@@ -17,9 +17,8 @@ experiment on another machine without code changes.
 
 ## Integrate and verify
 
-Change directory to the experiment worktree as its own command, then run `git merge exp/<slice>` as
-the next command. Never cherry-pick: the hook gates a merge into `main` or `master` on the ledger
-and does not gate trunk updates with no merge or push, such as a cherry-pick. Rerun the `run_*.sh`
-entry point and record the output in `results/RESULTS.md`, then push by name with
-`git push origin experiment/<topic>`. No ledger record is written. The exit path is one change from
-the experiment branch to the trunk through every gate.
+Integrate, verify, push, and exit as the Experiment section of the resolved process file states (its
+Integrate, Required, Results, and Exit operations), rerunning the entry point the Results operation
+names and recording its output in the report. Never cherry-pick: the hook gates a merge into `main`
+or `master` on the ledger and does not gate trunk updates with no merge or push, such as a
+cherry-pick. No ledger record is written.

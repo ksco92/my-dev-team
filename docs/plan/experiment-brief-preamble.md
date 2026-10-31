@@ -28,13 +28,12 @@ preamble one home the `tpm` skill pastes from, and points the baseline's Testing
       experiment on another machine without code changes.
       ```
 
-      The Integrate and verify prose states: change directory to the experiment worktree as its own
-      command, then `git merge exp/<slice>` as the next command; never cherry-pick, since the hook
-      gates a merge into `main` or `master` on the ledger and does not gate trunk updates with no
-      merge or push, such as a cherry-pick; rerun the `run_*.sh` entry point and record the output
-      in `results/RESULTS.md`; push by name with `git push origin experiment/<topic>`; no ledger
-      record is written; the exit path is one change from the experiment branch to the trunk through
-      every gate.
+      The Integrate and verify prose states: integrate, verify, push, and exit as the Experiment
+      section of the resolved process file states (its Integrate, Required, Results, and Exit
+      operations), rerunning the entry point the Results operation names and recording its output in
+      the report; never cherry-pick, since the hook gates a merge into `main` or `master` on the
+      ledger and does not gate trunk updates with no merge or push, such as a cherry-pick; no ledger
+      record is written. It repeats no command the process file states.
 - [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence, and
       the agent files are not edited (every implementer reads the baseline as its binding contract):
       "In experiment mode, declared by the preamble from
