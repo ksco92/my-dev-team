@@ -4,3 +4,4 @@ A "not gated" statement about the merge gate names a class of forms, never a clo
 Every gated subcommand is refused when it appears more than once in a command, and a subcommand added as a ledger-gated peer of merge joins the same trigger set.
 The review gates' scope on hook changes is the forms an agent plausibly writes by mistake; a form outside that scope is recorded in the accepted-limits statement, not filed as a finding.
 Prose about what the hook refuses or gates names `main` or `master`, the names the hook matches, never "the trunk".
+A merge the hook detects as redirected with -C whose git prefix it cannot parse is denied, never left ungated.

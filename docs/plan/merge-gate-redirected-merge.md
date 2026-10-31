@@ -1,0 +1,67 @@
+---
+difficulty: high
+priority: p1
+status: done
+---
+
+## Context
+`hooks/merge-gate.sh` refuses every `git merge` redirected with `-C`, grouped with the forms whose
+target branch cannot be read before the command runs (`cd`, `GIT_DIR`, `env -C`, `worktree add`).
+For `git -C <dir> merge`, `<dir>` is a literal directory whose HEAD the hook can read, so the merge
+can be gated exactly as if `<dir>` were the working directory. Refusing it pushes the integration
+step toward forms the hook does not gate at all.
+
+## Requirements
+- [ ] `git -C <dir> merge [options] <branch>`, with any `-c k=v` or `--no-pager` style options
+      before the subcommand and `<dir>` quoted or bare, is gated as if the hook's `cwd` were
+      `<dir>`: HEAD of `<dir>` not `main` or `master` → allowed; HEAD `main` or `master` → the
+      ledger check that a plain `git merge` there gets today; `<dir>` not an existing repository
+      (a literal `$DIR` or `$(pwd)` is not a directory) → denied; a `-C` merge whose git prefix the
+      hook cannot fully parse (an unquoted nested substitution, an option value as a separate word)
+      → denied, never left ungated, and `.claude/rules/merge-gate.md` states that rule
+- [ ] Every other combined form stays denied for merge and pull: `cd`, `pushd`, `git worktree add`,
+      a checkout or switch to `main` or `master`, `-`, or `@{-N}`, a rebase onto `main` or
+      `master`, `--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, `env -C`, a subshell or
+      `$(...)`, and a `-C` merge that also carries one of those forms in the same command
+- [ ] `git -C <dir> pull` is unchanged (still denied as a combined form)
+- [ ] Every push rule is unchanged: a `-C` push of `<src>:main`, `HEAD:main`, a force or delete of
+      main, or one with no refspec is still denied
+- [ ] The hook's header comment and the merge-hook paragraph of
+      `plugins/dev-team/context/dev-process-contract.md` state the new per-form behaviour exactly,
+      per `.claude/rules/merge-gate.md`; the combined-form denial message no longer lists `-C` for a
+      merge but still does for a pull
+- [ ] `plugins/dev-team/tests/merge-gate.test.sh` adds: `-C` merge into a branch other than `main`
+      or `master` allowed (from a cwd that is a different repository and from one that is no
+      repository); `-C` merge into main without a ledger denied with the ledger message; `-C` merge
+      into main with five PASS records allowed; `-C` merge whose directory does not exist denied;
+      `-C '$(pwd)'` merge denied; the two unparseable-prefix forms denied with the parse message;
+      `cd <dir> && git merge` still denied; `git -C <dir> pull . <branch>` still denied; `-C` push
+      onto main still denied
+- [ ] `plugins/dev-team/.claude-plugin/plugin.json` version bumps patch
+
+## Acceptance Criteria
+- [ ] All requirements verifiable from the diff
+- [ ] `bash plugins/dev-team/tests/merge-gate.test.sh` passes with the new cases and every
+      existing one
+- [ ] `shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/tests/*.sh` passes
+- [ ] Mutation checks recorded in the change body: with the new `-C` resolution reverted, the new
+      allowed-case tests fail; with the `main`/`master` check removed from the `-C` path, the
+      denied-case tests fail; with the parse-gap denial removed, its two tests fail
+- [ ] The protection property for `main` and `master` is stated in the change body as a closed list:
+      every form that lands a ref on `main` or `master` is listed with the check that gates it, and
+      the one form gated by less than before (a `-C` merge into `main` or `master`, from always
+      denied to ledger-gated) is named as such
+- [ ] No sentence in any edited file names a private repository, a date, or a PR
+
+## Implementation Plan
+Resolve the `-C` value from the merge segment's words before `combined` runs; when it is a literal
+existing repository, substitute it for `cwd` for the rest of the merge path and drop the `-C`
+clause from the combined test for merge only. Fail closed on anything else. Restate the contract
+paragraph and the header from the final code, not from the plan.
+
+## Dependencies
+- Blocked by: none · Blocks: none
+
+## Out of Scope
+Allowing `-C` for pull or any push form; gating `cherry-pick` (it is not gated today and stays
+ungated); the process-file Experiment section (experiment-process-section).

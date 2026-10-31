@@ -65,7 +65,7 @@ git -C "$on_main" fetch -q origin
 printf 'Merge feature/x\n' >"$TMP/msg"
 upstream() { git -C "$on_main" branch -q -u "$1" main; }
 
-combined="merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+combined="merge-gate: run the merge or pull as its own command, from the repository's working directory (or, for a merge, with git -C <repository>), on the branch already checked out there; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, env -C, or (for a pull) -C, or run in a subshell or command substitution, is not accepted."
 denied_combined() { check "$1 is denied" "$(gate "$1" "$2")" "2 $combined"; }
 denied_combined 'git checkout main && git merge feature/x' "$on_feature"
 denied_combined 'git switch main; git merge feature/x' "$on_feature"
@@ -87,9 +87,11 @@ denied_combined "cd $on_main
 git merge feature/x" "$TMP"
 denied_combined "git worktree add $TMP/wt main
 git merge feature/x" "$on_feature"
-denied_combined "git -C $on_main merge feature/x" "$TMP"
-denied_combined "git -C \"$on_main\" merge --no-ff feature/x" "$TMP"
-denied_combined "git -c k=v -C $on_main merge feature/x" "$TMP"
+denied_combined "cd $on_main && git -C $on_main merge feature/x" "$TMP"
+denied_combined "GIT_DIR=$on_main/.git git -C $on_main merge feature/x" "$on_feature"
+denied_combined "git -C $on_main --git-dir=$on_main/.git merge feature/x" "$TMP"
+denied_combined "(git -C $on_main merge feature/x)" "$TMP"
+denied_combined "git -C $on_feature checkout main && git -C $on_feature merge feature/x" "$TMP"
 denied_combined "git --git-dir=$on_main/.git --work-tree=$on_main merge feature/x" "$TMP"
 denied_combined "GIT_DIR=$on_main/.git git merge feature/x" "$on_feature"
 denied_combined "GIT_WORK_TREE=$on_main git merge feature/x" "$on_feature"
@@ -106,8 +108,32 @@ check "a checkout of main-like branch with a merge is not the combined shape" \
 check "git -C <dir> merge-base is allowed" "$(gate "git -C $on_main merge-base main feature/x" "$TMP")" "0 "
 
 check "merge from a cwd that is not a repository is denied" "$(gate 'git merge feature/x' "$TMP")" \
-  "2 merge-gate: the working directory '$TMP' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
+  "2 merge-gate: the directory '$TMP' is not a git repository, so the merge target cannot be read; run the merge from the repository's working directory or with git -C <repository>."
 check "merge on a feature branch is allowed" "$(gate 'git merge main' "$on_feature")" "0 "
+check "a -C merge into a feature branch from another repository is allowed" "$(gate "git -C $on_feature merge main" "$on_main")" "0 "
+check "a -C merge into a feature branch from no repository is allowed" \
+  "$(gate "git --no-pager -C \"$on_feature\" merge --ff-only main" "$TMP")" "0 "
+check "a relative -C merge into a feature branch is allowed" "$(gate 'git -C on-feature merge main' "$TMP")" "0 "
+check "an escaped -C directory is allowed" "$(gate 'git -C on\-feature merge main' "$TMP")" "0 "
+# shellcheck disable=SC2016 # the substitution is the command under test
+for dir in "$TMP/missing" "$TMP" '$(pwd)' "'\$(pwd)'" "'~/on-feature'"; do
+  check "a -C merge into '$dir' is denied" "$(gate "git -C $dir merge main" "$TMP")" \
+    "2 merge-gate: the merge's -C directory '$dir' is not a literal path to a git repository, so the merge target cannot be read; name an existing repository."
+done
+check "a -C glued to its directory is denied" "$(gate "git -C$on_feature merge main" "$on_main" | grep -cF "merge-gate: the merge's -C directory '-C$on_feature'")" "1"
+unparsed="2 merge-gate: the git options before this -C merge cannot be parsed, so its target cannot be read; write it as git -C <dir> merge <branch>, joining any option to its value with =."
+for cmd in "git -C \$(dirname \$(echo $on_main/x)) merge feature/x" "git -C $on_main --attr-source HEAD merge feature/x"; do
+  check "'$cmd' is denied as unparsed" "$(gate "$cmd" "$TMP")" "$unparsed"
+done
+check "a merge with two -C is denied" "$(gate "git -C $TMP -C on-feature merge main" "$TMP")" \
+  "2 merge-gate: pass one -C per merge; a merge with several is not accepted."
+c_forms=("git -C $on_main" "git -C \"$on_main\"" "git -c k=v -C $on_main" "git --no-pager -C '$on_main'")
+for prefix in "${c_forms[@]}"; do
+  for dir in "$TMP" "$on_feature"; do
+    check "'$prefix merge feature/x' from $dir without a ledger names the unproven gates" \
+      "$(gate "$prefix merge feature/x" "$dir" | grep -c 'review gates not proven for feature/x')" "1"
+  done
+done
 # shellcheck disable=SC2016 # the $(...) inside a -c value is part of the command under test
 option_forms=('git -c k=v' 'git --no-pager' 'git -c "user.name=a b"' "git -c user.name='a b'" 'git -c k=v\ w' 'git -c k=$(echo v)' 'git --attr-source=HEAD')
 for prefix in git "${option_forms[@]}"; do
@@ -126,6 +152,12 @@ done
 for prefix in git "${option_forms[@]}"; do
   check "'$prefix merge feature/x' on main with five PASS at the head is allowed" "$(gate "$prefix merge feature/x" "$on_main")" "0 "
 done
+for prefix in "${c_forms[@]}"; do
+  for dir in "$TMP" "$on_feature"; do
+    check "'$prefix merge feature/x' from $dir with five PASS at the head is allowed" "$(gate "$prefix merge feature/x" "$dir")" "0 "
+  done
+done
+check "a -C 'merge -' with five PASS on the previous branch is allowed" "$(gate "git -C $on_main merge -" "$TMP")" "0 "
 for cmd in 'git merge -' "git merge --no-ff feature/x -F $TMP/msg" 'git merge -m "Merge feature/x" feature/x' 'git merge -X theirs feature/x' \
   "git merge --no-ff feature/x -F \"\$(git rev-parse --git-common-dir)/changes/feature/x.md\""; do
   check "'$cmd' on main with five PASS at the head is allowed" "$(gate "$cmd" "$on_main")" "0 "
@@ -160,14 +192,14 @@ upstream other
 check "a bare merge; with a local upstream is denied" "$(gate 'git merge; true' "$on_main")" "$no_branch"
 check "a bare merge&& with a local upstream is denied" "$(gate 'git merge&&true' "$on_main")" "$no_branch"
 upstream origin/main
-check "a bare merge with a remote-trunk upstream is allowed" "$(gate 'git merge&&true' "$on_main")" "0 "
+check "a bare merge with a remote main upstream is allowed" "$(gate 'git merge&&true' "$on_main")" "0 "
 
-pull_denied="2 merge-gate: on main, pull only its remote trunk (git pull with a remote-trunk upstream, or git pull <remote> main); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
+pull_denied="2 merge-gate: on main, pull only a remote's main or master (git pull with such an upstream, or git pull <remote> main); fetch, then merge the local branch with git merge <branch> so the ledger is checked."
 for cmd in 'git pull' 'git pull --ff-only' 'git pull --rebase' 'git pull --no-rebase' 'git pull -X theirs'; do
-  check "bare '$cmd' with a remote-trunk upstream is allowed" "$(gate "$cmd" "$on_main")" "0 "
+  check "bare '$cmd' with a remote main upstream is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done
 for cmd in 'git pull origin main' 'git pull origin refs/heads/main' 'git pull --ff-only origin main' 'git pull -X theirs origin main'; do
-  check "explicit remote trunk '$cmd' is allowed" "$(gate "$cmd" "$on_main")" "0 "
+  check "explicit remote main '$cmd' is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done
 for cmd in 'git pull origin feature/x' 'git pull . feature/x' "git pull $on_feature" 'git pull https://example.com/r.git main' 'git pull --squash'; do
   check "'$cmd' on main is denied" "$(gate "$cmd" "$on_main")" "$pull_denied"
@@ -178,7 +210,7 @@ check "a pull on a feature branch is allowed" "$(gate 'git pull . main' "$on_fea
 
 onto="2 merge-gate: pushing 'feature/x' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
 bare_force="2 merge-gate: a force push without a refspec from main pushes main; name the branch to push."
-redirected_push="merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither the trunk nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
+redirected_push="merge-gate: a push run through cd, pushd, -C, --git-dir, GIT_DIR, env -C, or beside a checkout must name its remote and literal refspecs with a non-empty source and a destination that is neither main, master, nor HEAD/@, without delete, --all, or --mirror; run any other push from the repository as its own command."
 denied_redirected_push() { check "$1 is denied" "$(gate "$1" "$2")" "2 $redirected_push"; }
 denied_redirected_push "git -C $on_main push . feature/x:main" "$TMP"
 denied_redirected_push "git --git-dir=$on_main/.git push . feature/x:main" "$TMP"
@@ -197,7 +229,7 @@ check "cd <wt> && git push origin 'refs/heads/*' is refused as non-literal" \
   "$(gate "cd $on_feature && git push origin 'refs/heads/*'" "$on_main" | grep -cF "merge-gate: only literal refspecs (<branch> or <src>:<dst>) are accepted;")" "1"
 for cmd in "cd $on_feature && git push -u origin feature/x" "git -C $on_feature push -u origin feature/x" \
   "git -C $on_feature push --force-with-lease origin feature/x" "git -C $on_feature push origin feature/x:feature/x"; do
-  check "'$cmd' pushes a literal non-trunk branch and is allowed" "$(gate "$cmd" "$on_main")" "0 "
+  check "'$cmd' pushes a literal branch other than main and is allowed" "$(gate "$cmd" "$on_main")" "0 "
 done
 check "a push redirected through > is still parsed" "$(gate 'git push origin feature:main>/dev/null' "$on_feature")" \
   "2 merge-gate: pushing 'feature' onto main bypasses the PR and its gates; open a PR and merge it with 'gh pr merge' (or 'git merge' on main in a no-remote repo)."
@@ -333,7 +365,7 @@ check "a captured push of a feature branch is allowed" "$(gate 'out=$(git push o
 # shellcheck disable=SC2016 # the substitutions are the commands under test
 check "an fd copy inside a substitution takes no target" "$(gate 'out=$(git push 2>&1 origin feature/x)' "$on_feature")" "0 "
 # shellcheck disable=SC2016 # the substitutions are the commands under test
-check "a trunk refspec after an fd copy inside a substitution is denied" \
+check "a main refspec after an fd copy inside a substitution is denied" \
   "$(gate 'out=$(git push origin 2>&1 main feature/x)' "$on_feature")" "2 $redirected_push"
 
 check "gh pr merge outside a GitHub repo is denied at the repo lookup" "$(gate 'gh pr merge 1' "$TMP")" \
