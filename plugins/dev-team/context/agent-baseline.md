@@ -144,6 +144,10 @@ or trim before pushing.
 
 ## Testing
 
+In experiment mode, declared by the preamble from `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`,
+this section and the coding guides' test, coverage, and lint rules do not apply and the comment
+budget still does.
+
 Coverage ≥ the project's bar (default 95% on new code); uncovered lines justified in the PR.
 Roughly 70% unit (pure logic, no I/O), 20% integration (real database/dependencies — never mock
 the database), 10% end-to-end on the critical path. Descriptive names, Arrange-Act-Assert, one
