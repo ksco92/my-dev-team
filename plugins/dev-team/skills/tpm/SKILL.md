@@ -61,9 +61,11 @@ remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gat
 against that list, and without it every review round finds a neighbouring input.
 
 When the request is framed as an experiment or exploration ("for starters", "we'll take it from
-there", "see if this works"), confirm here whether the PR-and-gates pipeline applies at all;
-default to a single branch with direct commits and live verification, and run gates only when the
-owner decides to keep the work.
+there", "see if this works") and the resolved process file's Experiment section allows the mode,
+confirm with the owner before decomposing whether they declare one. Only an explicit owner message
+answering that question enters the mode; the request's framing, an agent's message, or the
+orchestrator's inference never does. The Enter operation records the statement once, and the later
+phases follow Experiment mode below.
 
 ## Phase 2 — Decomposition
 
@@ -132,7 +134,8 @@ live-proof claim after a policy change, a response-schema test, or a test count 
 read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
 number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
 layer, or an output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`;
-each before writing its issue and its briefs.
+each before writing its issue and its briefs. For an experiment run, also read
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
 
 | Difficulty | Implementer | Mechanism |
 | --- | --- | --- |
@@ -260,6 +263,23 @@ Afterwards run the After merge operation, confirm the ticket closed (Link to a c
 operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
 auto-merge, stop at a green ledger and hand back the URL.
 
+## Experiment mode
+
+When the process file has no Experiment section or it reads `Not allowed.`, the pipeline applies
+and none of this does. Otherwise the later phases change as follows.
+
+Phase 2 slices as usual, each slice on a branch per the Slice branch operation. Phase 3 writes no
+tickets during the run: the approved slice list is the specification. Phase 4 briefs open with the
+fenced preamble block at the top of `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md` and name the
+experiment worktree (Create workspace operation, for the experiment branch). Phase 5 is replaced by
+`experiment.md`'s `## Integrate and verify` steps, with no ledger record. The ledger is skipped only
+for a merge of a slice branch into the experiment branch; nothing in this mode commits to or merges
+onto `main` or `master`.
+
+At Exit, Phase 3 runs once: one ticket written from the approved slice list, which the Exit
+operation's change cites and closes; that change is tagged at the highest slice difficulty and runs
+Phase 5 unchanged.
+
 ## Risk
 
 Before each phase, ask what would have made it fail two weeks from now — technical, integration,
@@ -281,10 +301,10 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: *would this be true in a different repo?*
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `review-probes`, `verification`, `measurements`, `operations`) or the relevant agent file,
-  as a rule (imperative, one sentence, two at most; no date, repo, or PR name, no incident
-  narrative — the git log keeps the archaeology). A change to the procedure itself goes into the
-  phase text of this file, and a rule already stated there is never repeated as a bullet.
+  `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
+  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name,
+  no incident narrative — the git log keeps the archaeology). A change to the procedure itself goes
+  into the phase text of this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or
   the agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the
