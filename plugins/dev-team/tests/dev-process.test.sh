@@ -146,8 +146,8 @@ check "hook exits 0 when the policy is missing" "$?" "0"
 check "hook reports a missing policy in one line" "$out" "# Harness policy (dev-team plugin): not found at $broken/context/policy.md."
 
 # Every process file fits the hook limit, carries every Tracker, Code host, Experiment, and Workspace
-# operation of the contract (an Experiment section reading `Not allowed.` is the one exception), and
-# forbids every action the contract's Forbidden row lists.
+# operation of the contract (an Experiment section reading `Not allowed.` is exempt), and forbids every
+# action the contract's Forbidden row lists.
 operations() { awk -v want="$1" '/^## /{on = ($2 == want)} on && /^\| [^-]/ && !/^\| Operation /' "$PLUGIN/context/dev-process-contract.md" | cut -d'|' -f2 | sed 's/^ *//; s/ *$//'; }
 forbidden_keywords=(onto "force or delete" "anyone but" "commenting on" approving ledger "outside the workspace")
 for keyword in "${forbidden_keywords[@]}"; do
@@ -166,8 +166,8 @@ for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCES
     "$(CLAUDE_PLUGIN_ROOT="$long_root" CLAUDE_PROJECT_DIR="$TMP/conf" "$HOOK" process </dev/null | grep -c '^Not inlined')" "0"
   for word in Tracker Code Experiment Workspace; do
     body="$("$DP" show "$word" --repo "$TMP/conf")"
-    if [[ "$word" == Experiment && "$(tail -n +2 <<<"$body" | tr -d '[:space:]')" == "Notallowed." ]]; then
-      check "${file#"$REPO_ROOT"/} turns the Experiment mode off" "$(grep -c '^| ' <<<"$body")" "0"
+    if [[ "$word" == Experiment ]] && grep -qx 'Not allowed.' <<<"$body"; then
+      check "${file#"$REPO_ROOT"/} Experiment section is the single line Not allowed." "$(tail -n +2 <<<"$body" | grep -c .)" "1"
       continue
     fi
     while IFS= read -r op; do

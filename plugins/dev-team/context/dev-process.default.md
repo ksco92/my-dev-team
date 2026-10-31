@@ -103,12 +103,11 @@ Change body template:
 | Enter | Only when the owner says so; record it once in the session |
 | Branch name | `experiment/<topic>` |
 | Slice branch | `exp/<slice>`, cut from the experiment branch |
-| Integrate | With the experiment branch checked out (the checkout is its own command), `git merge exp/<slice>` or `git cherry-pick <sha>` |
+| Integrate | With the experiment branch checked out (the checkout is its own command), `git merge exp/<slice>`; a merge run on `main` is refused by the hook |
 | Skipped | Tickets, change bodies, the five gates, tests, lint, CI, the version bump |
-| Required | Live verification with its evidence, small commits, no attribution lines, a push of the experiment branch |
+| Required | Live verification with its evidence, small commits, no attribution lines; there is no remote, so nothing is pushed |
 | Results | Raw data under `results/<machine-slug>/raw/`, logs gitignored, the report at `results/RESULTS.md`, and a `run_*.sh` entry point that reruns on another machine without code changes |
 | Exit | One change from the experiment branch to the trunk, tagged at the highest slice difficulty, through every gate |
-
 
 ## Workspace: branch-in-place
 

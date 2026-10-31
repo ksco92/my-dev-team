@@ -23,7 +23,7 @@ claude plugin marketplace add /path/to/clone
 
 ## DEV_PROCESS.md
 
-`DEV_PROCESS.md` holds every tracker, code-host, and workspace command the skills and agents run;
+`DEV_PROCESS.md` holds every tracker, code-host, experiment, and workspace command the skills and agents run;
 they carry no commands of their own, and a lesson true only on a GitHub host keeps its command and
 says so. The operations it covers, and the forms the merge hook guards, are listed in
 `plugins/dev-team/context/dev-process-contract.md`; a blank copy is
@@ -31,7 +31,4 @@ says so. The operations it covers, and the forms the merge hook guards, are list
 and `docs/examples/DEV_PROCESS.asana.md`. Run `plugins/dev-team/bin/dev-process` with no arguments
 for its usage.
 
-The Experiment section turns on an experiment mode when the owner asks for one: slice branches
-merge into one experiment branch with no tickets, change requests, gates, tests, or CI, and results
-land under `results/`. The work re-enters the trunk as one gated change; a file whose section reads
-`Not allowed.` or lacks it keeps the mode off.
+The Experiment section turns on an experiment mode when the owner asks for one: slice branches are merged into one experiment branch with no tickets, change requests, gates, tests, or CI, and its Results row names where raw data, logs, and the report live. The work re-enters the trunk as one gated change; a file whose section is absent or reads `Not allowed.` keeps the mode off.

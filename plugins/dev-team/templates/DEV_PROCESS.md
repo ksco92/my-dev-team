@@ -57,17 +57,18 @@ Change body template:
 
 ## Experiment
 
+<!-- Or the single line "Not allowed." when the mode is off. -->
+
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Enter |  | how the owner's statement enters the mode, or "Not allowed" |
 | Branch name |  | pattern of the experiment branch |
 | Slice branch |  | pattern of a slice branch and where it is cut from |
-| Integrate |  | merge or cherry-pick of a slice branch into the experiment branch |
+| Integrate |  | merge of a slice branch into the experiment branch; a form the hook does not gate is not accepted |
 | Skipped |  | what the mode skips |
-| Required |  | what the mode still requires |
+| Required |  | what the mode still requires, including the push of the experiment branch by name |
 | Results |  | where raw data, logs, the report, and the rerun script live |
 | Exit |  | how the work re-enters the trunk through the gates |
-
 
 ## Workspace: <name>
 

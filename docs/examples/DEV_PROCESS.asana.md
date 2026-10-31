@@ -114,7 +114,6 @@ Change body template:
 
 Not allowed.
 
-
 ## Workspace: branch-in-place
 
 | Operation | Command / rule |

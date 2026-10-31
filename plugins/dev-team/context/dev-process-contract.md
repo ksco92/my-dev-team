@@ -122,9 +122,9 @@ mode off.
 | Enter | tpm, Phase 1 | the owner's statement | that the statement enters the mode, recorded once in the session, or "Not allowed" |
 | Branch name | tpm | topic | the experiment branch's pattern |
 | Slice branch | tpm, implementer | slice | the pattern, cut from the experiment branch |
-| Integrate | tpm | slice branch | the merge or cherry-pick into the experiment branch, run with the experiment worktree as the working directory; the directory change is its own command, since the hook refuses a merge combined with `cd` |
+| Integrate | tpm | slice branch | the merge of a slice branch into the experiment branch, run as its own command after a separate command checks out the experiment branch or changes into its worktree; a merge run on the trunk is refused by the hook, so a failed preceding step cannot land the slice there |
 | Skipped | every role | none | what the mode skips: tickets, change requests, the five gates, tests, lint, CI, the version bump |
-| Required | every role | none | live verification with its evidence, small commits, no attribution lines, a push of the experiment branch |
+| Required | every role | none | live verification with its evidence, small commits, no attribution lines, and a push of the experiment branch by name, or that there is no remote |
 | Results | implementer | none | where raw data, logs, the report, and the rerun script live, so another machine reruns without code changes |
 | Exit | tpm | experiment branch | one change from the experiment branch to the trunk, tagged at the highest slice difficulty, through every gate |
 
