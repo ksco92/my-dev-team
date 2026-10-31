@@ -30,3 +30,8 @@ says so. The operations it covers, and the forms the merge hook guards, are list
 `plugins/dev-team/templates/DEV_PROCESS.md`, with examples in `docs/examples/DEV_PROCESS.github.md`
 and `docs/examples/DEV_PROCESS.asana.md`. Run `plugins/dev-team/bin/dev-process` with no arguments
 for its usage.
+
+The Experiment section turns on an experiment mode when the owner asks for one: slice branches
+merge into one experiment branch with no tickets, change requests, gates, tests, or CI, and results
+land under `results/`. The work re-enters the trunk as one gated change; a file whose section reads
+`Not allowed.` or lacks it keeps the mode off.
