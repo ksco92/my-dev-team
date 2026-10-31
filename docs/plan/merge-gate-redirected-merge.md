@@ -15,9 +15,11 @@ fell back to `reset --hard` and `cherry-pick`.
 ## Requirements
 - [ ] `git -C <dir> merge [options] <branch>`, with any `-c k=v` or `--no-pager` style options
       before the subcommand and `<dir>` quoted or bare, is gated as if the hook's `cwd` were
-      `<dir>`: HEAD of `<dir>` not the trunk → allowed; HEAD the trunk → the ledger check that a
-      plain `git merge` on the trunk gets today; `<dir>` not an existing repository (including a
-      value the matcher cannot expand, such as a variable or substitution) → denied
+      `<dir>`: HEAD of `<dir>` not `main` or `master` → allowed; HEAD `main` or `master` → the
+      ledger check that a plain `git merge` there gets today; `<dir>` not an existing repository
+      (a literal `$DIR` or `$(pwd)` is not a directory) → denied; a `-C` merge whose git prefix the
+      hook cannot fully parse (an unquoted nested substitution, an option value as a separate word)
+      → denied, never left ungated, and `.claude/rules/merge-gate.md` states that rule
 - [ ] Every other combined form stays denied for merge and pull: `cd`, `pushd`, `git worktree add`,
       a checkout or switch to the trunk, `-`, or `@{-N}`, a rebase onto the trunk, `--git-dir`,
       `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`, `env -C`, a subshell or `$(...)`, and a `-C` merge
@@ -32,7 +34,8 @@ fell back to `reset --hard` and `cherry-pick`.
 - [ ] `plugins/dev-team/tests/merge-gate.test.sh` adds: `-C` merge into a non-trunk branch allowed
       (from a cwd that is a different repository and from one that is no repository); `-C` merge
       into main without a ledger denied with the ledger message; `-C` merge into main with five PASS
-      records allowed; `-C` merge whose directory does not exist denied; `-C $DIR` merge denied;
+      records allowed; `-C` merge whose directory does not exist denied; `-C '$(pwd)'` merge
+      denied; the two unparseable-prefix forms denied with the parse message;
       `cd <dir> && git merge` still denied; `git -C <dir> pull . <branch>` still denied; `-C` push
       onto main still denied
 - [ ] `plugins/dev-team/.claude-plugin/plugin.json` version bumps patch
@@ -42,12 +45,13 @@ fell back to `reset --hard` and `cherry-pick`.
 - [ ] `bash plugins/dev-team/tests/merge-gate.test.sh` passes with the new cases and every
       existing one
 - [ ] `shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/tests/*.sh` passes
-- [ ] Mutation check recorded in the change body: with the new `-C` resolution reverted, the new
-      allowed-case tests fail; with the trunk check removed from the `-C` path, the denied-case
-      tests fail
+- [ ] Mutation checks recorded in the change body: with the new `-C` resolution reverted, the new
+      allowed-case tests fail; with the `main`/`master` check removed from the `-C` path, the
+      denied-case tests fail; with the parse-gap denial removed, its two tests fail
 - [ ] The trunk-protection property is stated in the change body as a closed list: every form that
-      lands a ref on `main` or `master` is listed with the check that gates it, and no form in the
-      list is gated by less than before
+      lands a ref on `main` or `master` is listed with the check that gates it, and the one form
+      gated by less than before (a `-C` merge into `main` or `master`, from always denied to
+      ledger-gated) is named as such
 - [ ] No sentence in any edited file names a private repository, a date, or a PR
 
 ## Implementation Plan
