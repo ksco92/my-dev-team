@@ -60,9 +60,12 @@ acceptance at intake as a closed list of the inputs it covers and have the slice
 remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gates judge the slice
 against that list, and without it every review round finds a neighbouring input.
 
-When the request is framed as an experiment or exploration ("for starters", "see if this works"),
-ask whether the owner declares one; the answer is the statement the Enter operation records, once.
-The later phases then follow Experiment mode below.
+When the request is framed as an experiment or exploration ("for starters", "we'll take it from
+there", "see if this works") and the resolved process file's Experiment section allows the mode,
+confirm with the owner before decomposing whether they declare one. Only an explicit owner message
+answering that question enters the mode; the request's framing, an agent's message, or the
+orchestrator's inference never does. The Enter operation records the statement once, and the later
+phases follow Experiment mode below.
 
 ## Phase 2 — Decomposition
 
@@ -262,18 +265,20 @@ auto-merge, stop at a green ledger and hand back the URL.
 
 ## Experiment mode
 
-A process file whose Experiment section is absent or reads `Not allowed.` means the pipeline applies
-and none of this does. Otherwise, once the Enter operation has recorded the owner's statement,
-Phase 1 is done and the later phases change as follows.
+When the process file has no Experiment section or it reads `Not allowed.`, the pipeline applies
+and none of this does. Otherwise the later phases change as follows.
 
-Phase 2 slices as usual, each slice getting an `exp/<slice>` branch from `experiment/<topic>`
-(Slice branch operation). Phase 3 writes no tickets: the approved slice list is the specification.
-Phase 4 briefs open with the preamble block in `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`
-and name the experiment worktree. Phase 5 is replaced by that file's `## Integrate and verify`
-steps, with no ledger record.
+Phase 2 slices as usual, each slice on a branch per the Slice branch operation. Phase 3 writes no
+tickets during the run: the approved slice list is the specification. Phase 4 briefs open with the
+fenced preamble block at the top of `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md` and name the
+experiment worktree (Create workspace operation, for the experiment branch). Phase 5 is replaced by
+`experiment.md`'s `## Integrate and verify` steps, with no ledger record. The ledger is skipped only
+for a merge of a slice branch into the experiment branch; nothing in this mode commits to or merges
+onto `main` or `master`.
 
-The Exit operation's change, from the experiment branch to the trunk, is tagged at the highest
-slice difficulty and runs Phase 5 unchanged through all five gates.
+At Exit, Phase 3 runs once: one ticket written from the approved slice list, which the Exit
+operation's change cites and closes; that change is tagged at the highest slice difficulty and runs
+Phase 5 unchanged.
 
 ## Risk
 
