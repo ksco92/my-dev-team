@@ -60,10 +60,9 @@ acceptance at intake as a closed list of the inputs it covers and have the slice
 remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gates judge the slice
 against that list, and without it every review round finds a neighbouring input.
 
-When the request is framed as an experiment or exploration ("for starters", "we'll take it from
-there", "see if this works"), confirm here whether the PR-and-gates pipeline applies at all;
-default to a single branch with direct commits and live verification, and run gates only when the
-owner decides to keep the work.
+When the request is framed as an experiment or exploration ("for starters", "see if this works"),
+ask whether the owner declares one; the answer is the statement the Enter operation records, once.
+The later phases then follow Experiment mode below.
 
 ## Phase 2 — Decomposition
 
@@ -132,7 +131,8 @@ live-proof claim after a policy change, a response-schema test, or a test count 
 read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
 number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
 layer, or an output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`;
-each before writing its issue and its briefs.
+each before writing its issue and its briefs. For an experiment run, also read
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
 
 | Difficulty | Implementer | Mechanism |
 | --- | --- | --- |
@@ -260,6 +260,21 @@ Afterwards run the After merge operation, confirm the ticket closed (Link to a c
 operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
 auto-merge, stop at a green ledger and hand back the URL.
 
+## Experiment mode
+
+A process file whose Experiment section is absent or reads "Not allowed" means the pipeline applies
+and none of this does. Otherwise, once the Enter operation has recorded the owner's statement,
+Phase 1 is done and the later phases change as follows.
+
+Phase 2 slices as usual, each slice getting an `exp/<slice>` branch from `experiment/<topic>`
+(Slice branch operation). Phase 3 writes no tickets: the approved slice list is the specification.
+Phase 4 briefs open with the preamble block in `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`
+and name the experiment worktree. Phase 5 is replaced by that file's `## Integrate and verify`
+steps, with no ledger record.
+
+The Exit operation's change, from the experiment branch to the trunk, is tagged at the highest
+slice difficulty and runs Phase 5 unchanged through all five gates.
+
 ## Risk
 
 Before each phase, ask what would have made it fail two weeks from now — technical, integration,
@@ -281,8 +296,8 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: *would this be true in a different repo?*
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `review-probes`, `verification`, `measurements`, `operations`) or the relevant agent file,
-  as a rule (imperative, one sentence, two at most; no date, repo, or PR name, no incident
+  `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
+  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name, no incident
   narrative — the git log keeps the archaeology). A change to the procedure itself goes into the
   phase text of this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
