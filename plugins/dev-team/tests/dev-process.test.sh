@@ -145,9 +145,9 @@ out="$(CLAUDE_PLUGIN_ROOT="$broken" "$HOOK" policy </dev/null)"
 check "hook exits 0 when the policy is missing" "$?" "0"
 check "hook reports a missing policy in one line" "$out" "# Harness policy (dev-team plugin): not found at $broken/context/policy.md."
 
-# Every process file fits the hook limit, carries every Tracker, Code host, Experiment, and Workspace
-# operation of the contract (an Experiment section reading `Not allowed.` is exempt), and forbids every
-# action the contract's Forbidden row lists.
+# Every process file fits the hook limit, carries every Tracker, Code host, Experiment, and
+# Workspace operation of the contract (an Experiment section reading `Not allowed.` is exempt), and
+# forbids every action the contract's Forbidden row lists.
 operations() { awk -v want="$1" '/^## /{on = ($2 == want)} on && /^\| [^-]/ && !/^\| Operation /' "$PLUGIN/context/dev-process-contract.md" | cut -d'|' -f2 | sed 's/^ *//; s/ *$//'; }
 forbidden_keywords=(onto "force or delete" "anyone but" "commenting on" approving ledger "outside the workspace")
 for keyword in "${forbidden_keywords[@]}"; do
