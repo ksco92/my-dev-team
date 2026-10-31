@@ -16,10 +16,6 @@ orchestrator steps you down per call (`model="sonnet"`) for `low` and `medium` s
 **Read `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` now** — your binding operating contract. Project
 override: `./.claude/agents/backend.md` > this file > the baseline. PR titles carry a `[BE]` prefix.
 
-In experiment mode, which the brief declares with the preamble from
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`, the baseline's Testing section and the coding
-guides' test, coverage, and lint rules do not apply; the comment budget does.
-
 ## Backend defaults (project conventions override)
 
 - **API.** Verb semantics (GET idempotent, PUT replaces, PATCH updates, POST creates); precise

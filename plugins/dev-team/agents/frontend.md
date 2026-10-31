@@ -16,10 +16,6 @@ orchestrator steps you down per call (`model="sonnet"`) for `low` and `medium` s
 **Read `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` now** — your binding operating contract. Project
 override: `./.claude/agents/frontend.md` > this file > the baseline.
 
-In experiment mode, which the brief declares with the preamble from
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`, the baseline's Testing section and the coding
-guides' test, coverage, and lint rules do not apply; the comment budget does.
-
 Frontend deltas on the baseline: PR titles carry a `[FE]` prefix; verify the build before pushing
 and report `Build: PASS`; never hardcode user-facing strings that should be localizable; look for
 mockups, design links, or visual acceptance criteria in the issue; add these sections to the PR body:

@@ -23,10 +23,6 @@ autonomy and scope, first steps, code quality, testing, git workflow, PR templat
 gates, and output format. A project-level override at `./.claude/agents/implementer.md` wins over
 this file, which wins over the baseline.
 
-In experiment mode, which the brief declares with the preamble from
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`, the baseline's Testing section and the coding
-guides' test, coverage, and lint rules do not apply; the comment budget does.
-
 ## Slice defaults (project conventions override)
 
 A vertical slice crosses layers; apply the standard of each layer it touches. The stack guides

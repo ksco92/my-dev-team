@@ -21,43 +21,40 @@ preamble one home the `tpm` skill pastes from, and tells the agent files that th
       no ticket, no change request. Verify the work live and report each command with its output as
       the evidence. Commit small on exp/<slice>, cut from experiment/<topic>, and push that branch;
       never merge, never rebase onto the trunk, never push another branch. The stack coding guides
-      apply for style only; their test, coverage, and lint sections do not. The comment budget holds:
-      doc comments sized to the item, no single-use one-statement helpers, comment lines well under
-      code lines in every touched file. Raw results go under results/<machine-slug>/raw/, logs are
-      gitignored, the report is results/RESULTS.md, and a run_*.sh entry point reruns the experiment
-      on another machine without code changes.
+      apply for style only; their test, coverage, and lint sections do not. The comment budget
+      holds: doc comments sized to the item, no single-use one-statement helpers, comment lines well
+      under code lines in every touched file. Raw results go under results/<machine-slug>/raw/, logs
+      are gitignored, the report is results/RESULTS.md, and a run_*.sh entry point reruns the
+      experiment on another machine without code changes.
       ```
 
       The Integrate and verify prose states: change directory to the experiment worktree as its own
-      command, then `git merge exp/<slice>` as the next command (never a cherry-pick: the hook refuses a
-      merge run on the trunk and does not gate a cherry-pick); rerun
-      the `run_*.sh` entry point and record the output in `results/RESULTS.md`; push
-      `experiment/<topic>`; no ledger record is written; the exit path is one change from the
-      experiment branch to the trunk through every gate.
-- [ ] `plugins/dev-team/agents/implementer.md`, `backend.md`, and `frontend.md` each gain one
-      sentence immediately after their "Read agent-baseline.md now" paragraph: "In experiment mode,
-      which the brief declares with the preamble from `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`,
-      the baseline's Testing section and the coding guides' test, coverage, and lint rules do not
-      apply; the comment budget does."
-- [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence: "In
-      experiment mode, declared by the brief, this section does not apply and the comment budget
-      still does."
+      command, then `git merge exp/<slice>` as the next command; never cherry-pick, since the hook
+      gates a merge into `main` or `master` on the ledger and does not gate forms that change the
+      trunk without `git merge`, such as a cherry-pick; rerun the `run_*.sh` entry point and record
+      the output in `results/RESULTS.md`; push by name with `git push origin experiment/<topic>`; no
+      ledger record is written; the exit path is one change from the experiment branch to the trunk
+      through every gate.
+- [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence, and
+      the agent files are not edited (every implementer reads the baseline as its binding contract):
+      "In experiment mode, declared by the preamble from
+      `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`, this section and the coding guides' test,
+      coverage, and lint rules do not apply and the comment budget still does."
 - [ ] `plugins/dev-team/.claude-plugin/plugin.json` version bumps patch
 
 ## Acceptance Criteria
 - [ ] All requirements verifiable from the diff
-- [ ] `plugins/dev-team/bin/lesson-lint --added origin/main plugins/dev-team/context/tpm/experiment.md
-      plugins/dev-team/context/agent-baseline.md plugins/dev-team/agents/implementer.md
-      plugins/dev-team/agents/backend.md plugins/dev-team/agents/frontend.md` exits 0 with no budget
-      warning
+- [ ] `plugins/dev-team/bin/lesson-lint --added origin/main
+      plugins/dev-team/context/tpm/experiment.md plugins/dev-team/context/agent-baseline.md`
+      exits 0 with no budget warning
 - [ ] `bash plugins/dev-team/tests/lesson-lint.test.sh` passes
 - [ ] `claude plugin validate plugins/dev-team --strict` passes
-- [ ] `grep -c 'experiment.md' plugins/dev-team/agents/implementer.md plugins/dev-team/agents/backend.md
-      plugins/dev-team/agents/frontend.md` prints 1 for each file
+- [ ] `grep -c 'experiment.md' plugins/dev-team/context/agent-baseline.md` prints 1, and
+      `git diff origin/main --stat -- plugins/dev-team/agents` is empty
 - [ ] No sentence in any edited file names a private repository, a date, or a PR
 
 ## Implementation Plan
-Create the file with a heredoc, add the four sentences with the Edit tool, run the four checks,
+Create the file with a heredoc, add the baseline sentence with the Edit tool, run the checks,
 bump the version, open the change.
 
 ## Dependencies
