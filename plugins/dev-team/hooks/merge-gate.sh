@@ -7,12 +7,15 @@
 #   gh api ... repos/<o>/<r>/pulls/<n>/merge       the same check, PR and repo parsed from the path
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
+#   git -C <dir> merge <branch>                    gated as a merge run in <dir>; denied when <dir>
+#                                                  is no literal repository path or -C repeats
 #   git pull on main                               only from a remote trunk; anything else denied
 #   git merge/pull after cd, pushd, worktree add,  always denied; the hook reads the branch before
 #     a switch to main, -, @{-N}, a rebase onto    the command runs, so it cannot gate these
-#     main, a -C/--git-dir/--work-tree/GIT_DIR/
+#     main, a --git-dir/--work-tree/GIT_DIR/
 #     env -C redirect, or in a subshell
-#   git push in any of those forms                 allowed only with a remote and literal refspecs
+#   git -C <dir> pull                              always denied
+#   git push in any of those forms or with -C      allowed only with a remote and literal refspecs
 #                                                  with a source and a destination other than the
 #                                                  trunk or HEAD/@, no delete, --all, or --mirror
 #   two merge/pull/push segments, a merge of two   always denied
@@ -84,10 +87,11 @@ has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]](merge
 
 [[ -f "$BYPASS" ]] && { echo "merge-gate: bypass file present, allowing" >&2; exit 0; }
 
-# Whether a `git <sub>` (an alternation) is redirected or combined with a branch or directory change.
+# Whether `git <sub>` is redirected by an option in the alternation $2 or combined with a branch or
+# directory change.
 combined() {
-  local mp="($1)${END}"
-  has "${W}git[[:space:]][^;&|]*(-C|--git-dir|--work-tree)[^;&|]*[[:space:]]${mp}" \
+  local mp="$1${END}"
+  has "${W}git[[:space:]][^;&|]*($2)[^;&|]*[[:space:]]${mp}" \
     || has "${W}(cd|pushd)([[:space:]]|$).*${GIT}${mp}" \
     || has "${GIT}worktree[[:space:]]+add([[:space:]]|$).*${GIT}${mp}" \
     || has "(^|[;&|([:space:]\"'])GIT_(DIR|WORK_TREE)=" \
@@ -97,9 +101,10 @@ combined() {
     || has "${GIT}rebase([[:space:]]+[^;&|[:space:]]+)+[[:space:]]+[\"']?${MAIN}[\"']?${END}"
 }
 redirected_push=0
-(( is_git_push || is_redirected )) && combined push && redirected_push=1
-if (( is_git_merge || is_git_pull || is_redirected )) && combined 'merge|pull'; then
-  deny "merge-gate: run the merge or pull as its own command, from a session whose working directory is the repository, on the already checked-out trunk; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with -C, --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, or env -C, or run in a subshell or command substitution, is not accepted."
+(( is_git_push || is_redirected )) && combined push '-C|--git-dir|--work-tree' && redirected_push=1
+if (( is_git_merge || is_git_pull || is_redirected )) \
+  && { combined merge '--git-dir|--work-tree' || combined pull '-C|--git-dir|--work-tree'; }; then
+  deny "merge-gate: run the merge or pull as its own command, from the repository's working directory (or, for a merge, with git -C <repository>), on the branch already checked out there; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, env -C, or (for a pull) -C, or run in a subshell or command substitution, is not accepted."
 fi
 
 spaced="$(sed -E 's/[;&|()<>]/& /g' <<<"$flat")"
@@ -121,10 +126,29 @@ words() {
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
   done < <(grep -oE "$TOK" <<<"$rest")
 }
-current="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)" || current=""
+repo_dir="$cwd"
+if (( is_git_merge )); then
+  dirs=() next=0
+  while IFS= read -r tok; do
+    if (( next )); then dirs+=("$tok"); next=0
+    elif [[ "$tok" == -C* ]]; then [[ "$tok" == -C ]] && next=1 || dirs+=("$tok"); fi
+  done < <(grep -oE "${GIT}merge${END}" <<<"$flat" | head -1 | grep -oE "$TOK")
+  if (( ${#dirs[@]} )); then
+    (( ${#dirs[@]} == 1 )) || deny "merge-gate: pass one -C per merge; a merge with several is not accepted."
+    raw="${dirs[0]}" dir="${dirs[0]//[\"\']/}" dir="${dir//\\/}"
+    [[ "$raw" == \~ || "$raw" == \~/* ]] && dir="$HOME${dir#\~}"
+    [[ "$dir" == /* ]] || dir="$cwd/$dir"
+    # The shell expands a variable or substitution only after the hook has run.
+    if [[ "$raw" == *[\$\`]* ]] || ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+      deny "merge-gate: the merge's -C directory '$raw' is not a literal path to a git repository, so the merge target cannot be read; name an existing repository."
+    fi
+    repo_dir="$dir"
+  fi
+fi
+current="$(git -C "$repo_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)" || current=""
 on_trunk=0; [[ "$current" == "main" || "$current" == "master" ]] && on_trunk=1
 upstream_is_remote_trunk() {
-  git -C "$cwd" rev-parse --symbolic-full-name '@{upstream}' 2>/dev/null | grep -Eqx 'refs/remotes/[^/]+/(main|master)'
+  git -C "$repo_dir" rev-parse --symbolic-full-name '@{upstream}' 2>/dev/null | grep -Eqx 'refs/remotes/[^/]+/(main|master)'
 }
 
 if (( is_git_merge )); then
@@ -141,13 +165,13 @@ if (( is_git_merge )); then
   if (( on_trunk )); then
     branch="${merge_ops[0]:-}"
     if [[ "$branch" == - ]]; then
-      branch="$(git -C "$cwd" rev-parse --abbrev-ref '@{-1}' 2>/dev/null)" || deny "merge-gate: no previous branch for 'git merge -'."
+      branch="$(git -C "$repo_dir" rev-parse --abbrev-ref '@{-1}' 2>/dev/null)" || deny "merge-gate: no previous branch for 'git merge -'."
     fi
     if [[ -z "$branch" ]]; then
       upstream_is_remote_trunk || deny "merge-gate: could not determine the branch being merged into $current."
     else
-      repo="$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)"
-      head="$(git -C "$cwd" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
+      repo="$(git -C "$repo_dir" rev-parse --show-toplevel 2>/dev/null)"
+      head="$(git -C "$repo_dir" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
       ledger_out="$("$LEDGER" check "$repo" "$branch" "$head" 2>&1)" \
         || deny "merge-gate: review gates not proven for $branch at ${head:0:12}: $ledger_out. A local branch→main merge is a PR for gate purposes — run all gates and record them."
     fi
@@ -164,7 +188,7 @@ if (( is_git_pull && on_trunk )); then
   done < <(words pull)
   if (( ${#pull_ops[@]} == 0 )); then
     upstream_is_remote_trunk || pull_ok=0
-  elif (( ${#pull_ops[@]} != 2 )) || ! git -C "$cwd" remote | grep -qxF -- "${pull_ops[0]}" \
+  elif (( ${#pull_ops[@]} != 2 )) || ! git -C "$repo_dir" remote | grep -qxF -- "${pull_ops[0]}" \
     || ! grep -Eqx "$MAIN" <<<"${pull_ops[1]}"; then
     pull_ok=0
   fi
