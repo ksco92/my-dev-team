@@ -35,7 +35,7 @@ pointing at the process file's Experiment section and the preamble file so the s
       where they go" topic list adds `experiment`
 - [ ] The skill file stays at or under 350 lines
 - [ ] `plugins/dev-team/.claude-plugin/plugin.json` version is main's current version with patch
-      + 1 at every rebase (0.8.16 against 0.8.15); the final value is set in the merge-time rebase
+      + 1 at every rebase; the final value is set in the merge-time rebase
 
 ## Acceptance Criteria
 - [ ] All requirements verifiable from the diff
