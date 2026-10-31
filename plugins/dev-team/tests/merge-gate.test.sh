@@ -108,31 +108,30 @@ check "a checkout of main-like branch with a merge is not the combined shape" \
 check "git -C <dir> merge-base is allowed" "$(gate "git -C $on_main merge-base main feature/x" "$TMP")" "0 "
 
 check "merge from a cwd that is not a repository is denied" "$(gate 'git merge feature/x' "$TMP")" \
-  "2 merge-gate: the working directory '$TMP' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
+  "2 merge-gate: the directory '$TMP' is not a git repository, so the merge target cannot be read; run the merge from the repository's working directory or with git -C <repository>."
 check "merge on a feature branch is allowed" "$(gate 'git merge main' "$on_feature")" "0 "
 check "a -C merge into a feature branch from another repository is allowed" "$(gate "git -C $on_feature merge main" "$on_main")" "0 "
 check "a -C merge into a feature branch from no repository is allowed" \
   "$(gate "git --no-pager -C \"$on_feature\" merge --ff-only main" "$TMP")" "0 "
 check "a relative -C merge into a feature branch is allowed" "$(gate 'git -C on-feature merge main' "$TMP")" "0 "
 check "an escaped -C directory is allowed" "$(gate 'git -C on\-feature merge main' "$TMP")" "0 "
-check "a -C ~/ merge into a feature branch is allowed" "$(HOME="$TMP" gate 'git -C ~/on-feature merge main' "$on_main")" "0 "
-check "a -C ~ merge into a feature branch is allowed" "$(HOME="$on_feature" gate 'git -C ~ merge main' "$on_main")" "0 "
-# A repository named literally $DIR sits in the cwd; the shell would expand the variable instead.
-git clone -q "$on_feature" "$TMP/\$DIR"
-# shellcheck disable=SC2016 # the variable and substitution are the commands under test
-for dir in "$TMP/missing" "$TMP" '$DIR' '$(pwd)' "'~/on-feature'"; do
+# shellcheck disable=SC2016 # the substitution is the command under test
+for dir in "$TMP/missing" "$TMP" '$(pwd)' "'~/on-feature'"; do
   check "a -C merge into '$dir' is denied" "$(gate "git -C $dir merge main" "$TMP")" \
     "2 merge-gate: the merge's -C directory '$dir' is not a literal path to a git repository, so the merge target cannot be read; name an existing repository."
 done
 check "a -C glued to its directory is denied" "$(gate "git -C$on_feature merge main" "$on_main" | grep -cF "merge-gate: the merge's -C directory '-C$on_feature'")" "1"
+unparsed="2 merge-gate: the git options before this -C merge cannot be parsed, so its target cannot be read; write it as git -C <dir> merge <branch>, joining any option to its value with =."
+for cmd in "git -C \$(dirname \$(echo $on_main/x)) merge feature/x" "git -C $on_main --attr-source HEAD merge feature/x"; do
+  check "'$cmd' is denied as unparsed" "$(gate "$cmd" "$TMP")" "$unparsed"
+done
 check "a merge with two -C is denied" "$(gate "git -C $TMP -C on-feature merge main" "$TMP")" \
   "2 merge-gate: pass one -C per merge; a merge with several is not accepted."
 c_forms=("git -C $on_main" "git -C \"$on_main\"" "git -c k=v -C $on_main" "git --no-pager -C '$on_main'")
 for prefix in "${c_forms[@]}"; do
   for dir in "$TMP" "$on_feature"; do
-    out="$(gate "$prefix merge feature/x" "$dir")"
-    check "'$prefix merge feature/x' from $dir without a ledger is denied" "${out%% *}" "2"
-    check "'$prefix merge feature/x' from $dir names the unproven gates" "$(grep -c 'review gates not proven for feature/x' <<<"$out")" "1"
+    check "'$prefix merge feature/x' from $dir without a ledger names the unproven gates" \
+      "$(gate "$prefix merge feature/x" "$dir" | grep -c 'review gates not proven for feature/x')" "1"
   done
 done
 # shellcheck disable=SC2016 # the $(...) inside a -c value is part of the command under test

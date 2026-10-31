@@ -43,8 +43,8 @@ fell back to `reset --hard` and `cherry-pick`.
       existing one
 - [ ] `shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/tests/*.sh` passes
 - [ ] Mutation check recorded in the change body: with the new `-C` resolution reverted, the new
-      allowed-case tests fail; with the trunk check removed from the `-C` path, the denied-case tests
-      fail
+      allowed-case tests fail; with the trunk check removed from the `-C` path, the denied-case
+      tests fail
 - [ ] The trunk-protection property is stated in the change body as a closed list: every form that
       lands a ref on `main` or `master` is listed with the check that gates it, and no form in the
       list is gated by less than before

@@ -8,7 +8,7 @@
 #   gh api graphql ... mergePullRequest            always denied; merge through `gh pr merge`
 #   git merge <branch> on main                     no-remote repo's local "PR" — ledger PASS (no CI)
 #   git -C <dir> merge <branch>                    gated as a merge run in <dir>; denied when <dir>
-#                                                  is no literal repository path or -C repeats
+#                                                  is no repo, -C repeats, or an option is unparsed
 #   git pull on main                               only from a remote trunk; anything else denied
 #   git merge/pull after cd, pushd, worktree add,  always denied; the hook reads the branch before
 #     a switch to main, -, @{-N}, a rebase onto    the command runs, so it cannot gate these
@@ -19,7 +19,8 @@
 #                                                  with a source and a destination other than the
 #                                                  trunk or HEAD/@, no delete, --all, or --mirror
 #   two merge/pull/push segments, a merge of two   always denied
-#     branches, a merge from a cwd that is no repo
+#     branches, a merge whose directory (the cwd,
+#     or -C <dir>) is no repository
 #   git push ... <src>:main                        denied unless <src> is main itself
 #   git push --mirror, :main, a force or delete    always denied; long options match by prefix
 #     of main, a forced --all, a bare force on main,
@@ -101,9 +102,9 @@ combined() {
     || has "${GIT}rebase([[:space:]]+[^;&|[:space:]]+)+[[:space:]]+[\"']?${MAIN}[\"']?${END}"
 }
 redirected_push=0
-(( is_git_push || is_redirected )) && combined push '-C|--git-dir|--work-tree' && redirected_push=1
-if (( is_git_merge || is_git_pull || is_redirected )) \
-  && { combined merge '--git-dir|--work-tree' || combined pull '-C|--git-dir|--work-tree'; }; then
+redir='--git-dir|--work-tree'
+(( is_git_push || is_redirected )) && combined push "-C|$redir" && redirected_push=1
+if (( is_git_merge || is_git_pull || is_redirected )) && { combined merge "$redir" || combined pull "-C|$redir"; }; then
   deny "merge-gate: run the merge or pull as its own command, from the repository's working directory (or, for a merge, with git -C <repository>), on the branch already checked out there; one in the same command as a cd, pushd, worktree add, checkout, switch, or rebase, or redirected with --git-dir, --work-tree, GIT_DIR, GIT_WORK_TREE, env -C, or (for a pull) -C, or run in a subshell or command substitution, is not accepted."
 fi
 
@@ -126,6 +127,10 @@ words() {
     tok="${tok//\"/}"; tok="${tok//\'/}"; printf '%s\n' "${tok//\\/}"
   done < <(grep -oE "$TOK" <<<"$rest")
 }
+while IFS= read -r m; do
+  [[ "$m" =~ ^${GIT}merge${END} && "${BASH_REMATCH[0]}" == *[[:space:]]-C* ]] \
+    || deny "merge-gate: the git options before this -C merge cannot be parsed, so its target cannot be read; write it as git -C <dir> merge <branch>, joining any option to its value with =."
+done < <(grep -oE "${W}git[[:space:]][^;&|]*-C[^;&|]*[[:space:]]merge${END}" <<<"$flat")
 repo_dir="$cwd"
 if (( is_git_merge )); then
   dirs=() next=0
@@ -136,10 +141,8 @@ if (( is_git_merge )); then
   if (( ${#dirs[@]} )); then
     (( ${#dirs[@]} == 1 )) || deny "merge-gate: pass one -C per merge; a merge with several is not accepted."
     raw="${dirs[0]}" dir="${dirs[0]//[\"\']/}" dir="${dir//\\/}"
-    [[ "$raw" == \~ || "$raw" == \~/* ]] && dir="$HOME${dir#\~}"
     [[ "$dir" == /* ]] || dir="$cwd/$dir"
-    # The shell expands a variable or substitution only after the hook has run.
-    if [[ "$raw" == *[\$\`]* ]] || ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+    if ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
       deny "merge-gate: the merge's -C directory '$raw' is not a literal path to a git repository, so the merge target cannot be read; name an existing repository."
     fi
     repo_dir="$dir"
@@ -161,7 +164,7 @@ if (( is_git_merge )); then
   (( ${#merge_ops[@]} <= 1 )) \
     || deny "merge-gate: merge one branch per command, as git merge [options] <branch>; a merge of several branches is not accepted."
   [[ -n "$current" ]] \
-    || deny "merge-gate: the working directory '$cwd' is not a git repository, so the merge target cannot be read; run the merge from a session whose working directory is the repository."
+    || deny "merge-gate: the directory '$repo_dir' is not a git repository, so the merge target cannot be read; run the merge from the repository's working directory or with git -C <repository>."
   if (( on_trunk )); then
     branch="${merge_ops[0]:-}"
     if [[ "$branch" == - ]]; then
