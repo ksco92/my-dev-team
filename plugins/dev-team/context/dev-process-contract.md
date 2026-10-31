@@ -122,7 +122,7 @@ mode off.
 | Enter | tpm, Phase 1 | the owner's statement | that the statement enters the mode, recorded once in the session, or "Not allowed" |
 | Branch name | tpm | topic | the experiment branch's pattern |
 | Slice branch | tpm, implementer | slice | the pattern, cut from the experiment branch |
-| Integrate | tpm | slice branch | the merge of a slice branch into the experiment branch, run as its own command after a separate command checks out the experiment branch or changes into its worktree; the hook gates a merge run on `main` or `master` on the ledger (Code host above) |
+| Integrate | tpm | slice branch | the merge of a slice branch into the experiment branch, run as its own command after a separate command checks out the experiment branch or changes into its worktree |
 | Skipped | every role | none | what the mode skips: tickets, change requests, the five gates, tests, lint, CI, the version bump |
 | Required | every role | none | live verification with its evidence, small commits, no attribution lines, and a push of the experiment branch by name, or that there is no remote |
 | Results | implementer | none | where raw data, logs, the report, and the rerun script live, so another machine reruns without code changes |

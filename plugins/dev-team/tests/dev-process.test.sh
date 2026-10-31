@@ -167,7 +167,8 @@ for file in "$DEFAULT" "$PLUGIN/templates/DEV_PROCESS.md" "$REPO_ROOT/DEV_PROCES
   for word in Tracker Code Experiment Workspace; do
     body="$("$DP" show "$word" --repo "$TMP/conf")"
     if [[ "$word" == Experiment ]] && grep -qx 'Not allowed.' <<<"$body"; then
-      check "${file#"$REPO_ROOT"/} Experiment section is the single line Not allowed." "$(tail -n +2 <<<"$body" | grep -c .)" "1"
+      check "${file#"$REPO_ROOT"/} Experiment section is the single line Not allowed." \
+        "$(tail -n +2 <<<"$body" | grep -c .)" "1"
       continue
     fi
     while IFS= read -r op; do
