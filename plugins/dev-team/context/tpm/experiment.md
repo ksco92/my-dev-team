@@ -17,4 +17,8 @@ on another machine without code changes.
 
 ## Integrate and verify
 
-Change directory to the experiment worktree as its own command, then run `git merge exp/<slice>` as the next command. Never cherry-pick: the hook refuses a merge run on the trunk and does not gate a cherry-pick. Rerun the `run_*.sh` entry point and record the output in `results/RESULTS.md`, then push by name with `git push origin experiment/<topic>`. No ledger record is written. The exit path is one change from the experiment branch to the trunk through every gate.
+Change directory to the experiment worktree as its own command, then run `git merge exp/<slice>` as
+the next command. Never cherry-pick: the hook refuses a merge run on the trunk and does not gate a
+cherry-pick. Rerun the `run_*.sh` entry point and record the output in `results/RESULTS.md`, then
+push by name with `git push origin experiment/<topic>`. No ledger record is written. The exit path
+is one change from the experiment branch to the trunk through every gate.
