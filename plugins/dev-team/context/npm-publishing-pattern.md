@@ -159,5 +159,4 @@ plugin repository (`ksco92/my-dev-team`).
   version and peer ranges; after bumping the linked package, edit that entry by hand and prove it
   with `npm ci --dry-run`.
 - After a publish succeeds, poll the registry for the new version with a timeout before dispatching
-  dependents; the registry can lag the publish notice by about twenty minutes, and the workflow's
-  version gate above is unaffected because it compares against the previous version.
+  dependents; the registry can lag the publish notice by about twenty minutes.
