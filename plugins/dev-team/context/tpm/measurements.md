@@ -24,8 +24,8 @@ before its gates.
   the public API at a raised `max_depth`. A live-object benchmark whose fixture shallow-copies hands
   the reference an identity fast path; A/B identity-shared against freshly built fixtures.
 - Rebuilding a Python extension at an unchanged version can serve the cached wheel; require
-  `uv cache clean` or `--reinstall` plus a behavior probe before any published number, and launch
-  with `--no-sync`.
+  `uv cache clean` in a private `UV_CACHE_DIR` or `--reinstall` plus a behavior probe before any
+  published number, and launch with `--no-sync`.
 - A PR that regenerates one benchmark table re-checks every derived number (sibling results files,
   README headline, PyPI and repo descriptions); list those homes in the brief, and never run
   reviewer builds concurrently with a benchmark whose numbers will be published.

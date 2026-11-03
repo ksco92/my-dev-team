@@ -52,3 +52,8 @@ first gate of a run.
   backslash line continuation between the command's options and its subcommand; the shell joins
   the lines and the matcher sees two commands, and a form the contract lists as not gated is
   recorded, not filed.
+- A PR body that summarizes a run's log ("only startup noise", "no errors") is checked by
+  filtering the log for its ERROR-level lines and comparing them with a sibling run's.
+- A numeric claim about a library's limit (a size cap, a split threshold) is checked by grepping
+  the constant's name across the library's installed source, never against a recalled vendor
+  number: the value may sit in a sibling file and differ from the documented limit.

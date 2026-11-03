@@ -421,3 +421,12 @@ plugin repository (`ksco92/my-dev-team`).
   one reference declared as a getter; a reference to another file's const is a plain value.
 - `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
   `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
+- A Glue job's `Code.fromAsset` takes one file; ship a folder as an `Asset` with a `.py`-only
+  exclude list and `Code.fromBucket`, with an `__init__.py` in every package folder, because the
+  CDK CLI zips files only and `zipimport` before Python 3.14 finds no namespace package without
+  directory entries. Validate such a folder at synth with `readdirSync` exact-name regular-file
+  matches and `lstatSync` symlink rejection: `existsSync` passes a case variant and a directory on
+  macOS, and a name-based exclude is escaped by glob characters in a link name.
+- A Data Quality evaluation run started from a job needs `glue:GetPartitions` on the target table,
+  `glue:PublishDataQuality` and `kms:Decrypt` on the catalog key besides the ruleset actions; write
+  the job role's policy explicitly, since `AWSGlueServiceRole` grants `glue:*` on every resource.
