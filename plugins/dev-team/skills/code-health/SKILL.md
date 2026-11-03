@@ -315,10 +315,9 @@ The reviewed repo is read-only.
   design page whose source copy a move left in place) is A2 duplication: one home plus a one-line
   pointer. A constant doc that recomputes its value in prose is the same drift class, and so is a
   dated or versioned index ("as of 0.5.0") older than the manifest version.
-- A live test that re-evaluates the module's own derivation expression is a tautology; keep the
-  mocked derivation test and delete the live recomputation.
-- A test that only asserts a dependency's output transform, where the wrapper adds no logic,
-  duplicates the dependency's own tests; fold one assertion into the existing pass-through test.
+- A live test that re-evaluates the module's own derivation expression, or asserts only a
+  dependency's output transform through a no-logic wrapper, is a tautology; keep the mocked
+  derivation test and delete the live recomputation, and keep at most one pass-through assertion.
 - When an edit strips a literal from a sizing-rationale comment, re-check tense so the comment no
   longer asserts an invariant the code stopped maintaining.
 - On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, a

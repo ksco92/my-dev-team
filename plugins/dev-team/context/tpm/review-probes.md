@@ -60,6 +60,5 @@ first gate of a run.
 - A README or doc bullet that restates an upstream dependency's guarantee is checked against the
   upstream's precondition and known-limitations sections; the downstream copy tends to drop the
   precondition.
-- A claim that a change now always reaches a deployed resource is checked against the states the
-  resource's live history already holds from before the fix; a legacy state that renders
-  identically to one new state collides with it.
+- A claim that a change now always reaches a deployed resource is checked against the resource's
+  pre-fix history; an old state identical to a new one collides.
