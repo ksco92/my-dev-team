@@ -421,3 +421,15 @@ plugin repository (`ksco92/my-dev-team`).
   one reference declared as a getter; a reference to another file's const is a plain value.
 - `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
   `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
+- A Glue job's `Code.fromAsset` takes one file; ship a folder as an `Asset` with a `.py`-only
+  exclude list and `Code.fromBucket`, and give every package folder an `__init__.py`: the CDK CLI
+  zips files only, with no directory entries, so `zipimport` finds no namespace package.
+- A synth-time check on an asset folder a Linux runtime will import uses `readdirSync` exact-name
+  regular-file matches and rejects symlinks by `lstatSync`: `existsSync` passes a case variant and a
+  directory on macOS, and a name-based exclude is escaped by glob characters in a link name.
+- A Data Quality evaluation run started from a job needs `glue:GetPartitions` on the target table,
+  `glue:PublishDataQuality` and `kms:Decrypt` on the catalog key besides the ruleset actions; write
+  the job role's policy explicitly, since `AWSGlueServiceRole` grants `glue:*` account-wide.
+- Judge an IAM policy-size claim against `aws-cdk-lib`'s `policy-document.js`, never a recalled
+  cap: the placement pass counts a tokenized ARN as 150 characters and splits past 10,000 into
+  managed policies of at most 6,144, while the render-time merge has no size limit.

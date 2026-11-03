@@ -155,3 +155,6 @@ plugin repository (`ksco92/my-dev-team`).
 - At intake of a dependency upgrade, run `npm view <pkg>@<target> deprecated stability` for every
   package whose range moves; a `deprecated` message or a `stability` of `deprecated` turns the
   bump into a migration and changes the slice's scope before the first gate finds it.
+- `npm install` leaves a `file:` dependency's `node_modules/<pkg>` lockfile entry at its old
+  version and peer ranges; after bumping the linked package, edit that entry by hand and prove it
+  with `npm ci --dry-run`.
