@@ -57,3 +57,8 @@ first gate of a run.
 - A numeric claim about a library's limit (a size cap, a split threshold) is checked by grepping
   the constant's name across the library's installed source, never against a recalled vendor
   number: the value may sit in a sibling file and differ from the documented limit.
+- A README or doc bullet that restates an upstream dependency's guarantee is checked against the
+  upstream's precondition and known-limitations sections; the downstream copy tends to drop the
+  precondition.
+- A claim that a change now always reaches a deployed resource is checked against the resource's
+  pre-fix history; an old state identical to a new one collides.

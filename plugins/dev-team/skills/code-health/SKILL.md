@@ -317,6 +317,8 @@ The reviewed repo is read-only.
   dated or versioned index ("as of 0.5.0") older than the manifest version.
 - A live test that re-evaluates the module's own derivation expression is a tautology; keep the
   mocked derivation test and delete the live recomputation.
+- A test that only asserts a dependency's output transform through a no-logic wrapper duplicates
+  the dependency's own tests; keep at most one pass-through assertion in the existing test.
 - When an edit strips a literal from a sizing-rationale comment, re-check tense so the comment no
   longer asserts an invariant the code stopped maintaining.
 - On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, a

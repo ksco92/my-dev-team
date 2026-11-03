@@ -355,6 +355,11 @@ plugin repository (`ksco92/my-dev-team`).
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
   an untouched field keeps its id, any change makes a new field with a never-used id.
+- `cdk-glue-iceberg-table` ≥ 0.11.0: Glue `UpdateTable` reuses a history schema whose fields match and
+  keeps its identifier-field-ids, so an identifier-only change is dropped and the construct's `(PK) `
+  doc marker is what carries the ids. A `fieldId`-only partition change is a no-op (a new transform is
+  applied), and a V2 to V3 `formatVersion` change updates the `format-version` property while the
+  metadata stays 2.
 - A construct that promises files stay under one location rejects the Iceberg properties that
   relocate data or metadata (`write.*.path`, `write.location-provider.impl`).
 - A CloudWatch `Dashboard` body is an `Fn::Join` with region tokens and L2 dimensions render as
