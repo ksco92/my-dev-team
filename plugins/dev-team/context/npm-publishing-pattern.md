@@ -158,3 +158,6 @@ plugin repository (`ksco92/my-dev-team`).
 - `npm install` leaves a `file:` dependency's `node_modules/<pkg>` lockfile entry at its old
   version and peer ranges; after bumping the linked package, edit that entry by hand and prove it
   with `npm ci --dry-run`.
+- After a publish workflow reports success, poll the registry's `/<pkg>/<version>` document until
+  it serves the version before dispatching dependents; `npm view` and the packument can lag the
+  publish by minutes.
