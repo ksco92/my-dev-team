@@ -40,9 +40,9 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   returns.
 - Brief every subagent to keep scratch files in its own workspace or its own `mktemp -d`, never a
   fixed name in the shared `$TMPDIR`. Package caches are the exception: one `npm_config_cache`
-  and one `UV_CACHE_DIR` per run under the session scratchpad, shared by every subagent and
-  removed when the run ends, never a `mktemp -d` per call, except a post-publish smoke install,
-  which uses a fresh cache (verification.md).
+  and one `UV_CACHE_DIR` per run under the session scratchpad, removed when the run ends, never a
+  `mktemp -d` per call; a gate or measurement that builds a native extension (gates.md,
+  measurements.md) and a post-publish smoke install (verification.md) each use their own cache.
 - Brief every subagent to re-read a PR body immediately before editing it.
 - Brief scratch-file writes as a heredoc (`cat > f <<'EOF'`); a bare `cat > f` waits on stdin and
   leaves a shell running.
