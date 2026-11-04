@@ -53,10 +53,8 @@ brief (5.2).
 - When prescribing a doc reword, give the exact old and new text so the round closes on a diff
   proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
   <version>"; any observed state it asserts (a package list, a count) is reproduced at the head
-  first, not typed from the previous head; a fragment replacement is written out as the whole
-  resulting line, so a phrase the sentence already carries is not spliced in twice; and a claim
-  about a vendor's product carries the page URL, with the implementer quoting the page rather
-  than the brief's paraphrase.
+  first, not typed from the previous head; and a fragment replacement is written out as the whole
+  resulting line, so a phrase the sentence already carries is not spliced in twice.
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is
@@ -118,3 +116,5 @@ brief (5.2).
 - When an acceptance grep over the test tree must return nothing for a name that a test has to prove
   absent from the output, brief the test to match a distinctive substring the grep pattern misses;
   otherwise the test file itself fails the grep.
+- A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
+  rather than the brief's paraphrase.

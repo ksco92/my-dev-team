@@ -118,16 +118,17 @@ PR; never link them from tickets or shipped docs as if readers can reach them.
 A slice that creates or restructures a README carries the `readme-writer` skill's checklist in its
 ticket, plus the runtime floor stated once with its source.
 
+A ticket that names a library helper and also lists the output it must produce derives that list
+from the helper's source, and a ticket that says a consumer needs no change for a removed or retyped
+field greps the consumer for the field first.
+
 A recipe's test list covers each operand of a compound guard on its own and varies every
 pass-through parameter at least once at every call that forwards it, a nested factory included,
 so a literal in place of the parameter fails a test; a thrown message it prescribes names the
 remedy as well as the condition; and it prescribes no assertion the type system already
 guarantees. Check every exact-string assertion a recipe prescribes against the existing fixture
 before dispatch; a fixture row that already carries the new marker makes the assertion
-unsatisfiable and the implementer rewrites the fixture to fit. A ticket that names a library
-helper and also lists the output it must produce derives that list from the helper's source, and
-a ticket that says a consumer needs no change for a removed or retyped field greps the consumer
-for the field first.
+unsatisfiable and the implementer rewrites the fixture to fit.
 
 ## Phase 4 — Delegation
 

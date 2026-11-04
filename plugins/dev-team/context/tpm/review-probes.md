@@ -41,10 +41,11 @@ first gate of a run.
 - A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
   inside itself, not by a fixture that carries it once.
 - When a PR validates input against a character-class pattern, delete each class from the regex one
-  at a time and require a test to fail for each, then mutate each other piece the same way (each
-  alternative, `^`, `$`, `+` to `*`, each path group); a fixture with one sample of every allowed
-  character usually leaves out a class. Edit only the `RegExp` line, never the message that quotes
-  it, or a mutant fails on text, not behaviour.
+  at a time and require a test to fail for each; a fixture with one sample of every allowed
+  character usually leaves out a class.
+- Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group); a mutant caught
+  because the message changed failed on text, not behaviour.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
 - When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial
@@ -64,9 +65,9 @@ first gate of a run.
   precondition.
 - A claim that a change now always reaches a deployed resource is checked against the resource's
   pre-fix history; an old state identical to a new one collides.
-- A name built by joining two consumer names with a separator either may contain (`dq_${db}_${table}`
-  with `_` legal in both) is probed with two pairs that split at different points (`a_b`+`c` and
-  `a`+`b_c`); uniqueness per pair is not uniqueness across the set.
+- A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
+  probed with two pairs that split at different points (`a_b`+`c` and `a`+`b_c`), since uniqueness
+  per pair is not uniqueness across the set.
 - When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules, not
   only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote (DQDL
   `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).

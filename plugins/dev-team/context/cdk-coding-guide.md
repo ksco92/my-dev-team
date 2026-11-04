@@ -350,7 +350,7 @@ plugin repository (`ksco92/my-dev-team`).
 - When swapping an alpha L2 for its stable counterpart, diff the constructors' defaults as well as
   the typings by synthesizing both against the base; a stable promotion can flip a default (a
   removal policy gaining RETAIN) on a fixed-name resource that destroy-then-redeploy then trips
-  over; strip `aws:asset:path` metadata, a per-synth temp directory, before comparing.
+  over.
 - `cdk-glue-iceberg-table` ≥ 0.5.0 requires explicit top-level `IcebergColumn.id` and allocates
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
@@ -402,15 +402,18 @@ plugin repository (`ksco92/my-dev-team`).
   in a throwaway build, read the `.jsii` `types`, and revert; wrap an exported free function in a
   throwaway static method to type-check it.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
-  re-derives `CDK_DEFAULT_REGION` from the SDK default and `CDK_DEFAULT_ACCOUNT` from the active
-  credentials (one STS call) and overrides exported values; a credential-free review synth builds the
-  `App` in a test or hides the credentials (`AWS_CONFIG_FILE=/dev/null`, keys unset).
+  re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
+- A synth that must not depend on the caller's account builds the `App` in a test, or runs with
+  `AWS_CONFIG_FILE=/dev/null`, `AWS_SHARED_CREDENTIALS_FILE=/dev/null` and `AWS_PROFILE`,
+  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN` unset: the CLI sets
+  `CDK_DEFAULT_ACCOUNT` from the active credentials with one STS call and overrides an exported
+  value.
 - A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the preset
   is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and prove it
   with a `debugger;` probe file that lint must report.
-- `cdk diff` run with flags that change what is synthesized (`--no-version-reporting`, `--strict`) is
-  not evidence for a deploy decision; diff with the deploy's own flags (a `CDKMetadata destroy` appears
-  only under the flag).
+- `--no-version-reporting` synthesizes without `CDKMetadata` and `--strict` stops the diff filtering
+  it, so a `cdk diff` under either is not evidence for a deploy decision; diff with the deploy's own
+  flags.
 - A test that a principal is named in no resource policy stringifies the whole candidate resources
   (`findResources` for the key and bucket policies) and asserts `not.toContain(logicalId)`, with one
   `resourceCountIs` as the non-vacuity guard; extracting `Principal` fields misses a grant to
