@@ -119,8 +119,9 @@ A slice that creates or restructures a README carries the `readme-writer` skill'
 ticket, plus the runtime floor stated once with its source.
 
 A ticket that names a library helper and also lists the output it must produce derives that list
-from the helper's source, and a ticket that says a consumer needs no change for a removed or retyped
-field greps the consumer for the field first.
+from the helper's source, a ticket that says a consumer needs no change for a removed or retyped
+field greps the consumer for the field first, and a ticket for a dependency bump greps the
+consumer's tests for every count or per-resource loop the new version changes.
 
 A recipe's test list covers each operand of a compound guard on its own and varies every
 pass-through parameter at least once at every call that forwards it, a nested factory included,

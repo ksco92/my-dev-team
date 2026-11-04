@@ -74,3 +74,6 @@ first gate of a run.
 - When a PR adds properties to a resource whose builder's doc comment lists the resulting state,
   compare that list with the property block at the head; README edits land, the API doc beside the
   code drifts.
+- A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
+  with the flag alone and with its companions, never from the `--help` line; a default filter can
+  cancel one flag's effect so the artifact comes only from the combination.
