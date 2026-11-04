@@ -105,3 +105,7 @@ Read before the first gate of a run.
   validates at one layer.
 - Re-run every grep-shaped acceptance criterion of the ticket at each fix head before dispatching
   gates.
+- A full-repository gate run on a repo whose lint or build config was copied from a sibling checks
+  the sibling for the same defect in the same round and files its follow-up at once.
+- A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
+  truncated read reports a recorded accepted risk as missing.

@@ -56,3 +56,9 @@ and again before its gates.
 - When a PR body offers one object or timestamp as live proof that delivery still works after a
   policy change, list the live resource read-only and require several later objects with no
   delivery error.
+- A dependency swap that claims no behaviour change is proved by synthesizing base and head in
+  separate `git archive` copies, each with its own `npm ci`, and diffing the sorted JSON of every
+  template and asset file; an empty diff settles shape, grants, `DependsOn` and "no new IAM" at once.
+- When a cloud call fails with a vague authorization error, pull the denied event from the audit log and
+  compare its request parameters and caller context with a call that succeeded; and when changing the
+  grant leaves the request and the denial identical, stop varying grants, the denial is not from the grant.
