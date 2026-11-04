@@ -410,10 +410,9 @@ plugin repository (`ksco92/my-dev-team`).
 - A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the
   preset is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and
   prove it with a `debugger;` probe file that lint must report.
-- `cdk diff` with `--no-version-reporting` and `--strict` together shows a `CDKMetadata` destroy the
-  deploy never performs (the first synthesizes without the resource, the second stops the diff
-  filtering it), and `--strict` alone also surfaces mangled non-ASCII characters and the
-  bootstrap-version rule; diff with the deploy's own flags before a deploy decision.
+- A `cdk diff` run with flags the deploy will not use (`--no-version-reporting`, `--strict`) is not
+  evidence for a deploy decision, since each flag changes what the synth contains or what the diff
+  reports; diff with the deploy's own flags.
 - A test that a principal is named in no resource policy stringifies the whole candidate resources
   (`findResources` for the key and bucket policies) and asserts `not.toContain(logicalId)`, with one
   `resourceCountIs` as the non-vacuity guard; extracting `Principal` fields misses a grant to
