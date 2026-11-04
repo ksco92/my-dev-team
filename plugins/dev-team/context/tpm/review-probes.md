@@ -68,8 +68,9 @@ first gate of a run.
 - A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
   probed with two pairs that split at different points (`a_b`+`c` and `a`+`b_c`), since uniqueness
   per pair is not uniqueness across the set.
-- When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules, not
-  only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote (DQDL
-  `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
-- When a PR adds properties to a resource whose builder's doc comment lists the resulting state, compare
-  that list with the property block at the head; README edits land, the API doc beside the code drifts.
+- When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules,
+  not only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote
+  (DQDL `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
+- When a PR adds properties to a resource whose builder's doc comment lists the resulting state,
+  compare that list with the property block at the head; README edits land, the API doc beside the
+  code drifts.

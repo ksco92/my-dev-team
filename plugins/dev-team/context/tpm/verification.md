@@ -61,6 +61,7 @@ before its gates.
   separate `git archive` copies, each with its own `npm ci`, and diffing the sorted JSON of every
   template and asset file with the `aws:asset:path` metadata (a per-synth temp directory) stripped;
   an empty diff settles shape, grants, `DependsOn` and "no new IAM" at once.
-- When a cloud call fails with a vague authorization error, pull the denied event from the audit log and
-  compare its request parameters and caller context with a call that succeeded; and when changing the
-  grant leaves the request and the denial identical, stop varying grants, the denial is not from the grant.
+- When a cloud call fails with a vague authorization error, pull the denied event from the audit log
+  and compare its request parameters and caller context with a call that succeeded; and when
+  changing the grant leaves the request and the denial identical, stop varying grants, the denial is
+  not from the grant.

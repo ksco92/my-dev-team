@@ -36,9 +36,8 @@ Read before the first gate of a run.
   delta across a rebase, diff the two heads restricted to the PR's own paths (`git diff <old> <new>
   -- <paths>`), and when a sibling merge touched one of those same files, only the Diff operation
   (or a three-dot diff against the base) separates the PR's edits from the replayed ones.
-- Every security gate brief names the explicit three-dot range and has the skill's diff run in the
-  reviewer probe: the skill's own bootstrap diffs the primary checkout against `origin/HEAD`, which
-  yields an empty diff on a checkout that stays on `main` and does not exist on a no-remote repo.
+- Every security gate brief names the explicit three-dot range (`origin/HEAD` does not exist on a
+  no-remote repo); the security-reviewer agent file's step 2 says where the diff runs.
 - When a CI failure is fixed by pinning at the root, do not also brief graceful degradation for the
   unpinned case; verify a new test path by running the project's own command and checking for
   unexpected SKIPs.

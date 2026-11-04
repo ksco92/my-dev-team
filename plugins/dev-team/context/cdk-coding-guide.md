@@ -403,27 +403,28 @@ plugin repository (`ksco92/my-dev-team`).
   throwaway static method to type-check it.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
   re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
-- A synth that must not depend on the caller's account builds the `App` in a test, or runs with
-  `AWS_CONFIG_FILE=/dev/null`, `AWS_SHARED_CREDENTIALS_FILE=/dev/null` and `AWS_PROFILE`,
-  `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN` unset: the CLI sets
-  `CDK_DEFAULT_ACCOUNT` from the active credentials with one STS call and overrides an exported
-  value.
-- A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the preset
-  is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and prove it
-  with a `debugger;` probe file that lint must report.
-- `--no-version-reporting` synthesizes without `CDKMetadata` and `--strict` stops the diff filtering
-  it, so a `cdk diff` under either is not evidence for a deploy decision; diff with the deploy's own
-  flags.
+- A synth that must not depend on the caller's account builds the `App` in a test, never through the
+  CLI: the CLI sets `CDK_DEFAULT_ACCOUNT` from whatever credentials its default provider chain finds
+  (shared files, environment keys, web identity, container and instance metadata) with one STS call
+  and overrides an exported value.
+- A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the
+  preset is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and
+  prove it with a `debugger;` probe file that lint must report.
+- `cdk diff` with `--no-version-reporting` and `--strict` together shows a `CDKMetadata` destroy the
+  deploy never performs (the first synthesizes without the resource, the second stops the diff
+  filtering it), and `--strict` alone also surfaces mangled non-ASCII characters and the
+  bootstrap-version rule; diff with the deploy's own flags before a deploy decision.
 - A test that a principal is named in no resource policy stringifies the whole candidate resources
   (`findResources` for the key and bucket policies) and asserts `not.toContain(logicalId)`, with one
   `resourceCountIs` as the non-vacuity guard; extracting `Principal` fields misses a grant to
   `AnyPrincipal` conditioned on `aws:PrincipalArn`, so the probe includes that mutation.
-- When a CDK property override targets an array index (`AssumeRolePolicyDocument.Statement.0.Action`),
-  the test compares the resource's whole `Properties` with `toEqual`, so an override that lands on the
-  wrong index or adds a statement fails instead of passing `hasResourceProperties`.
+- When a CDK property override targets an array index
+  (`AssumeRolePolicyDocument.Statement.0.Action`), the test compares the resource's whole
+  `Properties` with `toEqual`, so an override that lands on the wrong index or adds a statement
+  fails instead of passing `hasResourceProperties`.
 - A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
-  `DataLakeSettings`) is checked against the property's documented update behaviour before deploying,
-  and the stack events are read for the same physical id and no delete afterwards.
+  `DataLakeSettings`) is checked against the property's documented update behaviour before
+  deploying, and the stack events are read for the same physical id and no delete afterwards.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.

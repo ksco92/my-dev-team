@@ -75,7 +75,7 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - When the tool under edit is a live command hook, write edit scripts, commit messages, and bodies
   through a file tool and pass them by path, not a heredoc; a quoted guarded phrase in a shell
   command trips the hook.
-- A reviewer probe of a repo with a `file:../x` dependency cannot `npm ci` in place, because the path
-  resolves beside the probe; stage a `git archive` of the head plus a sibling symlink to the real `x`
-  inside the probe's own directory, never beside the live checkout, where the symlink shows up as an
-  untracked file.
+- A reviewer probe of a repo with a `file:../x` dependency cannot `npm ci` in place, because the
+  path resolves beside the probe; stage a `git archive` of the head plus a sibling symlink to the
+  real `x` inside the probe's own directory, never beside the live checkout, where the symlink shows
+  up as an untracked file.
