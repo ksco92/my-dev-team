@@ -38,6 +38,9 @@ Read before the first gate of a run.
   (or a three-dot diff against the base) separates the PR's edits from the replayed ones.
 - On a no-remote repo, the security gate gets an explicit commit range; `origin/HEAD` does not
   exist there.
+- Every security gate brief names the explicit three-dot range and has the skill's diff run in the
+  reviewer probe; the skill's own bootstrap diffs the primary checkout, which stays on `main`, and
+  yields an empty diff.
 - When a CI failure is fixed by pinning at the root, do not also brief graceful degradation for the
   unpinned case; verify a new test path by running the project's own command and checking for
   unexpected SKIPs.

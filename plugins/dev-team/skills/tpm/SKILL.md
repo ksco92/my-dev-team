@@ -124,7 +124,10 @@ so a literal in place of the parameter fails a test; a thrown message it prescri
 remedy as well as the condition; and it prescribes no assertion the type system already
 guarantees. Check every exact-string assertion a recipe prescribes against the existing fixture
 before dispatch; a fixture row that already carries the new marker makes the assertion
-unsatisfiable and the implementer rewrites the fixture to fit.
+unsatisfiable and the implementer rewrites the fixture to fit. A ticket that names a library
+helper and also lists the output it must produce derives that list from the helper's source, and
+a ticket that says a consumer needs no change for a removed or retyped field greps the consumer
+for the field first.
 
 ## Phase 4 — Delegation
 
