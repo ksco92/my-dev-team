@@ -43,6 +43,9 @@ first gate of a run.
 - When a PR validates input against a character-class pattern, delete each class from the regex one
   at a time and require a test to fail for each; a fixture with one sample of every allowed
   character usually leaves out a class.
+- Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group); a mutant caught
+  because the message changed failed on text, not behaviour.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
 - When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial
@@ -62,3 +65,12 @@ first gate of a run.
   precondition.
 - A claim that a change now always reaches a deployed resource is checked against the resource's
   pre-fix history; an old state identical to a new one collides.
+- A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
+  probed with two pairs that split at different points (`a_b`+`c` and `a`+`b_c`), since uniqueness
+  per pair is not uniqueness across the set.
+- When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules,
+  not only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote
+  (DQDL `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
+- When a PR adds properties to a resource whose builder's doc comment lists the resulting state,
+  compare that list with the property block at the head; README edits land, the API doc beside the
+  code drifts.

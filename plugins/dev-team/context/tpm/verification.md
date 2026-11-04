@@ -3,8 +3,9 @@
 Evidence rules for slices whose deliverable is a live claim: deploys and data loads, post-publish
 installs, interruption handling, CI floors and legs, broad UI-suite failures, tool flags a skill
 relies on, live runs and their recorded inputs, live-proof claims after a policy change,
-response-schema tests, and test counts and mutations. Read before writing the issue for such a slice
-and again before its gates.
+response-schema tests, test counts and mutations, equivalence proofs for a dependency swap, and the
+diagnosis of a vague authorization denial. Read before writing the issue for such a slice and again
+before its gates.
 
 - A tool's preview/verify/dry-run flag is not assumed to produce the real run's side effects;
   verify against the tool's code path, and give a skill's central promised artifact a
@@ -56,3 +57,11 @@ and again before its gates.
 - When a PR body offers one object or timestamp as live proof that delivery still works after a
   policy change, list the live resource read-only and require several later objects with no
   delivery error.
+- A dependency swap that claims no behaviour change is proved by synthesizing base and head in
+  separate `git archive` copies, each with its own `npm ci`, and diffing the sorted JSON of every
+  template and asset file with the `aws:asset:path` metadata (a per-synth temp directory) stripped;
+  an empty diff settles shape, grants, `DependsOn` and "no new IAM" at once.
+- When a cloud call fails with a vague authorization error, pull the denied event from the audit log
+  and compare its request parameters and caller context with a call that succeeded; and when
+  changing the grant leaves the request and the denial identical, stop varying grants, the denial is
+  not from the grant.

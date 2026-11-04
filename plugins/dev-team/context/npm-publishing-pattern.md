@@ -158,5 +158,8 @@ plugin repository (`ksco92/my-dev-team`).
 - `npm install` leaves a `file:` dependency's `node_modules/<pkg>` lockfile entry at its old
   version and peer ranges; after bumping the linked package, edit that entry by hand and prove it
   with `npm ci --dry-run`.
+- A `file:../<lib>` entry takes the sibling checkout's version, so a lockfile at an unmerged branch
+  version is made with `npm install --package-lock-only` in a scratch copy whose `../<lib>` symlinks
+  the worktree, then copied back.
 - After a publish succeeds, poll the registry for the new version with a timeout before dispatching
   dependents; the registry can lag the publish notice by about twenty minutes.

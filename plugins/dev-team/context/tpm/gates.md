@@ -36,14 +36,19 @@ Read before the first gate of a run.
   delta across a rebase, diff the two heads restricted to the PR's own paths (`git diff <old> <new>
   -- <paths>`), and when a sibling merge touched one of those same files, only the Diff operation
   (or a three-dot diff against the base) separates the PR's edits from the replayed ones.
-- On a no-remote repo, the security gate gets an explicit commit range; `origin/HEAD` does not
-  exist there.
+- Every security gate brief names the explicit three-dot range (`origin/HEAD` does not exist on a
+  no-remote repo); the security-reviewer agent file's step 2 says where the diff runs.
 - When a CI failure is fixed by pinning at the root, do not also brief graceful degradation for the
   unpinned case; verify a new test path by running the project's own command and checking for
   unexpected SKIPs.
 - GitHub host: a PR with no CI run and `mergeable: CONFLICTING` needs a rebase, not a retrigger:
   GitHub runs no `pull_request` workflow when it cannot build the merge ref. Brief the rebase to
   re-run gates on the rebased head, because the conflict resolution is new review surface.
+- GitHub host: in a workflow `concurrency` group a newly queued run cancels any pending run of the
+  group and takes its place (`queue: single`, the default), and `cancel-in-progress: true` cancels
+  the running one as well. Under such a group the orchestrator alone triggers the workflow, one PR
+  at a time with at most one run pending, and every brief says never to add the trigger label or
+  watch the run.
 - Concurrent gates that each `maturin develop` against one uv cache stall on its lock; brief a
   light venv with the run's shared `UV_CACHE_DIR` (operations.md) for test-only PRs, a private one
   for each gate that builds a native extension, and accept CI's fresh run at the pinned head when
@@ -90,6 +95,9 @@ Read before the first gate of a run.
   the behaviour, because the criterion is the contract and the next gate will fail its absence.
   Then re-apply the mutation the test used to catch and require another test to fail before the
   deletion or fold is briefed.
+- Before briefing a test for an uncovered branch behind a guard, list the guard's callers and what
+  each passes; a branch no caller reaches is deleted with its guard, never covered through an
+  `@internal` import, and the ticket is amended to the deletion.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
@@ -102,3 +110,7 @@ Read before the first gate of a run.
   validates at one layer.
 - Re-run every grep-shaped acceptance criterion of the ticket at each fix head before dispatching
   gates.
+- A full-repository gate run on a repo whose lint or build config was copied from a sibling checks
+  the sibling for the same defect in the same round and files its follow-up at once.
+- A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
+  truncated read reports a recorded accepted risk as missing.

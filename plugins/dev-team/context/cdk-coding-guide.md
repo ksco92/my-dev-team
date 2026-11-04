@@ -374,10 +374,14 @@ plugin repository (`ksco92/my-dev-team`).
 - A `Trail` with `managementEvents: ALL` plus `logAllS3DataEvents()` and `logAllLambdaDataEvents()`
   deploys as three selectors; pin the synthesized selectors with `Match.exact`, since the data
   selectors leave `IncludeManagementEvents` unset while the live API reports it `true`.
-- Registering an S3 location with the Lake Formation service-linked role makes Lake Formation add
-  the S3 actions to that role's own inline policy (`LakeFormationDataAccessPolicyForS3`); grant the
-  role only `kms:Decrypt` and `kms:GenerateDataKey*` on the bucket key, no bucket-policy statement
-  (`grantReadWrite` adds `DeleteObjectVersion` and retention actions) and no `aws:SourceArn`.
+- Register Lake Formation locations with a user-defined role trusting `lakeformation.amazonaws.com`
+  for `sts:AssumeRole` and `sts:SetContext`, never the service-linked role: Lake Formation vends
+  external engines (Glue Data Quality, EMR) no credentials from a service-linked registration, so
+  their `GetDataAccess` answers `Access is not allowed.` whatever the grants or data-lake settings
+  while Athena still passes. Write the role's own policy explicitly (object get, put and delete,
+  `s3:ListBucket`, `kms:Decrypt` and `kms:GenerateDataKey*` on the bucket key), never
+  `grantReadWrite`, which adds `DeleteObjectVersion` and retention actions, and check the
+  registration role before turning on a data-lake setting to cure a denial.
 - Lake Formation-only access needs `hybridAccessEnabled: false` on the registration and no
   `IAM_ALLOWED_PRINCIPALS` grant on the construct's databases and tables: an empty
   `CreateTableDefaultPermissions` on each database, asserted in a template test, and an empty
@@ -386,6 +390,10 @@ plugin repository (`ksco92/my-dev-team`).
 - Lake Formation gives the principal that creates a table (the CloudFormation execution role) its
   own permissions on it, so a "no grant to the execution role" criterion is judged on the templates,
   never on `list-permissions`.
+- Lake Formation admin status grants no `CREATE_TABLE` on a database, so an engine's
+  `CREATE TABLE` through the Glue catalog fails with `Required Create Table on <database>` even
+  for an admin principal; create integration tables through the construct's own stack and grant
+  the test principal on them.
 - An L1 property left unset still takes the service default on the live resource (an Athena
   workgroup without `enforceWorkGroupConfiguration` enforces); docs say the property is unset, never
   what the service then does.
@@ -395,6 +403,27 @@ plugin repository (`ksco92/my-dev-team`).
   throwaway static method to type-check it.
 - To target a region with `cdk synth`/`deploy`, set `AWS_REGION`/`AWS_DEFAULT_REGION`; the CLI
   re-derives `CDK_DEFAULT_REGION` from the SDK default and overrides an exported value.
+- A synth that must not depend on the caller's account builds the `App` in a test, never through the
+  CLI: the CLI sets `CDK_DEFAULT_ACCOUNT` from whatever credentials its default provider chain finds
+  (shared files, environment keys, web identity, container and instance metadata) with one STS call
+  and overrides an exported value.
+- A flat ESLint block written as `{ ...preset, rules: {...} }` discards the preset's rules (the
+  preset is `{ name, rules }` and the later key wins); spread `...preset.rules` inside `rules`, and
+  prove it with a `debugger;` probe file that lint must report.
+- A `cdk diff` run with flags the deploy will not use (`--no-version-reporting`, `--strict`) is not
+  evidence for a deploy decision, since each flag changes what the synth contains or what the diff
+  reports; diff with the deploy's own flags.
+- A test that a principal is named in no resource policy stringifies the whole candidate resources
+  (`findResources` for the key and bucket policies) and asserts `not.toContain(logicalId)`, with one
+  `resourceCountIs` as the non-vacuity guard; extracting `Principal` fields misses a grant to
+  `AnyPrincipal` conditioned on `aws:PrincipalArn`, so the probe includes that mutation.
+- When a CDK property override targets an array index
+  (`AssumeRolePolicyDocument.Statement.0.Action`), the test compares the resource's whole
+  `Properties` with `toEqual`, so an override that lands on the wrong index or adds a statement
+  fails instead of passing `hasResourceProperties`.
+- A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
+  `DataLakeSettings`) is checked against the property's documented update behaviour before
+  deploying, and the stack events are read for the same physical id and no delete afterwards.
 - CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
   existing custom header's value, grep the stack for an existing policy before creating one, and
   emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.

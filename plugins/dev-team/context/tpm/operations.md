@@ -57,6 +57,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   `assert old in text`.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
+- In zsh, an ARN built as `$ACCT:role/...` loses `:r` to the history modifier; brace every expansion
+  a colon follows.
 - In zsh, an unquoted `$V` holding newlines reaches a CLI as one newline-joined argument; pass a
   list probe as an array, or a validation error reads as the limit being enforced.
 - Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
@@ -73,3 +75,7 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - When the tool under edit is a live command hook, write edit scripts, commit messages, and bodies
   through a file tool and pass them by path, not a heredoc; a quoted guarded phrase in a shell
   command trips the hook.
+- A reviewer probe of a repo with a `file:../x` dependency cannot `npm ci` in place, because the
+  path resolves beside the probe; stage a `git archive` of the head plus a sibling symlink to the
+  real `x` inside the probe's own directory, never beside the live checkout, where the symlink shows
+  up as an untracked file.

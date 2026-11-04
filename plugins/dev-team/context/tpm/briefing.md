@@ -113,3 +113,8 @@ brief (5.2).
 - When a fix brief lets the implementer choose between two forms, name the file's existing shape as
   the tie-breaker, never a line count; the shorter form with a side effect is the next round's
   finding.
+- When an acceptance grep over the test tree must return nothing for a name that a test has to prove
+  absent from the output, brief the test to match a distinctive substring the grep pattern misses;
+  otherwise the test file itself fails the grep.
+- A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
+  rather than the brief's paraphrase.
