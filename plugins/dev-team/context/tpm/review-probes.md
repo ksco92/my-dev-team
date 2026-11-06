@@ -77,3 +77,10 @@ first gate of a run.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
+- When a handler tests a key with `in` on parsed JSON (`"K" in json.loads(x)`), probe a number,
+  `null`, and a list or string that contains the key; `in` raises on a scalar and passes on list
+  or substring membership.
+- When a construct writes a synth-time asset folder and deletes it after construction, synth once
+  with `aws:cdk:disable-asset-staging` set and once with an input that throws between the write and
+  the delete; without staging the asset manifest points at the deleted folder, and the throw leaves
+  the folder behind.

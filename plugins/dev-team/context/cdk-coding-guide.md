@@ -464,3 +464,6 @@ plugin repository (`ksco92/my-dev-team`).
 - A Data Quality evaluation run started from a job needs `glue:GetPartitions` on the target table,
   `glue:PublishDataQuality` and `kms:Decrypt` on the catalog key besides the ruleset actions; write
   the job role's policy explicitly, since `AWSGlueServiceRole` grants `glue:*` on every resource.
+- A file a construct generates at synth for an asset is written under the cloud assembly's outdir
+  (`Stage.of(scope).outdir`), never the OS temp dir, into a folder emptied before the write rather
+  than deleted after; it then exists for as long as the assembly does, staging disabled included.
