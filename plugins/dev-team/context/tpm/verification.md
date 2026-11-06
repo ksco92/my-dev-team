@@ -65,3 +65,7 @@ before its gates.
   and compare its request parameters and caller context with a call that succeeded; and when
   changing the grant leaves the request and the denial identical, stop varying grants, the denial is
   not from the grant.
+- Dropping a restated default from a template still changes that property on the deployed
+  resource: before accepting a claim that a change needs no redeploy because it only removed
+  defaults, check each removed property's documented update behaviour, since one that requires
+  replacement fails the deploy of a custom-named resource.

@@ -15,7 +15,9 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   `SendMessage`-resume each finished agent rather than relaunching — they keep their context.
 - Serialize heavy local jobs (Spark, simulators, multi-hour training) on the shared box; a
   concurrent heap kills the longest-running one, and `pgrep -f` false-negatives on long command
-  lines, so guard with a full-line `ps` scan.
+  lines, so guard with a full-line `ps` scan. Gates that each install dependencies and run a test
+  suite count as heavy: launch about six at a time, since a batch of ten stalls some at the
+  agent's no-progress watchdog.
 - `mkdir -p` the log dir before a backgrounded compound command and verify the log exists after
   launch; a failed `cd` writes the EXIT marker elsewhere and reports success.
 - A server a probe starts detached from the GUI session cannot answer a desktop database app's

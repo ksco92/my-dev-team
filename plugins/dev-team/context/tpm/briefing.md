@@ -118,3 +118,6 @@ brief (5.2).
   otherwise the test file itself fails the grep.
 - A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
   rather than the brief's paraphrase.
+- Write a ticket's live scenario (what triggers what, which resources a deploy holds) from the
+  consumer app's deployed configuration read at dispatch, never from the orchestrator's memory of
+  it; a scenario the deployed config contradicts surfaces only when the live run does nothing.

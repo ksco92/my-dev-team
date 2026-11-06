@@ -66,13 +66,14 @@ Read before the first gate of a run.
   a figure another file cites is found at its new home.
 - Check a PR against every issue-specific numeric criterion as well as the repo's general bar; the
   same computed figure can clear the general ceiling and miss the issue's tighter target.
-- Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
-  not a contradiction for the owner: the repo rule decides, the orchestrator amends the issue's
-  constraint with the reason, and the gate that cited the old constraint re-issues its verdict. A
-  ticket-mandated sentence, figure, or verbatim copy of a named reference file, and a
-  consumer-facing section's precedent for stating sibling throws, likewise outrank a gate's style
-  preference or dedup, while a gate that shows ticket text false outranks the ticket, which is
-  amended to the claim that holds.
+- Two gates that read one delta differently (one as narrative or fix-round accretion, one as
+  rule-mandated or gate-prescribed content) are not a contradiction for the owner: the repo rule
+  decides, the orchestrator amends the issue's constraint with the reason and names the sentences
+  it keeps, and the gate that cited the old constraint re-issues its verdict from a brief that
+  states the ruling. A ticket-mandated sentence, figure, or verbatim copy of a named reference
+  file, and a consumer-facing section's precedent for stating sibling throws, likewise outrank a
+  gate's style preference or dedup, while a gate that shows ticket text false outranks the ticket,
+  which is amended to the claim that holds.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
 - When a gate finding rests on a default heuristic with an "unless justified" clause and the
@@ -95,6 +96,9 @@ Read before the first gate of a run.
   the behaviour, because the criterion is the contract and the next gate will fail its absence.
   Then re-apply the mutation the test used to catch and require another test to fail before the
   deletion or fold is briefed.
+- When a fix round removes a restated default, the correctness brief asks for an absence assertion
+  on that property (`Match.absent()` in a CDK template test) in place of the value assertion;
+  deleting the assertion with the default leaves the requirement with no test.
 - Before briefing a test for an uncovered branch behind a guard, list the guard's callers and what
   each passes; a branch no caller reaches is deleted with its guard, never covered through an
   `@internal` import, and the ticket is amended to the deletion.
