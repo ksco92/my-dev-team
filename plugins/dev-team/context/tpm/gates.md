@@ -114,7 +114,3 @@ Read before the first gate of a run.
   the sibling for the same defect in the same round and files its follow-up at once.
 - A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
   truncated read reports a recorded accepted risk as missing.
-- Reviewing a claim about the position of fields in an output, run `Object.keys` (or the
-  language's ordered view) on the real output; a deep-equality assertion proves nothing about
-  order, and the ticket's position wording is checked against the code before it is copied into a
-  README.

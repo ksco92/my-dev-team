@@ -502,16 +502,10 @@ plugin repository (`ksco92/my-dev-team`).
 - A Vite dev proxy in front of Django keeps `changeOrigin: false`, because Django's CSRF check
   compares the browser's `Origin` with the `Host` it receives; prove it by running the login through
   the proxy with both settings.
-- In a `.mts` config that Vitest also loads under jsdom, derive paths from `import.meta.dirname`,
-  not `fileURLToPath(import.meta.url)`: jsdom replaces the global `URL` and `fileURLToPath` rejects
-  the result as not a `file:` URL.
-- Give MUI `Breadcrumbs` an explicit `aria-label`; it renders a `nav` with no accessible name, so
-  swapping it for a hand-written one silently changes every `getByRole('navigation', { name })`
-  query in neighbouring suites.
-- Close a modal drawer on navigation with an effect keyed on `useLocation().key`, never the
-  pathname: a click on the link of the page already open keeps the pathname and leaves the drawer
-  up over the page.
-- Under jsdom there is no `window.matchMedia`, so `vi.spyOn` on it throws; define it per test with
-  `Object.defineProperty` (configurable) returning `{ matches, addEventListener,
-  removeEventListener }`, delete it in `afterEach`, and put `vi.unstubAllGlobals()` in `afterEach`
-  rather than at the end of a test body, where a failed assertion skips it.
+- In a module a jsdom test imports, derive paths from `import.meta.dirname`, never
+  `fileURLToPath(new URL(..., import.meta.url))`; jsdom's `URL` is not a Node `file:` URL.
+- Give MUI `Breadcrumbs` an explicit `aria-label`; it renders a `nav` with no accessible name.
+- Close a modal drawer from an effect whose dependency is `useLocation().key`, not the pathname;
+  a click on the current page's link keeps the pathname.
+- Under jsdom, define `window.matchMedia` per test with a configurable `Object.defineProperty`
+  and delete it in `afterEach`; `vi.spyOn` throws because it is absent.

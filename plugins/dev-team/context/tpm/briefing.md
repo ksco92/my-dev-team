@@ -87,8 +87,9 @@ brief (5.2).
   PR that catches the base class; the rebase brief names the new condition and re-derives its
   reachability from the caller's preconditions.
 - An explanatory clause added in a fix round to make a sample output fit is where an invented
-  mechanism slips in; the brief prescribes the rule sentence from the code, and the reviewer checks
-  the database state at that step, not only the final output.
+  mechanism slips in; the brief prescribes the rule sentence from the code, a ticket-dictated
+  rules-file sentence included, and the reviewer checks the database state at that step, not only
+  the final output.
 - When a fix centralises a predicate into a helper, brief the correctness gate to break the helper's
   definition and to remove its use at each call site in turn; a test that fails on the broken
   definition proves one call site only.
@@ -118,6 +119,3 @@ brief (5.2).
   otherwise the test file itself fails the grep.
 - A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
   rather than the brief's paraphrase.
-- When a ticket dictates a rules file's exact sentence, derive its allowed forms from the code the
-  same PR ships before dispatch; a gate reads the new rule against the PR's own diff, and a rule
-  that forbids a form the diff uses costs a round.
