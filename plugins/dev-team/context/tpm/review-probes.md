@@ -77,3 +77,10 @@ first gate of a run.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
+- Reviewing a shipped skill or prompt file that points at README sections, treat a restated README
+  field list, run-order fact or grant as duplication; when a round replaces a self-contained
+  fallback shape with a pointer to a README example, diff that example field by field against the
+  file's own rules and require the precedence sentence to name the example.
+- A test that re-derives its expectation with the same function family as the code under test
+  (`isoweekday()` over rows a sibling test already pins by literal) is a tautology; the expectation
+  is a literal.

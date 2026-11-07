@@ -11,6 +11,9 @@ before its gates.
   verify against the tool's code path, and give a skill's central promised artifact a
   deterministic check (mtime, size) so a silent no-op fails loudly. Cross-check a new skill's
   steps against the repo's documented process before shipping it.
+- When a slice ships a skill or doc that prescribes code for others to write, its dry run executes
+  every operation the file offers, not only the one the acceptance criteria name; the operation
+  the criteria skip is where a wrong rule survives.
 - When a full UI suite fails broadly on a PR, partition before any fix loop: each failing test alone
   on a fresh runtime, then the deterministic survivors on a reviewer probe at main's head. Only what
   passes on main is the PR's; the rest is its own issue.

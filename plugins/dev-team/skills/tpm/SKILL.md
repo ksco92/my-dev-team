@@ -163,10 +163,11 @@ Brief a subagent like a smart colleague who just walked in: the ticket text or I
 name (the process file's Branch name operation), repo path, workspace instructions, the PR body
 template, what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace
 (Create workspace operation), and the process file's Primary checkout rule applies; a cross-repo
-brief opens with that command run explicitly in the target repo. Run independent slices in
-parallel as far as the Parallelism operation allows, multiple Agent calls in one message. After
-each merge, remove the workspace and kill any process still running from it (Remove workspace
-operation).
+brief opens with that command run explicitly in the target repo. Before dispatching a slice
+another slice blocked, re-read its ticket against what the blocker merged (the version, the names,
+the rule it exercises) and amend it first. Run independent slices in parallel as far as the
+Parallelism operation allows, multiple Agent calls in one message. After each merge, remove the
+workspace and kill any process still running from it (Remove workspace operation).
 
 **Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer,
 and orchestrator in one process. Run the phases sequentially: implement one slice in its workspace
