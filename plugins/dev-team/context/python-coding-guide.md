@@ -1198,3 +1198,8 @@ convention becomes a section above and leaves this list.
 - Measure a file's comment ratio with `tokenize` COMMENT tokens plus docstrings found by AST
   position (the first string statement of a module, class or function); a scan for `#` lines or
   triple quotes counts an embedded script or fixture string as prose.
+- A PySpark field stays non-nullable through `F.lit` of a non-None value, `F.localtimestamp()` and
+  arithmetic over non-nullable columns, and turns nullable through `F.to_date(F.lit(text))`, an
+  aggregate, a cast of a nullable input or the optional side of an outer join; `where(isNotNull())`
+  leaves the schema nullable and `DataFrame.to(schema)` rejects the change, so make a field
+  non-nullable with `F.coalesce(expr, F.lit(fallback))` or `spark.createDataFrame(df.rdd, schema)`.

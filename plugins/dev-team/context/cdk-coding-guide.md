@@ -362,6 +362,9 @@ plugin repository (`ksco92/my-dev-team`).
   metadata stays 2.
 - A construct that promises files stay under one location rejects the Iceberg properties that
   relocate data or metadata (`write.*.path`, `write.location-provider.impl`).
+- A doc or skill that tells a reader to remove a resource from the stack and deploy, which deletes
+  it, is checked against the removal policy the consumer picks; a dry run in a consumer on
+  `DESTROY` never reaches the `RETAIN` path, where the second deploy fails on the existing name.
 - A CloudWatch `Dashboard` body is an `Fn::Join` with region tokens and L2 dimensions render as
   `Ref`s; in template tests join the parts with a placeholder for intrinsics, parse, and assert
   dimension keys, not values. Glue catalog objects and LakeFormation permissions are not taggable;
