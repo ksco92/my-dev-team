@@ -502,3 +502,10 @@ plugin repository (`ksco92/my-dev-team`).
 - A Vite dev proxy in front of Django keeps `changeOrigin: false`, because Django's CSRF check
   compares the browser's `Origin` with the `Host` it receives; prove it by running the login through
   the proxy with both settings.
+- In a module a jsdom test imports, derive paths from `import.meta.dirname`, never
+  `fileURLToPath(new URL(..., import.meta.url))`; jsdom's `URL` is not a Node `file:` URL.
+- Give MUI `Breadcrumbs` an explicit `aria-label`; it renders a `nav` with no accessible name.
+- Close a modal drawer from an effect whose dependency is `useLocation().key`, not the pathname;
+  a click on the current page's link keeps the pathname.
+- Under jsdom, define `window.matchMedia` per test with a configurable `Object.defineProperty`
+  and delete it in `afterEach`; `vi.spyOn` throws because it is absent.

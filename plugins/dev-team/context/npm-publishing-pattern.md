@@ -156,8 +156,9 @@ plugin repository (`ksco92/my-dev-team`).
   package whose range moves; a `deprecated` message or a `stability` of `deprecated` turns the
   bump into a migration and changes the slice's scope before the first gate finds it.
 - `npm install` leaves a `file:` dependency's `node_modules/<pkg>` lockfile entry at its old
-  version and peer ranges; after bumping the linked package, edit that entry by hand and prove it
-  with `npm ci --dry-run`.
+  version, peer ranges and `bin`; after bumping the linked package, run
+  `npm install <pkg>@file:<path>` and prove the consumer path, a new bin included, with a scratch
+  install.
 - A `file:../<lib>` entry takes the sibling checkout's version, so a lockfile at an unmerged branch
   version is made with `npm install --package-lock-only` in a scratch copy whose `../<lib>` symlinks
   the worktree, then copied back.

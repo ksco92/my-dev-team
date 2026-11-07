@@ -202,3 +202,5 @@ Durable, cross-project reviewer lessons. Project-specific ones belong in that re
   a direct call on that member (`bucket.encryptionKey!.grant`), drive the absent case; and when a
   guard's message names what the member stands for, list every option that leaves it unset (an
   AWS-managed key is a KMS key without an `encryptionKey`).
+- Verify a claim about the order of fields in an output with `Object.keys` on the real output; a
+  deep-equality assertion proves nothing about order.
