@@ -49,7 +49,9 @@ before its gates.
   stated number.
 - A mutation is applied with an edit that fails when its pattern is absent and confirmed with
   `git diff` before a green run is trusted; BSD `sed '0,/re/'` leaves the file unchanged without an
-  error.
+  error. Mutate a widened range matcher to its single canonical member and a result cache behind a
+  worker pool to a cold concurrent request; fixtures use the canonical member and sequential calls,
+  so both survive unnoticed.
 - A test that compares a real response with its documented schema compares keys at every nested
   level, with data that makes each nested object non-null and each list non-empty, and checks each
   documented alternative against the caller that should receive it; top-level keys, a null, an
@@ -65,3 +67,7 @@ before its gates.
   and compare its request parameters and caller context with a call that succeeded; and when
   changing the grant leaves the request and the denial identical, stop varying grants, the denial is
   not from the grant.
+- A guard added to one middleware, or a startup check moved into a function a dev server re-runs on
+  an in-process restart, is proven on the real server: send the raw bad request through the whole
+  chain, and change the backing file before a restart in the same process; an earlier sibling
+  middleware parses unguarded and a module-level cache in the dependency keeps the check stale.

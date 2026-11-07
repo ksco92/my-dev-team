@@ -164,3 +164,9 @@ plugin repository (`ksco92/my-dev-team`).
   the worktree, then copied back.
 - After a publish succeeds, poll the registry for the new version with a timeout before dispatching
   dependents; the registry can lag the publish notice by about twenty minutes.
+- An optional runtime package stays unloaded on the paths that do not need it: the module every
+  entry point imports names it in type-only imports and loads it with a dynamic `import()` inside
+  the function that uses it, proven by a test in a fresh module registry that replaces each optional
+  package with a throwing module and runs the unaffected path. jsii reads only `dependencies`,
+  `peerDependencies` and `bundledDependencies`, so a non-jsii runtime package a construct library
+  ships goes in `optionalDependencies`.

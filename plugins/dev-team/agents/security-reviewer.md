@@ -38,3 +38,10 @@ VERDICT: PASS | FAIL | BLOCKED
 HEAD: <full sha reviewed>
 FINDINGS: <count, all severities>
 ```
+
+## Learned patterns
+
+- A Host header never proves a request is local: a loopback-only route is gated on the peer address
+  (127/8, `::1`, `::ffff:127.x`) and proven live from a client bound to a LAN address, and an
+  allow-listed hostname counts only in its WHATWG-canonical form (`new URL('http://' + name).hostname
+  === name`, not an IP literal, not under `.localhost`).
