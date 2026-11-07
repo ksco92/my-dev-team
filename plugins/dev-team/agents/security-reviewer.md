@@ -48,10 +48,8 @@ plugin's repository (`ksco92/my-dev-team`); end your verdict with a `Proposed le
 bullet when you have one.
 
 - A loopback-only route needs both checks: the peer address is loopback (the IPv4-mapped form
-  included), which a Host header never proves, and the Host is an allow-listed canonical name,
-  which a loopback peer never proves against a rebinding or cross-site request. Prove the peer
-  check live only on a server reachable on a non-loopback interface, started without real
-  credentials and with a dead SDK endpoint.
-- An allow-listed hostname counts only when the WHATWG parser accepts it and returns it unchanged,
-  it has no trailing dot, it is not an IP literal in any spelling once brackets are removed, and it
-  is neither `localhost` nor under `.localhost`; the Host header is compared in the same form.
+  included), which a Host header never proves, and the Host is an allow-listed name, which a
+  loopback peer never proves against a rebinding or cross-site request.
+- The Host matches an allow-listed entry exactly, and each entry is the URL parser's canonical
+  output, so `127.1`, `0x7f000001`, `LOCALHOST`, trailing-dot and `*.localhost` spellings never
+  match while the canonical `127.0.0.1`, `[::1]` and `localhost` entries stay valid.

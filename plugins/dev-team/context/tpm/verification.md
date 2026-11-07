@@ -65,8 +65,3 @@ before its gates.
   and compare its request parameters and caller context with a call that succeeded; and when
   changing the grant leaves the request and the denial identical, stop varying grants, the denial is
   not from the grant.
-- A guard added to one middleware is proven on the real server with the raw bad request sent
-  through the whole chain; a sibling registered earlier can parse the same input unguarded.
-- A startup check moved into a function a dev server re-runs on an in-process restart is proven
-  by changing a scratch copy of its backing file, never the owner's own, and restarting in the
-  same process; a module-level cache in the dependency keeps the check stale.
