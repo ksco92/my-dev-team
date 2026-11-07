@@ -163,3 +163,6 @@ plugin repository (`ksco92/my-dev-team`).
   the worktree, then copied back.
 - After a publish succeeds, poll the registry for the new version with a timeout before dispatching
   dependents; the registry can lag the publish notice by about twenty minutes.
+- A `file:` dependency that gains a `bin` is relinked only by `npm install <name>@file:<path>`;
+  a plain `npm install` keeps the lockfile's `file:` entry, which carries no `bin`, so prove a new
+  bin's consumer path with a scratch install rather than from the package's own checkout.

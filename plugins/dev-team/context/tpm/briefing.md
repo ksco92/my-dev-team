@@ -118,3 +118,6 @@ brief (5.2).
   otherwise the test file itself fails the grep.
 - A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
   rather than the brief's paraphrase.
+- When a ticket dictates a rules file's exact sentence, derive its allowed forms from the code the
+  same PR ships before dispatch; a gate reads the new rule against the PR's own diff, and a rule
+  that forbids a form the diff uses costs a round.
