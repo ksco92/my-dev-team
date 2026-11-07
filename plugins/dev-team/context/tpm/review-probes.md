@@ -77,3 +77,10 @@ first gate of a run.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
+- A gate that may start a server holding cloud credentials launches it with a dead SDK endpoint in
+  the process environment, no `AWS_PROFILE`, no per-service endpoint or ignore-endpoint variables,
+  and the config and credentials file variables pointed at scratch placeholder files. The run is
+  trusted only after the first SDK call fails with a refused connection to that endpoint.
+- Mutate a widened range matcher to its single canonical member and a result cache behind a worker
+  pool to a cold concurrent request; fixtures use the canonical member and sequential calls, so
+  both mutants survive unnoticed.

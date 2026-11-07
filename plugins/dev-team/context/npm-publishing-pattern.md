@@ -166,7 +166,9 @@ plugin repository (`ksco92/my-dev-team`).
   dependents; the registry can lag the publish notice by about twenty minutes.
 - An optional runtime package stays unloaded on the paths that do not need it: the module every
   entry point imports names it in type-only imports and loads it with a dynamic `import()` inside
-  the function that uses it, proven by a test in a fresh module registry that replaces each optional
-  package with a throwing module and runs the unaffected path. jsii reads only `dependencies`,
-  `peerDependencies` and `bundledDependencies`, so a non-jsii runtime package a construct library
-  ships goes in `optionalDependencies`.
+  the function that uses it, proven by a test that makes each optional package throw on load and
+  runs the unaffected path.
+- A non-jsii runtime package that a construct library already treats as optional goes in
+  `optionalDependencies`, which jsii ignores (it reads `dependencies`, `peerDependencies` and
+  `bundledDependencies` only); pin it exactly, or accept that consumers resolve it by range at
+  install and that non-Node jsii targets never see it, and bundle a package every path needs.

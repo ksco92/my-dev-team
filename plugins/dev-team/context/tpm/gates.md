@@ -68,7 +68,9 @@ Read before the first gate of a run.
   same computed figure can clear the general ceiling and miss the issue's tighter target.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are
   not a contradiction for the owner: the repo rule decides, the orchestrator amends the issue's
-  constraint with the reason, and the gate that cited the old constraint re-issues its verdict. A
+  constraint with the reason, and the gate that cited the old constraint re-issues its verdict;
+  when two gates prescribe opposite mechanisms for one spot, the fix brief states the reconciled
+  property with both constraints named, never either mechanism. A
   ticket-mandated sentence, figure, or verbatim copy of a named reference file, and a
   consumer-facing section's precedent for stating sibling throws, likewise outrank a gate's style
   preference or dedup, while a gate that shows ticket text false outranks the ticket, which is

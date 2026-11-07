@@ -70,9 +70,7 @@ brief (5.2).
   mechanism written from one example opens the sibling case the next gate finds.
 - Every brief that touches a shared local resource (a database, a port) names a value unique to
   that agent, PR and round and forbids running any script whose default targets the owner's own
-  resource; two gates for different PRs briefed with the same port collide, and a gate that may
-  start a credentialed server names a dead endpoint (`AWS_ENDPOINT_URL=http://127.0.0.1:1`) to set
-  before its first request.
+  resource; two gates for different PRs briefed with the same port collide.
 - Implementer briefs push from a worktree as `git -C <wt> push --force-with-lease=<branch>:<sha>
   origin <branch>`, with `<sha>` the last SHA pushed (plain `-u origin <branch>` on the first
   push): the merge gate refuses a `-C` push that names no remote and literal non-trunk refspec, and
@@ -115,9 +113,7 @@ brief (5.2).
   section that owns the type, with pointer bullets elsewhere.
 - When a fix brief lets the implementer choose between two forms, name the file's existing shape as
   the tie-breaker, never a line count; the shorter form with a side effect is the next round's
-  finding. When two gates prescribe opposite mechanisms for one spot (split versus inline, a rule
-  file versus a user-facing restatement), the brief states the reconciled property with both
-  constraints named, never either mechanism.
+  finding.
 - When an acceptance grep over the test tree must return nothing for a name that a test has to prove
   absent from the output, brief the test to match a distinctive substring the grep pattern misses;
   otherwise the test file itself fails the grep.
