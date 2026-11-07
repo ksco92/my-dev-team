@@ -169,6 +169,5 @@ plugin repository (`ksco92/my-dev-team`).
   the function that uses it, proven by a test that makes each optional package throw on load and
   runs the unaffected path.
 - A non-jsii runtime package that a construct library already treats as optional goes in
-  `optionalDependencies`, pinned exactly: consumers resolve a range at install and non-Node jsii
-  targets never see it. A package every path needs is bundled; the CDK guide states which
-  dependency kinds jsii reads.
+  `optionalDependencies`, pinned exactly, since consumers resolve a range at install; the CDK guide
+  states which dependency kinds survive the jsii build and a consumer install.
