@@ -107,7 +107,8 @@ the other homes for what you want to say. Most of it already lives in one of the
 
 - A function or type doc states the contract in one to three lines: what it does or returns, plus
   at most one constraint the signature cannot show (an ordering guarantee, a unit, an equality rule
-  that differs from the language's). Most private helpers need none; no doc justifies its item by
+  that differs from the language's), plus the parameter, return and raises lines the stack guide
+  requires. Most private helpers need none; no doc justifies its item by
   the lint or tool it satisfies ("stays under the argument limit", "split out so it is testable").
 - A module doc is under ten lines: what the module is for, and one attribution line (upstream,
   version, license) when it ports or mirrors something. Design essays, "why this exists", and how
