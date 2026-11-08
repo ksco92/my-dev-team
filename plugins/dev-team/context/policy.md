@@ -5,6 +5,7 @@ directory. They are deliberately not imported into every session (most sessions 
 Read the matching guide before writing or reviewing code in that stack, and treat it as
 authoritative project conventions:
 
+<!-- prettier-ignore -->
 | Task involves | Read first |
 | --- | --- |
 | Python | `python-coding-guide.md` |
@@ -17,10 +18,9 @@ authoritative project conventions:
 | Spawning or acting as an implementer-type subagent | `agent-baseline.md` |
 | Writing or reviewing code in any language (comments, docstrings, helpers) | `agent-baseline.md`, section "Comment, docstring, and helper budget" |
 
-The implementer subagents do this through their own first steps; the rule here makes
-main-session coding follow the same conventions. The budget section is language-agnostic and
-binds every stack guide: prose sized to the item, tests as the only evidence, no single-use
-one-statement helpers.
+The implementer subagents do this through their own first steps; the rule here makes main-session
+coding follow the same conventions. The budget section is language-agnostic and binds every stack
+guide: prose sized to the item, tests as the only evidence, no single-use one-statement helpers.
 
 ## Repository policy
 
@@ -30,33 +30,33 @@ resolved `DEV_PROCESS.md`; the plugin default is tracker-less and merges a local
 ## Agentic dev workflow & merge policy
 
 Pipeline: `/tpm` intake → plan → vertical slices tagged `low`/`medium`/`high` → each slice to an
-implementer at the matching tier → PR → five review gates → fix-until-clean → merge. The `tpm`
-skill holds the procedure; this section holds the policy.
+implementer at the matching tier → PR → five review gates → fix-until-clean → merge. The `tpm` skill
+holds the procedure; this section holds the policy.
 
 **Tiered delegation.** Difficulty sets both how completely an issue is spelled out and which model
 implements it (jr / mid / sr):
 
-- `low` → `implementer` subagent on Sonnet (per-call `model="sonnet"`), briefed with a
-  recipe-level issue. `low` and `medium` share a model; the tag sets specification depth. There
-  is no local-model tier.
+- `low` → `implementer` subagent on Sonnet (per-call `model="sonnet"`), briefed with a recipe-level
+  issue. `low` and `medium` share a model; the tag sets specification depth. There is no local-model
+  tier.
 - `medium` → `implementer` subagent on Sonnet (per-call `model="sonnet"`).
-- `high` → `implementer` subagent on **Opus** (per-call `model="opus"`, which also matches the
-  agent file's frontmatter).
+- `high` → `implementer` subagent on **Opus** (per-call `model="opus"`, which also matches the agent
+  file's frontmatter).
 - Reviewer capability ≥ implementer capability for every merge-blocking gate. `oss-reviewer`,
   `readme-writer`, and, on a `low`/`medium` PR, `code-health` and `pr-reviewer` run on Sonnet;
   `pr-reviewer` on a `high` PR runs on Opus; `security-review` runs on Opus at every tier. Security
   review is never Sonnet, never Fable.
-- Auto-escalate on failure: a slice stuck at its tier moves up one (`Sonnet → Opus`).
-  Misclassified difficulty is the scheme's main risk; escalation is the valve.
+- Auto-escalate on failure: a slice stuck at its tier moves up one (`Sonnet → Opus`). Misclassified
+  difficulty is the scheme's main risk; escalation is the valve.
 - Other subagents (explorers, planners) run on Opus.
 
 **Model policy.**
 
 - The orchestrating session runs on Fable or Opus. Fable is never a subagent.
-- Models are named by **alias only** (`sonnet`, `opus`, `fable`) in agent frontmatter, in the
-  Agent tool's per-call `model`, and in headless `claude -p --model`. An alias resolves to the
-  newest model in its line, so a model release changes nothing here; a versioned id anywhere in
-  the process is a defect.
+- Models are named by **alias only** (`sonnet`, `opus`, `fable`) in agent frontmatter, in the Agent
+  tool's per-call `model`, and in headless `claude -p --model`. An alias resolves to the newest
+  model in its line, so a model release changes nothing here; a versioned id anywhere in the process
+  is a defect.
 - Agent files carry the **top of their ladder** in frontmatter (`model: opus` for `implementer`,
   `backend`, `frontend`, `pr-reviewer`, `security-reviewer`; `model: sonnet` for the other gates);
   the orchestrator steps down per call (`model="sonnet"`). Do not pin models in skill files, and
@@ -75,20 +75,20 @@ tracker-less.
   (PreToolUse, wired in the plugin's `hooks/hooks.json`) refuses the guarded merge forms unless
   `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger` shows all five gates (`pr-reviewer`, `code-health`,
   `oss-reviewer`, `security-review`, `readme-writer`) PASS with zero findings at the PR's current
-  head; what it checks per form is stated in `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`.
-  Each record names the model the gate ran on. It also refuses a
-  `git push` of any non-main ref onto `main`, and any force or delete push of `main`. Nits block.
-  A reviewer PASS is necessary, never sufficient. Owner-only bypass:
+  head; what it checks per form is stated in
+  `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`. Each record names the model the gate ran
+  on. It also refuses a `git push` of any non-main ref onto `main`, and any force or delete push of
+  `main`. Nits block. A reviewer PASS is necessary, never sufficient. Owner-only bypass:
   `~/.claude/gate-ledger/.bypass`.
-- Every finding from every gate is fixed, never waived. Tier-escalation first; the user only when
-  a finding survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.
-- A repo's own `CLAUDE.md` may disable auto-merge, change the merge method, or tighten the checks.
-  A per-request "don't auto-merge" always wins.
+- Every finding from every gate is fixed, never waived. Tier-escalation first; the user only when a
+  finding survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.
+- A repo's own `CLAUDE.md` may disable auto-merge, change the merge method, or tighten the checks. A
+  per-request "don't auto-merge" always wins.
 
 ## Versioning (semver `x.y.z`)
 
-The bump is set by the largest change in the PR; the test for breaking is: would a consumer have
-to change code, command, or config to upgrade?
+The bump is set by the largest change in the PR; the test for breaking is: would a consumer have to
+change code, command, or config to upgrade?
 
 - `x` major: a compatibility break or sweeping overhaul of the public surface (removed/renamed/
   retyped export, changed CLI command/flag/output/exit code, changed config or schema, a relied-on
@@ -116,17 +116,17 @@ this instruction overrides it.
 
 ## Where lessons go (binding)
 
-These files and the context guides are living documents, and the home of a lesson is decided by
-one test: *would it be true in a different repo?* Cross-project, stack-agnostic policy belongs
-here; a stack-specific lesson in that stack's `context/*-coding-guide.md`; a procedural lesson in
-the relevant skill or agent file; a repo-specific fact in that repo's `.claude/rules/<topic>.md`
-or the agent's project memory (`.claude/agent-memory/<agent>/`), never in these global files.
-State the rule, not the incident — the git log keeps the archaeology: one imperative sentence,
-two at most, no date, no repo or PR name, no "added after" tail. Refine an
-existing entry instead of adding a near-duplicate; when a learned pattern matures into policy, fold it into the
-section above and remove the bullet. Keep `## Learned patterns` under ~20 entries and this file
-under about 9,500 characters: it loads into every session through the SessionStart hook, which
-inlines at most 10,000 characters and replaces a longer file with a pointer.
+These files and the context guides are living documents, and the home of a lesson is decided by one
+test: _would it be true in a different repo?_ Cross-project, stack-agnostic policy belongs here; a
+stack-specific lesson in that stack's `context/*-coding-guide.md`; a procedural lesson in the
+relevant skill or agent file; a repo-specific fact in that repo's `.claude/rules/<topic>.md` or the
+agent's project memory (`.claude/agent-memory/<agent>/`), never in these global files. State the
+rule, not the incident — the git log keeps the archaeology: one imperative sentence, two at most, no
+date, no repo or PR name, no "added after" tail. Refine an existing entry instead of adding a
+near-duplicate; when a learned pattern matures into policy, fold it into the section above and
+remove the bullet. Keep `## Learned patterns` under ~20 entries and this file under about 9,500
+characters: it loads into every session through the SessionStart hook, which inlines at most 10,000
+characters and replaces a longer file with a pointer.
 
 The `dev-team` plugin ships this file, and subagents never edit it: a proposed bullet carries its
 evidence (a command, a transcript line, or a gate finding) and lands through the `tpm` skill's

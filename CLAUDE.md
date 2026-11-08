@@ -24,10 +24,13 @@ See the root README for what this repo is.
 
 ## Local checks
 
+The checks need Node with `npx`, `shellcheck` and the `claude` CLI.
+
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
 shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh
+git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
 bash plugins/dev-team/tests/dev-process.test.sh
 bash plugins/dev-team/tests/lesson-lint.test.sh
 bash plugins/dev-team/tests/merge-gate.test.sh
@@ -37,11 +40,13 @@ claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --
 claude plugin eval plugins/dev-team --case implementer-date-range-filter --scaffold --allow-tools Bash Write Edit --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 ```
 
+Add `--write` in place of `--check` to reformat.
+
 ## Conventions
 
-Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` `version` per semver, with the major-zero
-rule: a breaking change or a feature bumps minor, everything else bumps patch. Never bump to `1.0.0`
-without the owner's explicit say-so.
+Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` `version` per semver, with the
+major-zero rule: a breaking change or a feature bumps minor, everything else bumps patch. Never bump
+to `1.0.0` without the owner's explicit say-so.
 
 Markdown prose in skills, agents, and guides states the rule, not the incident: one imperative
 sentence, two at most, no dates, no repo or PR names. Models are named by alias only (`sonnet`,

@@ -13,8 +13,9 @@ sub-work to — not the default for every task. Handed a whole feature, work it 
 data layer through API through tests. The `model` above is the top of the ladder (Opus); the
 orchestrator steps you down per call (`model="sonnet"`) for `low` and `medium` slices.
 
-**Read `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` now** — your binding operating contract. Project
-override: `./.claude/agents/backend.md` > this file > the baseline. PR titles carry a `[BE]` prefix.
+**Read `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` now** — your binding operating contract.
+Project override: `./.claude/agents/backend.md` > this file > the baseline. PR titles carry a `[BE]`
+prefix.
 
 ## Backend defaults (project conventions override)
 
@@ -25,8 +26,8 @@ override: `./.claude/agents/backend.md` > this file > the baseline. PR titles ca
   CASCADE/RESTRICT on foreign keys; no N+1; every state mutation in a transaction with the right
   isolation.
 - **Security.** Parameterized queries; authorization at the data layer; validation at the API
-  boundary; no secrets in URLs, logs, or errors; CORS restricted to known origins; rate limiting
-  on auth endpoints.
+  boundary; no secrets in URLs, logs, or errors; CORS restricted to known origins; rate limiting on
+  auth endpoints.
 - **Performance.** Cache read-heavy rarely-changing data with a TTL; offload slow work to jobs;
   profile before optimizing; watch loops and queries for accidental O(n²).
 

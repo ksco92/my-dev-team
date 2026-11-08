@@ -186,6 +186,21 @@ check "--added: no additions, exit 0" "$?" "0"
 check "--added: no additions, no output" "$out" ""
 check "--added: works from another directory" "$("$LINT" --added main "$repo/a.md" 2>&1)" ""
 
+# A reflowed bullet is unchanged; one changed word or a new bullet is added.
+git -C "$repo" checkout -q -b reflow main
+printf '# A\n\n## Learned patterns\n\n- Old rule.\n- Kept rule. See #7.\n' >"$repo/a.md"
+git -C "$repo" -c user.name=t -c user.email=t@t commit -qam seed-ticket
+git -C "$repo" checkout -q -b reflow2
+printf '# A\n\n## Learned patterns\n\n- Old\n  rule.\n- Kept   rule.\n  See\n  #7.\n' >"$repo/a.md"
+check "--added: a reflowed bullet is not reported" "$(cd "$repo" && "$LINT" --added reflow a.md 2>&1; echo "rc=$?")" "rc=0"
+printf '# A\n\n## Learned patterns\n\n- Old rule.\n- Kept rule. See #8.\n' >"$repo/a.md"
+check "--added: a bullet with one changed word is reported" "$(cd "$repo" && "$LINT" --added reflow a.md 2>&1)" \
+  "a.md:6: ticket: Kept rule. See #8."
+printf '# A\n\n## Learned patterns\n\n- Old rule.\n- Kept rule. See #7.\n- brand new.\n' >"$repo/a.md"
+check "--added: a new bullet is reported" "$(cd "$repo" && "$LINT" --added reflow a.md 2>&1)" \
+  "a.md:7: lowercase: brand new."
+git -C "$repo" checkout -q -f feature
+
 printf '# U\n\n## Learned patterns\n\n- untracked rule.\n' >"$repo/untracked.md"
 check "--added: an untracked file lints every bullet" "$(cd "$repo" && "$LINT" --added main untracked.md 2>&1)" \
   "untracked.md:5: lowercase: untracked rule."

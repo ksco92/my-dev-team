@@ -43,6 +43,9 @@ jobs:
             shellcheck "${scripts[@]}"
           fi
 
+      - name: Check Markdown formatting
+        run: git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
+
       - name: Test dev-process resolver and session hook
         run: bash plugins/dev-team/tests/dev-process.test.sh
 

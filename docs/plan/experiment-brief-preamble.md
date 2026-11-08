@@ -5,11 +5,13 @@ status: done
 ---
 
 ## Context
+
 Every implementer brief in an experiment run carried hand-written text about what to skip, and the
 implementer agents read a baseline whose Testing section contradicts it. This ticket gives the
 preamble one home the `tpm` skill pastes from, and points the baseline's Testing section at it.
 
 ## Requirements
+
 - [ ] New file `plugins/dev-team/context/tpm/experiment.md`, titled `# tpm experiment mode`, with:
       one lead paragraph (the mode is entered only by the owner's statement, recorded in the Enter
       operation of the resolved process file; the brief for every slice opens with the block below);
@@ -34,17 +36,18 @@ preamble one home the `tpm` skill pastes from, and points the baseline's Testing
       the report; never cherry-pick, since the hook gates a merge into `main` or `master` on the
       ledger and does not gate trunk updates with no merge or push, such as a cherry-pick; no ledger
       record is written. It repeats no command the process file states.
-- [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence, and
-      the agent files are not edited (every implementer reads the baseline as its binding contract):
-      "In experiment mode, declared by the preamble from
+
+- [ ] `plugins/dev-team/context/agent-baseline.md` Testing section opens with one sentence, and the
+      agent files are not edited (every implementer reads the baseline as its binding contract): "In
+      experiment mode, declared by the preamble from
       `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`, this section and the coding guides' test,
       coverage, and lint rules do not apply and the comment budget still does."
 - [ ] `plugins/dev-team/.claude-plugin/plugin.json` version bumps patch
 
 ## Acceptance Criteria
+
 - [ ] All requirements verifiable from the diff
-- [ ] `plugins/dev-team/bin/lesson-lint --added origin/main
-      plugins/dev-team/context/tpm/experiment.md plugins/dev-team/context/agent-baseline.md`
+- [ ] `plugins/dev-team/bin/lesson-lint --added origin/main     plugins/dev-team/context/tpm/experiment.md plugins/dev-team/context/agent-baseline.md`
       exits 0 with no budget warning
 - [ ] `bash plugins/dev-team/tests/lesson-lint.test.sh` passes
 - [ ] `claude plugin validate plugins/dev-team --strict` passes
@@ -53,12 +56,15 @@ preamble one home the `tpm` skill pastes from, and points the baseline's Testing
 - [ ] No sentence in any edited file names a private repository, a date, or a PR
 
 ## Implementation Plan
-Create the file with a heredoc, add the baseline sentence with the Edit tool, run the checks,
-bump the version, open the change.
+
+Create the file with a heredoc, add the baseline sentence with the Edit tool, run the checks, bump
+the version, open the change.
 
 ## Dependencies
+
 - Blocked by: experiment-process-section · Blocks: tpm-experiment-variant
 
 ## Out of Scope
+
 Any change to `plugins/dev-team/context/tpm/briefing.md` (over budget; split pending) or to the
 `tpm` skill (tpm-experiment-variant).

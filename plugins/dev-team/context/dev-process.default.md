@@ -7,13 +7,14 @@ merge_method: merge
 
 # Development process
 
-The dev-team plugin's built-in default, used when neither the repository root nor `~/.claude/`
-has a `DEV_PROCESS.md`. Tickets are files in the repository, a change is a local branch merged
-into `main`, and one checkout holds one slice at a time. The format is
+The dev-team plugin's built-in default, used when neither the repository root nor `~/.claude/` has a
+`DEV_PROCESS.md`. Tickets are files in the repository, a change is a local branch merged into
+`main`, and one checkout holds one slice at a time. The format is
 `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`.
 
 ## Tracker: files in the repository
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | ID format | The slug of `docs/plan/<slug>.md` (lowercase, hyphenated); cite as `plan <slug>`, never an ordinal |
@@ -58,6 +59,7 @@ status: open
 
 ## Code host: none (local branch)
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Repo key | The absolute path from `git rev-parse --show-toplevel`; this is the ledger's repo key, and the change id is the branch name |
@@ -98,6 +100,7 @@ Change body template:
 
 ## Experiment
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Enter | Only when the owner says so; record it once in the session |
@@ -111,6 +114,7 @@ Change body template:
 
 ## Workspace: branch-in-place
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Branch name | `<type>/<slug>` with `<type>` in `feature\|fix\|chore\|refactor\|docs` and `<slug>` the ticket's |
@@ -123,19 +127,18 @@ Change body template:
 
 ## Gates and ledger
 
-All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`,
-`security-review`, `readme-writer`. Every finding at any severity blocks; nits included. Verdicts
-are recorded with `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <repo-path> <branch> <gate>
-<PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`, checked with `gate-ledger check <repo-path>
-<branch> <head-sha>`, and listed with `gate-ledger show <repo-path> <branch>`; a record at a new
-head resets the others.
+All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`, `security-review`,
+`readme-writer`. Every finding at any severity blocks; nits included. Verdicts are recorded with
+`${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <repo-path> <branch> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`,
+checked with `gate-ledger check <repo-path> <branch> <head-sha>`, and listed with
+`gate-ledger show <repo-path> <branch>`; a record at a new head resets the others.
 
 ## Commits
 
-No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small,
-logically grouped commits on the branch; the merge keeps them under one merge commit. The version
-bump follows the semver policy in the harness (major zero: breaking or feature → minor, otherwise
-patch) and is made once, in the final rebase before the merge.
+No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small, logically
+grouped commits on the branch; the merge keeps them under one merge commit. The version bump follows
+the semver policy in the harness (major zero: breaking or feature → minor, otherwise patch) and is
+made once, in the final rebase before the merge.
 
 ## Forbidden
 
@@ -146,5 +149,4 @@ ledger, the hooks, or CI configuration inside a slice; deleting outside the work
 
 ## Repository-specific constraints
 
-None in the default. A repository states its own under this heading in its root
-`DEV_PROCESS.md`.
+None in the default. A repository states its own under this heading in its root `DEV_PROCESS.md`.

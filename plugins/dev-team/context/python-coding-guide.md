@@ -1,7 +1,7 @@
 # Python Coding Standards Guide\
 
-This document defines the Python coding standards for Rodrigo's projects. These standards are enforced through automated
-linters and formatters configured in the codebase.
+This document defines the Python coding standards for Rodrigo's projects. These standards are
+enforced through automated linters and formatters configured in the codebase.
 
 ---
 
@@ -18,16 +18,16 @@ linters and formatters configured in the codebase.
 
 #### Module Docstrings
 
-Every Python file must contain a top-level module docstring on the first line after any shebang or encoding
-declarations.
+Every Python file must contain a top-level module docstring on the first line after any shebang or
+encoding declarations.
 
 **Format**:
 
 - Triple quotes must be on the same line as the text
 - Use imperative mood
-- Keep it concise and descriptive, at most ten physical lines counted by
-  `ast.parse(src).body[0]`'s `end_lineno - lineno + 1` (the closing quotes count); a diff
-  hunk that looks short can still land one line over
+- Keep it concise and descriptive, at most ten physical lines counted by `ast.parse(src).body[0]`'s
+  `end_lineno - lineno + 1` (the closing quotes count); a diff hunk that looks short can still land
+  one line over
 
 **Example**:
 
@@ -253,10 +253,10 @@ def _sum_nums(a: int, b: int) -> int:
 
 - **All parameter descriptions must end with a period**
 - **Use imperative mood**: "Create the client" not "Creates the client"
-- **Be concise but descriptive**, sized to the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`
-  (Comment, docstring, and helper budget): the contract plus at most one constraint the signature
-  cannot show. No test evidence, no "confirmed against X", no rationale essays, no `:raises:` for
-  an exception that cannot fire.
+- **Be concise but descriptive**, sized to the budget in
+  `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` (Comment, docstring, and helper budget): the
+  contract plus at most one constraint the signature cannot show. No test evidence, no "confirmed
+  against X", no rationale essays, no `:raises:` for an exception that cannot fire.
 - **No single-use one-statement helpers**: a private `_helper()` with one call site and one
   statement (`if pred(x): raise`, a renamed stdlib call) is inlined at the call site.
 - **Structure first**: a docstring that describes more than one step is a numbered list of what
@@ -265,8 +265,8 @@ def _sum_nums(a: int, b: int) -> int:
 - **Every parameter has a `:param:` line**: it says what the name and type hint cannot (a unit, an
   accepted range, what `None` means), or a short noun phrase when it has none.
 - **A `:return:` line, unless the function returns None**
-- **A `:raises:` line for each exception the function raises with a literal `raise` statement in
-  its own body**. Don't tag exceptions that merely propagate from a function it calls (e.g. a thin
+- **A `:raises:` line for each exception the function raises with a literal `raise` statement in its
+  own body**. Don't tag exceptions that merely propagate from a function it calls (e.g. a thin
   wrapper around a call that itself raises) — that reading would eventually require `:raises:` on
   most functions in the codebase, since exceptions propagate by default. Document propagation-only
   cases, if ever needed, at the function that actually raises.
@@ -339,39 +339,36 @@ error_message = (
 
 #### Blank Lines Around Multi-line Statements
 
-This is a pure readability aid for a human scanning the function top to bottom — it has
-no effect on behavior. Three rules, in order of precedence:
+This is a pure readability aid for a human scanning the function top to bottom — it has no effect on
+behavior. Three rules, in order of precedence:
 
-1. **`return` always gets a blank line above it**, regardless of what precedes it or
-   whether the return itself is a single line.
-2. **A `for`/`if`/`while`/`with` block always gets a blank line above it** (when it isn't
-   the first statement in its enclosing block) **and a blank line below it** (when
-   something follows in the same block) — this holds regardless of whether its neighbor
-   is itself single- or multi-line.
-3. **Any other statement that spans multiple physical lines** (a call, collection
-   literal, etc. whose closing token isn't on the line it opens) **gets a blank line on
-   any side bordering a different statement** — whether that neighbor is single-line or
-   itself multi-line. Two multi-line statements sitting back to back still each read as
-   their own paragraph, so they still get a blank between them. A multi-line statement
-   bordering a `for`/`if`/`while`/`with` block is already covered by rule 2 from that
-   block's side.
+1. **`return` always gets a blank line above it**, regardless of what precedes it or whether the
+   return itself is a single line.
+2. **A `for`/`if`/`while`/`with` block always gets a blank line above it** (when it isn't the first
+   statement in its enclosing block) **and a blank line below it** (when something follows in the
+   same block) — this holds regardless of whether its neighbor is itself single- or multi-line.
+3. **Any other statement that spans multiple physical lines** (a call, collection literal, etc.
+   whose closing token isn't on the line it opens) **gets a blank line on any side bordering a
+   different statement** — whether that neighbor is single-line or itself multi-line. Two multi-line
+   statements sitting back to back still each read as their own paragraph, so they still get a blank
+   between them. A multi-line statement bordering a `for`/`if`/`while`/`with` block is already
+   covered by rule 2 from that block's side.
 
-Never add a blank line immediately after a block header and its first body line (e.g.
-between `for x in y:` and its first statement) — the indentation already marks that
-boundary. Not required when the multi-line statement is the only statement in its
-enclosing block, or when nothing precedes/follows it to separate from.
+Never add a blank line immediately after a block header and its first body line (e.g. between
+`for x in y:` and its first statement) — the indentation already marks that boundary. Not required
+when the multi-line statement is the only statement in its enclosing block, or when nothing
+precedes/follows it to separate from.
 
 **`try`/`except` is exempt from rule 2.** A stacked `except` ladder (e.g. several
-`except SomeError:` clauses in a row handling related failure modes) is commonly kept
-dense on purpose — don't force blank lines between `except` clauses or around a
-`try`/`except` block the way `for`/`if`/`while`/`with` require them.
+`except SomeError:` clauses in a row handling related failure modes) is commonly kept dense on
+purpose — don't force blank lines between `except` clauses or around a `try`/`except` block the way
+`for`/`if`/`while`/`with` require them.
 
-**A stacked `if`-guard-clause ladder is exempt too.** Several `if condition: return X`
-early exits in a row (a validation chain) are a single logical unit, same spirit as the
-`try`/`except` exemption above — don't force blank lines between consecutive guard
-clauses. This is distinct from an `if` that gates a larger body (that still follows rule
-2 normally); the exemption is specifically for a run of short, single-purpose early
-returns.
+**A stacked `if`-guard-clause ladder is exempt too.** Several `if condition: return X` early exits
+in a row (a validation chain) are a single logical unit, same spirit as the `try`/`except` exemption
+above — don't force blank lines between consecutive guard clauses. This is distinct from an `if`
+that gates a larger body (that still follows rule 2 normally); the exemption is specifically for a
+run of short, single-purpose early returns.
 
 **Example** (drawn from `build_earnings_rows` and `get_data_frame`):
 
@@ -423,10 +420,9 @@ return df
 
 #### Comment Redundancy
 
-Don't restate reasoning that's already captured elsewhere at the right altitude — the
-function's own docstring, the message of an exception it's about to raise, or the code
-itself. A comment earns its place only when it adds information nothing else in the file
-already states.
+Don't restate reasoning that's already captured elsewhere at the right altitude — the function's own
+docstring, the message of an exception it's about to raise, or the code itself. A comment earns its
+place only when it adds information nothing else in the file already states.
 
 **Not** (the ordering rationale is already the docstring's own numbered step):
 
@@ -446,10 +442,10 @@ def get_data_frame(spark: SparkSession) -> DataFrame:
 
 **Do**: drop the comment — the docstring's numbered step already carries that rationale.
 
-Likewise, don't preserve a past implementation trade-off ("did X instead of Y because Z
-was cheaper") as a permanent inline comment once the decision is made and the code reads
-clearly on its own. That reasoning belongs in the PR or issue that made the call, not as a
-comment every future reader carries forward:
+Likewise, don't preserve a past implementation trade-off ("did X instead of Y because Z was
+cheaper") as a permanent inline comment once the decision is made and the code reads clearly on its
+own. That reasoning belongs in the PR or issue that made the call, not as a comment every future
+reader carries forward:
 
 **Not**:
 
@@ -461,11 +457,11 @@ comment every future reader carries forward:
     pk_columns = glue_client.get_table_pk("eodhd", "earnings_calendar")
 ```
 
-**Do**: drop the comment — the two-line call is self-explanatory, and the trade-off lives
-in the PR description.
+**Do**: drop the comment — the two-line call is self-explanatory, and the trade-off lives in the PR
+description.
 
-A comment or docstring explaining why code is copied rather than imported is itself the finding:
-fix the import path (a `pythonpath` entry, a shared module) and delete both the copy and the
+A comment or docstring explaining why code is copied rather than imported is itself the finding: fix
+the import path (a `pythonpath` entry, a shared module) and delete both the copy and the
 explanation.
 
 #### Comment Style
@@ -482,12 +478,12 @@ explanation.
 
 #### Section Separators
 
-Multiline comment separators are used for readability and **must not be removed**. Apply
-them uniformly to every **job module** under `src/charmander/databases/` — one labeled
-banner before its constants block (if any) and one before each top-level function or
-logical method group, regardless of the file's size. A short, 3-function job module gets
-the same treatment as a large one; don't size-gate this on line count or perceived
-necessity within that population — consistency across every job module is the point:
+Multiline comment separators are used for readability and **must not be removed**. Apply them
+uniformly to every **job module** under `src/charmander/databases/` — one labeled banner before its
+constants block (if any) and one before each top-level function or logical method group, regardless
+of the file's size. A short, 3-function job module gets the same treatment as a large one; don't
+size-gate this on line count or perceived necessity within that population — consistency across
+every job module is the point:
 
 ```python
 ##############################################
@@ -509,25 +505,22 @@ necessity within that population — consistency across every job module is the 
 
 **Exceptions to the uniform mandate**:
 
-- **Small utility files** (roughly 1-3 functions, no distinct logical groups to
-  signpost — e.g. a single parser or a single small helper class) don't need banners at
-  all. A banner earns its keep dividing multiple logical groups in a larger file; a
-  19-line single-function file has nothing to divide, and the banner would outsize the
-  code it labels. A multi-function or multi-group utils file (several unrelated helpers,
-  or a class with a clear public/private split) still gets the full treatment. **This
-  exemption does NOT extend to job modules under `databases/`, regardless of function
-  count** — job modules get the uniform banner treatment even at their smallest (a single
-  `get_data_frame` plus a constants block still gets one banner per group). Consistency
-  across every job module was an explicit, deliberate choice, not an oversight.
-- **Test files keep their existing, lighter `# <category> tests` single-line grouping
-  comment** (see Test Organization below) instead of full banners — that convention
-  already predates this rule and is universal across the whole test suite, not just a
-  per-file choice.
+- **Small utility files** (roughly 1-3 functions, no distinct logical groups to signpost — e.g. a
+  single parser or a single small helper class) don't need banners at all. A banner earns its keep
+  dividing multiple logical groups in a larger file; a 19-line single-function file has nothing to
+  divide, and the banner would outsize the code it labels. A multi-function or multi-group utils
+  file (several unrelated helpers, or a class with a clear public/private split) still gets the full
+  treatment. **This exemption does NOT extend to job modules under `databases/`, regardless of
+  function count** — job modules get the uniform banner treatment even at their smallest (a single
+  `get_data_frame` plus a constants block still gets one banner per group). Consistency across every
+  job module was an explicit, deliberate choice, not an oversight.
+- **Test files keep their existing, lighter `# <category> tests` single-line grouping comment** (see
+  Test Organization below) instead of full banners — that convention already predates this rule and
+  is universal across the whole test suite, not just a per-file choice.
 - **Files with many small private helpers** (e.g. several single-purpose functions like
-  `_parse_utc`, `_build_sentiment`) group those helpers under one shared banner (e.g.
-  `# Helpers`) rather than giving each its own — one banner per **public**
-  function/entry point, not per function. Mirrors the `job_handler.py` convention of a
-  `Public API` / `Internals` split.
+  `_parse_utc`, `_build_sentiment`) group those helpers under one shared banner (e.g. `# Helpers`)
+  rather than giving each its own — one banner per **public** function/entry point, not per
+  function. Mirrors the `job_handler.py` convention of a `Public API` / `Internals` split.
 
 ### Error Handling
 
@@ -1229,16 +1222,16 @@ These standards are enforced through:
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
-even one instructed to read this file; a subagent that notices something worth adding reports it
-under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
-any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
-imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name,
-no "added after" tail), refine near-duplicates in place, keep the section under ~25 entries, and
-open a PR against the plugin repository (`ksco92/my-dev-team`). A lesson that only fires in a
-Django or DRF project goes to `django-coding-guide.md`; one about the Python face of a native
-extension goes to `python-bindings-coding-guide.md`; a lesson that matures into a standing
-convention becomes a section above and leaves this list.
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker, even
+one instructed to read this file; a subagent that notices something worth adding reports it under
+`Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in any repo
+of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an imperative bullet
+under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after"
+tail), refine near-duplicates in place, keep the section under ~25 entries, and open a PR against
+the plugin repository (`ksco92/my-dev-team`). A lesson that only fires in a Django or DRF project
+goes to `django-coding-guide.md`; one about the Python face of a native extension goes to
+`python-bindings-coding-guide.md`; a lesson that matures into a standing convention becomes a
+section above and leaves this list.
 
 ## Learned patterns
 
@@ -1249,8 +1242,8 @@ convention becomes a section above and leaves this list.
 - Guard non-finite JSON numerics before a `Decimal` conversion: `json.loads` accepts bare
   `NaN`/`Infinity`.
 - A differential test whose oracle is the interpreter (`repr()`, `unicodedata`, `json`) pins the
-  interpreter (`.python-version`, `uv python install` in the workflow) and reads the CI log for
-  the one `uv sync` picked.
+  interpreter (`.python-version`, `uv python install` in the workflow) and reads the CI log for the
+  one `uv sync` picked.
 - When rewriting a Python file by line ranges taken from `ast` line numbers, build the line array
   with `readlines()` or `split("\n")`, never `str.splitlines()`: it also splits on U+2028/U+2029,
   which a string literal can carry, and the array desyncs from the compiler's `\n`-only numbering.

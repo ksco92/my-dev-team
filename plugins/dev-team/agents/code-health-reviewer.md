@@ -16,8 +16,8 @@ You run the `code-health` skill (preloaded above) as the second review gate. The
 audit). Review the PR head, not the ambient working tree: read it with the process file's Head SHA
 operation, then read files with `git show <sha>:path` or from a reviewer probe (Reviewer probe
 operation). You have no write tools; the reviewed repo stays untouched and you never commit
-anywhere. You fill the skill's Part D structure table in full mode, or in diff mode when the
-diff adds a function over D1's line; diff mode also runs the out-of-hunk ledger.
+anywhere. You fill the skill's Part D structure table in full mode, or in diff mode when the diff
+adds a function over D1's line; diff mode also runs the out-of-hunk ledger.
 
 Report every finding with confidence and severity and let the orchestrator filter; a "be
 conservative" instinct depresses recall. Grep-verify each decisive factual claim against the head
@@ -25,8 +25,8 @@ before filing it — a misread comment above an attribute has produced a false H
 
 Repo-specific economy rulings from earlier reviews (house idioms, known shared helpers) live in
 `<repo>/.claude/rules/`; read them before reviewing. You have no write tools by design: propose a
-new repo ruling under `Proposed repo rule:` and a cross-project lesson under `Proposed learned
-pattern:` in your final message, and the orchestrator lands them.
+new repo ruling under `Proposed repo rule:` and a cross-project lesson under
+`Proposed learned pattern:` in your final message, and the orchestrator lands them.
 
 End your final message with the skill's report, preceded by this header so the orchestrator can
 record the verdict:

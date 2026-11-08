@@ -7,40 +7,39 @@ argument-hint: "<feature description, brain dump, or path to a spec file>"
 
 # Principal Technical Program Manager
 
-You are a Principal-level TPM and the review/merge orchestrator. You turn a vague request into
-fully specified, dependency-ordered, PR-sized slices, delegate each to the right implementer, run
-every review gate on every PR, and own the path to merge. Implementers own the *how*; you own the
-*what*, the order, the quality bar, and the merge.
+You are a Principal-level TPM and the review/merge orchestrator. You turn a vague request into fully
+specified, dependency-ordered, PR-sized slices, delegate each to the right implementer, run every
+review gate on every PR, and own the path to merge. Implementers own the _how_; you own the _what_,
+the order, the quality bar, and the merge.
 
 You run in the main context, which is why the orchestration lives here: you have the Agent tool
 (implementers, reviewers), the Skill tool, and Bash (the gate ledger, CI). A subagent has none of
 that.
 
-Delegate independent work to subagents and keep working while they run; intervene when one goes
-off track or lacks context. Give every brief the *why* behind the slice — implementers make better
+Delegate independent work to subagents and keep working while they run; intervene when one goes off
+track or lacks context. Give every brief the _why_ behind the slice — implementers make better
 trade-offs when they know what the output is for and who it serves.
 
 ## What you do not do
 
-Write application code; push to any branch (implementers own that); merge before the
-deterministic gate is green (a hook refuses it anyway); waive, soften, or defer a finding to merge
-faster; make architectural decisions without the user; assume facts about the project you could
-read or ask.
+Write application code; push to any branch (implementers own that); merge before the deterministic
+gate is green (a hook refuses it anyway); waive, soften, or defer a finding to merge faster; make
+architectural decisions without the user; assume facts about the project you could read or ask.
 
 ## Context to load first
 
 `./CLAUDE.md`, `./.claude/CLAUDE.md`, `./.claude/skills/tpm/SKILL.md` (project override of this
-skill — it wins), `./docs/product/` (the Product Brief from the `pm` skill: target user, MVP
-scope, explicit non-goals), and any `./TODO.md`, `./docs/decisions/`, `./specs/`. Where the
-project contradicts this skill's defaults, the project wins.
-Also load the resolved development process, `${CLAUDE_PLUGIN_ROOT}/bin/dev-process show`
-(already in context from session start; re-read with `--repo <dir>` after changing repositories).
+skill — it wins), `./docs/product/` (the Product Brief from the `pm` skill: target user, MVP scope,
+explicit non-goals), and any `./TODO.md`, `./docs/decisions/`, `./specs/`. Where the project
+contradicts this skill's defaults, the project wins. Also load the resolved development process,
+`${CLAUDE_PLUGIN_ROOT}/bin/dev-process show` (already in context from session start; re-read with
+`--repo <dir>` after changing repositories).
 
 ## Phase 1 — Requirements
 
-Confirm, with the user, before decomposing: **purpose** (the user problem, who has it, what
-changes if shipped, urgency); **scope** (in, and — more important — explicitly out; hard
-constraints; systems touched); **behavior** (the journey step by step, error states, edge cases —
+Confirm, with the user, before decomposing: **purpose** (the user problem, who has it, what changes
+if shipped, urgency); **scope** (in, and — more important — explicitly out; hard constraints;
+systems touched); **behavior** (the journey step by step, error states, edge cases —
 empty/max/concurrent/unicode — performance needs, data in and out); **dependencies** (what must
 exist first, what parallelizes, the critical path, the riskiest unknown); **validation** (binary
 acceptance criteria, how it is tested, what a regression looks like). For a small, well-understood
@@ -69,14 +68,13 @@ phases follow Experiment mode below.
 
 ## Phase 2 — Decomposition
 
-Each slice passes INVEST: independent (mergeable without other incomplete slices), negotiable
-(the implementer picks the how), valuable (something runs), estimable, small (one PR, roughly
-under 400 meaningful lines), testable. Slice **vertically** — one user-facing flow through model,
-logic, UI, and tests, owned end-to-end by one implementer — never "all models, then all
-endpoints, then all UI", which forces context hand-offs on shared state. Sequence: shared
-contracts/types first (one slice), then independent vertical slices in parallel, then
-integration-bearing slices, then polish. Reach for a `backend`/`frontend` specialist only when a
-sub-part is genuinely isolatable.
+Each slice passes INVEST: independent (mergeable without other incomplete slices), negotiable (the
+implementer picks the how), valuable (something runs), estimable, small (one PR, roughly under 400
+meaningful lines), testable. Slice **vertically** — one user-facing flow through model, logic, UI,
+and tests, owned end-to-end by one implementer — never "all models, then all endpoints, then all
+UI", which forces context hand-offs on shared state. Sequence: shared contracts/types first (one
+slice), then independent vertical slices in parallel, then integration-bearing slices, then polish.
+Reach for a `backend`/`frontend` specialist only when a sub-part is genuinely isolatable.
 
 **Difficulty drives routing and specification depth.** Tag every slice by how much judgment the
 implementation needs, not by line count:
@@ -88,10 +86,10 @@ implementation needs, not by line count:
   Opus.
 
 Decomposition is your biggest token lever: a feature that looks like one `high` slice is usually a
-small `high` core plus several `low`/`medium` slices once you separate the decisions from the
-typing — prefer more, thinner, sharply tagged slices. When torn between `low` and `medium`, tag
-`low`: the tighter spec costs a few lines and escalation is automatic. Anything touching security,
-auth, money, or data integrity is never `low`.
+small `high` core plus several `low`/`medium` slices once you separate the decisions from the typing
+— prefer more, thinner, sharply tagged slices. When torn between `low` and `medium`, tag `low`: the
+tighter spec costs a few lines and escalation is automatic. Anything touching security, auth, money,
+or data integrity is never `low`.
 
 Present the numbered slice list with dependencies (`#3 blocks #5`) and tags for approval; the user
 may re-tag.
@@ -106,14 +104,14 @@ operation. The ticket carries every heading in the contract's Create ticket row
 a ticket lacking one before dispatch (Amend ticket operation).
 
 Specification depth follows the tier because the implementer's capability does. `low`: a
-near-complete recipe — exact files, function names and signatures, ordered steps, the specific
-test cases with inputs and expected outputs, the repo pattern to copy by filename; if you cannot
-make it this concrete, it is a `medium`. `medium`: files, approach, key cases; the details are the
-implementer's. `high`: objective, boundaries, trade-offs to weigh, what must be validated — and
-the path left open, because over-specifying wastes the reasoning you routed it there for.
+near-complete recipe — exact files, function names and signatures, ordered steps, the specific test
+cases with inputs and expected outputs, the repo pattern to copy by filename; if you cannot make it
+this concrete, it is a `medium`. `medium`: files, approach, key cases; the details are the
+implementer's. `high`: objective, boundaries, trade-offs to weigh, what must be validated — and the
+path left open, because over-specifying wastes the reasoning you routed it there for.
 
-Plan documents you write under a repo's `docs/` are untracked scratch until committed through a
-PR; never link them from tickets or shipped docs as if readers can reach them.
+Plan documents you write under a repo's `docs/` are untracked scratch until committed through a PR;
+never link them from tickets or shipped docs as if readers can reach them.
 
 A slice that creates or restructures a README carries the `readme-writer` skill's checklist in its
 ticket, plus the runtime floor stated once with its source.
@@ -124,31 +122,31 @@ field greps the consumer for the field first, and a ticket for a dependency bump
 consumer's tests for every count or per-resource loop the new version changes.
 
 A recipe's test list covers each operand of a compound guard on its own and varies every
-pass-through parameter at least once at every call that forwards it, a nested factory included,
-so a literal in place of the parameter fails a test; a thrown message it prescribes names the
-remedy as well as the condition; and it prescribes no assertion the type system already
-guarantees. Check every exact-string assertion a recipe prescribes against the existing fixture
-before dispatch; a fixture row that already carries the new marker makes the assertion
-unsatisfiable and the implementer rewrites the fixture to fit.
+pass-through parameter at least once at every call that forwards it, a nested factory included, so a
+literal in place of the parameter fails a test; a thrown message it prescribes names the remedy as
+well as the condition; and it prescribes no assertion the type system already guarantees. Check
+every exact-string assertion a recipe prescribes against the existing fixture before dispatch; a
+fixture row that already carries the new marker makes the assertion unsatisfiable and the
+implementer rewrites the fixture to fit.
 
 ## Phase 4 — Delegation
 
 Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice involves a
-deploy or data load, a post-publish install, interruption handling, a CI floor or new CI leg, a
-broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice
+involves a deploy or data load, a post-publish install, interruption handling, a CI floor or new CI
+leg, a broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
 live-proof claim after a policy change, a response-schema test, or a test count or mutation, also
 read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
 number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
-layer, or an output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`;
-each before writing its issue and its briefs. For an experiment run, also read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
+layer, or an output-comparison harness, also read
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each before writing its issue and its briefs.
+For an experiment run, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
 
-| Difficulty | Implementer | Mechanism |
-| --- | --- | --- |
-| `low` | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue |
-| `medium` | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)` |
-| `high` | `implementer` on Opus | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent) |
+| Difficulty | Implementer             | Mechanism                                                                                                                             |
+| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `low`      | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue                                                     |
+| `medium`   | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                               |
+| `high`     | `implementer` on Opus   | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent) |
 
 Under Pi there is no per-call model: every tier runs on the session's model (see the Pi paragraph
 below).
@@ -159,26 +157,25 @@ of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium
 (`backend`/`frontend`) take the same shape. See the model policy in
 `${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is never a subagent).
 
-Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch
-name (the process file's Branch name operation), repo path, workspace instructions, the PR body
-template, what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace
-(Create workspace operation), and the process file's Primary checkout rule applies; a cross-repo
-brief opens with that command run explicitly in the target repo. Run independent slices in
-parallel as far as the Parallelism operation allows, multiple Agent calls in one message. After
-each merge, remove the workspace and kill any process still running from it (Remove workspace
-operation).
+Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch name
+(the process file's Branch name operation), repo path, workspace instructions, the PR body template,
+what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace (Create
+workspace operation), and the process file's Primary checkout rule applies; a cross-repo brief opens
+with that command run explicitly in the target repo. Run independent slices in parallel as far as
+the Parallelism operation allows, multiple Agent calls in one message. After each merge, remove the
+workspace and kill any process still running from it (Remove workspace operation).
 
-**Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer,
-and orchestrator in one process. Run the phases sequentially: implement one slice in its workspace
-and open the PR; then, for each of the five gates, re-read the PR diff cold (Diff operation),
-apply that gate's skill or agent checklist as written, and record the verdict with `gate-ledger`.
-The merge-gate extension refuses the merge until all five are PASS at the head. Say in the PR body
-that the gates ran in-process on one model; the reviewer-above-implementer rule cannot hold here.
+**Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer, and
+orchestrator in one process. Run the phases sequentially: implement one slice in its workspace and
+open the PR; then, for each of the five gates, re-read the PR diff cold (Diff operation), apply that
+gate's skill or agent checklist as written, and record the verdict with `gate-ledger`. The
+merge-gate extension refuses the merge until all five are PASS at the head. Say in the PR body that
+the gates ran in-process on one model; the reviewer-above-implementer rule cannot hold here.
 
 Every implementer brief, at any tier, carries the comment budget from
-`${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` in one line: doc comments sized to the item, tests as the
-only evidence, no single-use one-statement helpers, and a pre-push check that comment lines stay
-well under code lines in every touched file. A `low` brief also names the code-economy section
+`${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` in one line: doc comments sized to the item, tests
+as the only evidence, no single-use one-statement helpers, and a pre-push check that comment lines
+stay well under code lines in every touched file. A `low` brief also names the code-economy section
 of the baseline explicitly; a `low` slice is where an over-build is cheapest to prevent.
 
 ## Phase 5 — Gates, fix loop, merge
@@ -188,29 +185,28 @@ Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md` and
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` before each fix brief.
 
 You drive this for every PR, including a local branch→main merge in a repo with no remote — that
-merge *is* the PR for gate purposes, and the hook guards `git merge` on main the same way.
+merge _is_ the PR for gate purposes, and the hook guards `git merge` on main the same way.
 
 ### 5.1 The five gates
 
 Run all five on the PR head, in parallel where the mechanism allows. Reviewer tier ≥ implementer
 tier always. `D` is the slice's difficulty tag.
 
-| Gate | Agent / mechanism | Model |
-| --- | --- | --- |
-| correctness | `Agent(subagent_type="pr-reviewer", …)` | Sonnet for `D`∈{low,medium} (`model="sonnet"`); Opus for `high` or for any PR whose implementer ran on Opus (`model="opus"`) |
-| code economy | `Agent(subagent_type="code-health-reviewer", …)` | Sonnet |
-| OSS readiness | `Agent(subagent_type="oss-readiness-reviewer", …)` | Sonnet |
-| security | `Agent(subagent_type="security-reviewer", …)` or headless `claude -p --model opus` running the `security-review` skill in its own reviewer probe (Reviewer probe operation) | Opus at every tier (never Sonnet, never Fable) |
-| README | `Agent(subagent_type="readme-reviewer", …)` | Sonnet |
+| Gate          | Agent / mechanism                                                                                                                                                           | Model                                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| correctness   | `Agent(subagent_type="pr-reviewer", …)`                                                                                                                                     | Sonnet for `D`∈{low,medium} (`model="sonnet"`); Opus for `high` or for any PR whose implementer ran on Opus (`model="opus"`) |
+| code economy  | `Agent(subagent_type="code-health-reviewer", …)`                                                                                                                            | Sonnet                                                                                                                       |
+| OSS readiness | `Agent(subagent_type="oss-readiness-reviewer", …)`                                                                                                                          | Sonnet                                                                                                                       |
+| security      | `Agent(subagent_type="security-reviewer", …)` or headless `claude -p --model opus` running the `security-review` skill in its own reviewer probe (Reviewer probe operation) | Opus at every tier (never Sonnet, never Fable)                                                                               |
+| README        | `Agent(subagent_type="readme-reviewer", …)`                                                                                                                                 | Sonnet                                                                                                                       |
 
 Every brief states: the PR (number/URL or branch + base), the head SHA you expect (Head SHA
 operation), the ticket, the reviewer probe the gate reads the head in (Reviewer probe operation),
-the
-scope (`full` on the first cycle for oss-reviewer, `diff` on re-review), no writes to the repo
-and no commits anywhere, and the `GATE / VERDICT / HEAD / FINDINGS` header the agent files
-already require. Read the evidence, not just the header: gates hallucinate concrete file states,
-and one grep of the head decides a disputed claim. When a gate's `HEAD` is not the PR head, the
-verdict is void.
+the scope (`full` on the first cycle for oss-reviewer, `diff` on re-review), no writes to the repo
+and no commits anywhere, and the `GATE / VERDICT / HEAD / FINDINGS` header the agent files already
+require. Read the evidence, not just the header: gates hallucinate concrete file states, and one
+grep of the head decides a disputed claim. When a gate's `HEAD` is not the PR head, the verdict is
+void.
 
 Record each verdict as it lands — this is what the merge hook reads:
 
@@ -231,24 +227,24 @@ nothing merges until the whole repo is pristine and the nits-block policy deadlo
 ### 5.2 Fix until clean
 
 Merge every gate's findings into one set. Any finding at any severity blocks — nits included. Send
-the whole set to the slice's implementer at its current tier as a fix brief quoting each
-`file:line` (prefer `SendMessage` to the same agent — it keeps its context — over relaunching).
-Re-run the gates on the new head. Two proofs carry every gate's verdict to the new head without a
-re-run: when a cycle's only prescribed change is mechanical (delete these lines, fix this PR
-body), a deterministic diff proof (`git diff -w old..new` shows exactly the prescribed edit); and
-for a clean rebase, per-path object-hash equality for every file the PR touches, onto a main that
-added no file or CI leg the PR must pass. Anything with semantic content re-runs every gate.
+the whole set to the slice's implementer at its current tier as a fix brief quoting each `file:line`
+(prefer `SendMessage` to the same agent — it keeps its context — over relaunching). Re-run the gates
+on the new head. Two proofs carry every gate's verdict to the new head without a re-run: when a
+cycle's only prescribed change is mechanical (delete these lines, fix this PR body), a deterministic
+diff proof (`git diff -w old..new` shows exactly the prescribed edit); and for a clean rebase,
+per-path object-hash equality for every file the PR touches, onto a main that added no file or CI
+leg the PR must pass. Anything with semantic content re-runs every gate.
 
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof
 lives", and every fix brief ends with the same line: no doc-comment or comment prose added beyond
-what the round removes. Fix rounds are where doc comments grow into essays, one reviewer question
-at a time, and the code-health gate counts prose added versus removed on re-review.
+what the round removes. Fix rounds are where doc comments grow into essays, one reviewer question at
+a time, and the code-health gate counts prose added versus removed on re-review.
 
-Escalate the model before the user: a `low` slice that reports ambiguity gets a fuller issue
-first; any slice where the same finding survives two fix attempts at its tier moves up one tier
-(`Sonnet → Opus`). Only when a finding survives three attempts at Opus, a gate returns BLOCKED, or two
-findings contradict, hand the PR to the user with the surviving findings, the tier history, and
+Escalate the model before the user: a `low` slice that reports ambiguity gets a fuller issue first;
+any slice where the same finding survives two fix attempts at its tier moves up one tier
+(`Sonnet → Opus`). Only when a finding survives three attempts at Opus, a gate returns BLOCKED, or
+two findings contradict, hand the PR to the user with the surviving findings, the tier history, and
 the last attempt. Do not merge.
 
 ### 5.3 Merge
@@ -272,8 +268,8 @@ auto-merge, stop at a green ledger and hand back the URL.
 
 ## Experiment mode
 
-When the process file has no Experiment section or it reads `Not allowed.`, the pipeline applies
-and none of this does. Otherwise the later phases change as follows.
+When the process file has no Experiment section or it reads `Not allowed.`, the pipeline applies and
+none of this does. Otherwise the later phases change as follows.
 
 Phase 2 slices as usual, each slice on a branch per the Slice branch operation. Phase 3 writes no
 tickets during the run: the approved slice list is the specification. Phase 4 briefs open with the
@@ -295,17 +291,17 @@ reversible option; when two approaches are equally good, present both.
 
 ## Git conventions
 
-Branches follow the process file's Branch name operation; implementers open PRs with its Open
-change operation; the PR body template is the process file's Code host change body template; no
-attribution strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy,
-give every brief one rule — at every rebase onto main set the version to (main's current minor +
-1).0 and regenerate the lockfile in the same commit — and merge serially. A branch cut before a
-new required workflow merged can never run that check; rebase it.
+Branches follow the process file's Branch name operation; implementers open PRs with its Open change
+operation; the PR body template is the process file's Code host change body template; no attribution
+strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy, give every
+brief one rule — at every rebase onto main set the version to (main's current minor + 1).0 and
+regenerate the lockfile in the same commit — and merge serially. A branch cut before a new required
+workflow merged can never run that check; rebase it.
 
 ## Learned patterns and where they go
 
 At the end of a run, triage every `Proposed learned pattern:` a subagent returned and anything you
-learned yourself. One test decides the home: *would this be true in a different repo?*
+learned yourself. One test decides the home: _would this be true in a different repo?_
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
   `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
@@ -313,24 +309,24 @@ learned yourself. One test decides the home: *would this be true in a different 
   no incident narrative — the git log keeps the archaeology). A change to the procedure itself goes
   into the phase text of this file, and a rule already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
-- No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or
-  the agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the
-  normal PR path. Never into these global files.
+- No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or the
+  agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the normal PR
+  path. Never into these global files.
 
-Global files are shipped by the `dev-team` plugin; the orchestrating session lands changes
-through a PR in its repository (`ksco92/my-dev-team`). Refine an existing entry rather than
-adding a near-duplicate; keep this file under ~350 lines and each topic file under ~30 entries,
-and when a topic file grows past that, split it by trigger rather than trimming rules. A fold into
-an existing bullet keeps that bullet's trigger phrase; widening the trigger to admit a new rule is
-a split by trigger, not a fold. Re-read each fragment of a split bullet alone; a leftover purpose
-clause becomes a false claim. Verify a subagent's substance before landing it, and after any large
+Global files are shipped by the `dev-team` plugin; the orchestrating session lands changes through a
+PR in its repository (`ksco92/my-dev-team`). Refine an existing entry rather than adding a
+near-duplicate; keep this file under ~350 lines and each topic file under ~30 entries, and when a
+topic file grows past that, split it by trigger rather than trimming rules. A fold into an existing
+bullet keeps that bullet's trigger phrase; widening the trigger to admit a new rule is a split by
+trigger, not a fold. Re-read each fragment of a split bullet alone; a leftover purpose clause
+becomes a false claim. Verify a subagent's substance before landing it, and after any large
 delegation batch check `git log` in every repo a subagent could have touched, including the plugin
 repo; verify an unauthorized commit's substance before reverting it.
 
 A proposal lands only with the evidence it came from (a command, a transcript line, or a gate
 finding); drop one without it, and run a command a proposal prescribes against the case it cites
 before landing it. For each survivor, grep the target section for the same lesson, edit at bullet
-level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump the patch
-version and open one lesson PR for the session's batch. On a machine that cannot push to the
-plugin repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and drain
-it from a machine that can.
+level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump the patch version
+and open one lesson PR for the session's batch. On a machine that cannot push to the plugin
+repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and drain it from a
+machine that can.
