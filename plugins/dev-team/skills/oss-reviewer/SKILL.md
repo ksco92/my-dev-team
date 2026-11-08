@@ -74,7 +74,7 @@ Before reviewing, read:
 Some patterns that elsewhere are AI-slop may be deliberate project conventions. If CLAUDE.md or a similar conventions file documents them, treat as legitimate:
 
 - **Multi-`#` comment separators** (`############################################`). Some authors use these for visual section breaks. Not slop.
-- **Sphinx-style docstrings** (`:param:` / `:return:` / `:raises:`) on every function. Verbose but load-bearing if `flake8-docstrings` or similar enforces them.
+- **Sphinx-style docstrings** (`:param:` / `:return:` / `:raises:`) on every public function. The Python guide requires them and pydoclint enforces them.
 - **`assert resolved is not None`** narrowing after a Protocol-returning call. This is a mypy-narrowing necessity, not paranoia.
 - **`# pragma: no cover`** annotations on genuinely-unreachable branches. Skip only if there's a 95%+ coverage gate enforcing them.
 

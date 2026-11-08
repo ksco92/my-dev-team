@@ -89,7 +89,13 @@ All function parameters and return types must have type hints.
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
-    """Run a SQL query in Athena."""
+    """
+    Run a SQL query in Athena.
+
+    :param query: SQL text, sent to Athena as written.
+    :param fetch_size: Rows requested per page; Athena caps it at 1000.
+    :return: One dictionary per row, keyed by column name.
+    """
     pass
 ```
 
@@ -260,10 +266,10 @@ def _sum_nums(a: int, b: int) -> int:
   accepted range, what `None` means), or a short noun phrase when it has none.
 - **A `:return:` line, unless the function returns None**
 - **A `:raises:` line for each exception the function raises with a literal `raise` statement in
-  its own body**. Don't tag exceptions that merely propagate
-  from a function it calls (e.g. a thin wrapper around a call that itself raises) — that
-  reading would eventually require `:raises:` on most functions in the codebase, since
-  exceptions propagate by default. Document propagation-only cases, if ever needed, at the
+  its own body**. Don't tag exceptions that merely propagate from a function it calls (e.g. a thin
+  wrapper around a call that itself raises) — that reading would eventually require `:raises:` on
+  most functions in the codebase, since exceptions propagate by default. Document
+  propagation-only cases, if ever needed, at the
   function that actually raises.
 
 ### Classes
@@ -532,7 +538,13 @@ Be specific about error conditions:
 
 ```python
 def cpc_predictor(query_text: str | None = None) -> dict:
-    """Predict CPC codes based on query text."""
+    """
+    Predict CPC codes based on query text.
+
+    :param query_text: Text to classify, at most 1000 characters.
+    :return: CPC codes keyed by confidence.
+    :raises ValueError: When query_text is None or longer than 1000 characters.
+    """
     if query_text is None:
         raise ValueError("query_text is None.")
 
@@ -620,7 +632,13 @@ Functions should return consistent types:
 
 ```python
 def list_files(self: Self, bucket_name: str, prefix: str) -> list[dict]:
-    """List all the files in a prefix."""
+    """
+    List all the files in a prefix.
+
+    :param bucket_name: Bucket to list.
+    :param prefix: Key prefix; every object under it is listed.
+    :return: One dictionary per object, as S3 returns it.
+    """
     return get_all_results(...)
 ```
 
@@ -630,7 +648,13 @@ Use early returns for error conditions:
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
-    """Run a SQL query in Athena."""
+    """
+    Run a SQL query in Athena.
+
+    :param query: SQL text, sent to Athena as written.
+    :param fetch_size: Rows requested per page; Athena caps it at 1000.
+    :return: One dictionary per row, or an empty list for a statement without results.
+    """
     cursor = self._create_cursor()
     cursor.execute(query)
 
@@ -670,6 +694,8 @@ Use clear, descriptive names:
 #### Logical Grouping
 
 Group related functionality together:
+
+The docstrings below are abbreviated to their summary lines.
 
 ```python
 class S3Client:

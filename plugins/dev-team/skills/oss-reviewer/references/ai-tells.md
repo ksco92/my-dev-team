@@ -444,7 +444,7 @@ Numpy / Google style: param description ≤4 words AND contains the param name o
 
 Per-file rule: flag files where >30% of public functions match.
 
-Exclude: `Protocol` / `@abstractmethod` definitions where restatement is the contract; auto-generated stub modules.
+Exclude: `Protocol` / `@abstractmethod` definitions where restatement is the contract; auto-generated stub modules; a `:param:` line the stack guide requires on a parameter whose name and type hint say everything.
 
 Severity: HIGH. Restated docstrings add zero information; the pattern signals docstrings were filled mechanically rather than by an author with intent.
 

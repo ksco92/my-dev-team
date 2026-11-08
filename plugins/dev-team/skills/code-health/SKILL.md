@@ -63,8 +63,8 @@ rung. Ask, in order:
    (The predicate+raise wrapper class: a bespoke `_guard_x()` that is really
    `if pred(x): raise` belongs inline on a shared primitive.) Any language: a helper with
    one call site and one statement (`x.expect(...)`, a renamed stdlib call, a
-   `predicate + raise`) is inlined however well it is named and documented; a doc
-   comment longer than the body is the tell. Count call sites with grep before accepting
+   `predicate + raise`) is inlined however well it is named and documented; a private
+   helper's doc comment longer than the body is the tell. Count call sites with grep before accepting
    the helper. A helper whose body is one call forwarding its arguments unchanged is an
    alias: call the target at every site, whatever the call-site count.
 7. **Minimum** — if code was genuinely needed, is this the least of it? Fewest files,
@@ -253,8 +253,7 @@ Lines are code lines (no blanks, no comments), counted as the repo's length lint
   replacement; a single-call-site one-statement helper; a false docstring claim; an uncited
   provenance number; a comment essay that hides the purpose of load-bearing code; a doc
   comment longer than its item beyond the stack guide's required lines; test evidence restated
-  in prose; a touched internal file
-  over the 40% comment ratio.
+  in prose; a touched internal file over the 40% comment ratio.
 - **MEDIUM** — review-fear or self-defense guards (removal recommended); alias-for-
   comment; unrequested abstraction with a concrete simpler form; a Part D finding, unless it is
   a second renderer (D9), a second worker pool (D10), a lint-dodge structure (D2), or a D1
