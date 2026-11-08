@@ -28,9 +28,11 @@ Read before the first gate of a run.
   is refused because the ledger does not yet hold that verdict (the hook reports that gate MISSING,
   no ledger, or a ledger at another head).
 - Grep-verify a gate's decisive factual claims against the head before dispatching a fix round;
-  grep-verify a gate's proposed repo rule against the repo it describes before prescribing it; run
-  `git log --follow` on a PR body's root-cause narrative. An overrule of a gate's finding needs the
-  same evidence, recorded and put into every gate's next brief, never the implementer's.
+  grep-verify an implementer's report that a prescribed code change landed (`grep -n` the head for
+  the new expression) before launching the re-gate round; grep-verify a gate's proposed repo rule
+  against the repo it describes before prescribing it; run `git log --follow` on a PR body's
+  root-cause narrative. An overrule of a gate's finding needs the same evidence, recorded and put
+  into every gate's next brief, never the implementer's.
 - Every gate brief on a PR whose base has moved names the diff form (the Diff operation, or
   three-dot `origin/main...HEAD`); a two-dot diff attributes base commits to the PR. For a fix-round
   delta across a rebase, diff the two heads restricted to the PR's own paths
@@ -115,4 +117,5 @@ Read before the first gate of a run.
 - A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
   truncated read reports a recorded accepted risk as missing.
 - A gate result that lacks the verdict block is void until the gate resends it; the `SubagentStop`
-  hook asks the gate once.
+  hook asks the gate once. A gate whose transcript stops advancing on its final cleanup command is
+  stopped, its probe removed by the orchestrator, and relaunched at the same head.
