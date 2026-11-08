@@ -10,8 +10,7 @@ merge_method:
 <!-- Fill every empty cell with a command or a rule; write "Not used" or "Not applicable" with
 where that concern lives instead. The format is ${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md.
 Place this file at a repository root or at ~/.claude/DEV_PROCESS.md. The prettier-ignore markers
-keep a formatter from padding the tables, which would push the inlined file past the session hook's
-10,000-character cap. -->
+keep a formatter from padding the tables. -->
 
 ## Tracker: <name>
 

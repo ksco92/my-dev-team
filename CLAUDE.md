@@ -24,7 +24,7 @@ See the root README for what this repo is.
 
 ## Local checks
 
-The checks need Node with `npx`, `shellcheck` and the `claude` CLI.
+The checks need Node for `npx`.
 
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict

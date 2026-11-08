@@ -4,14 +4,15 @@
 # Usage:
 #   lesson-lint <file>...                    every bullet under `## Learned patterns`, and every
 #                                            bullet of a context/tpm/*.md file
-#   lesson-lint --added <base-ref> <file>... only bullets whose whitespace-collapsed text is absent from the merge base's copy;
-#                                            every bullet of an untracked file
+#   lesson-lint --added <base-ref> <file>... only bullets whose whitespace-collapsed text is absent
+#                                            from the merge base's copy; every bullet of an
+#                                            untracked file
 #
 # Prints `<file>:<line>: <rule>: <first 60 chars>` per failure and exits 1 on any; a section
 # over its bullet budget is a warning on stderr. Exit 2 on a usage error.
 set -euo pipefail
 
-usage() { sed -n '4,8p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '4,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
 base=""
 if [[ "${1:-}" == "--added" ]]; then

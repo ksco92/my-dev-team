@@ -704,7 +704,8 @@ itself a model fingerprint). Thresholds:
 - 0.8–1.5 → INFO.
 - > 1.5 → HIGH.
 
-Also count ASCII surrogate `--` (used by authors who write em-dashes deliberately in markdown).
+Also count an ASCII surrogate: two hyphens with a space on each side (used by authors who write
+em-dashes deliberately in markdown).
 
 **b. Contrastive negation — "It's not X — it's Y" (INFO / HIGH at 3+).** Structural rhetorical
 pivot.
