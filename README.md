@@ -42,6 +42,6 @@ gated change; a file whose section is absent or reads `Not allowed.` keeps the m
 
 The plugin registers a `SubagentStop` hook that refuses the first stop of a review-gate subagent
 whose final message lacks the verdict block (`GATE`, `VERDICT: PASS|FAIL|BLOCKED`, `HEAD`,
-`FINDINGS`, each on its own line; BLOCKED needs only the first two) and asks it to resend; the
-retry is let through, as is a message with no readable text. The exact patterns are in
+`FINDINGS`, each on its own line; BLOCKED needs only the first two) and asks it to resend; the retry
+is let through, as is a message with no readable text. The exact patterns are in
 `plugins/dev-team/hooks/verdict-guard.sh`.

@@ -33,4 +33,5 @@ FINDINGS: <count, all severities>
 
 PASS means zero findings at any severity.
 
-Remove your probe and finish every tool call before writing the verdict; the verdict block is the last text you emit.
+Remove your probe and finish every tool call before writing the verdict; the verdict block is the
+last text you emit.

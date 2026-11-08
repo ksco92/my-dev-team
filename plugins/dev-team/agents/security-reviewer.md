@@ -39,7 +39,8 @@ HEAD: <full sha reviewed>
 FINDINGS: <count, all severities>
 ```
 
-Remove your probe and finish every tool call before writing the verdict; the verdict block is the last text you emit.
+Remove your probe and finish every tool call before writing the verdict; the verdict block is the
+last text you emit.
 
 ## Learned patterns
 
