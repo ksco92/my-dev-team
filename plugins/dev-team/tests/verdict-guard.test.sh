@@ -29,13 +29,14 @@ run() {
   rc=$?
   printf '%s %s' "$rc" "$err"
 }
+# raw <json>: prints "<exit> <output>" for a literal hook input.
+raw() { printf '%s' "$1" | bash "$PLUGIN/hooks/verdict-guard.sh" 2>&1; echo "$?"; }
 code() { run "$1" "$2" "$3" | cut -d' ' -f1; }
 
 check "complete block" "$(run pr-reviewer false "$(block)")" "0 "
 check "FAIL verdict" "$(code pr-reviewer false "$(block FAIL "$SHA" 3)")" "0"
 check "7-hex HEAD" "$(code pr-reviewer false "$(block PASS 0123456)")" "0"
 check "6-hex HEAD" "$(code pr-reviewer false "$(block PASS 012345)")" "2"
-check "40-hex HEAD" "$(code pr-reviewer false "$(block PASS "$SHA")")" "0"
 check "41-hex HEAD" "$(code pr-reviewer false "$(block PASS "${SHA}a")")" "2"
 check "non-hex HEAD" "$(code pr-reviewer false "$(block PASS 0123456g)")" "2"
 
@@ -46,6 +47,8 @@ check "missing HEAD names only HEAD" "$(run code-health-reviewer false $'GATE: g
 check "non-numeric FINDINGS names FINDINGS" "$(run pr-reviewer false "$(block PASS "$SHA" many)")" \
   "2 $LACKS FINDINGS: <count>; send the full verdict block as your final message."
 check "VERDICT: PASSING" "$(code pr-reviewer false "$(block PASSING)")" "2"
+check "VERDICT: PASSED" "$(code pr-reviewer false "$(block PASSED)")" "2"
+check "VERDICT: FAILED" "$(code pr-reviewer false "$(block FAILED)")" "2"
 check "VERDICT: WIP" "$(code pr-reviewer false "$(block WIP)")" "2"
 check "GATE without a name" "$(code pr-reviewer false $'GATE:\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
 check "GATE name with a space" "$(code pr-reviewer false $'GATE: pr reviewer\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
@@ -68,9 +71,9 @@ done
 
 check "stop_hook_active true" "$(code pr-reviewer true "The worktree is removed.")" "0"
 check "empty message" "$(code pr-reviewer false "")" "0"
-check "message absent" "$(echo '{"agent_type":"pr-reviewer"}' | bash "$PLUGIN/hooks/verdict-guard.sh" 2>&1; echo $?)" "0"
-check "invalid JSON" "$(echo 'not json' | bash "$PLUGIN/hooks/verdict-guard.sh" 2>&1; echo $?)" "0"
-check "trailing garbage after JSON" "$(echo '{"agent_type":"pr-reviewer","last_assistant_message":"x"} {' | bash "$PLUGIN/hooks/verdict-guard.sh" 2>&1; echo $?)" "0"
+check "message absent" "$(raw '{"agent_type":"pr-reviewer"}')" "0"
+check "invalid JSON" "$(raw 'not json')" "0"
+check "trailing garbage after JSON" "$(raw '{"agent_type":"pr-reviewer","last_assistant_message":"x"} {')" "0"
 
 printf '%s passed, %s failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]

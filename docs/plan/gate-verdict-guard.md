@@ -21,16 +21,17 @@ leaving its final message without the verdict block the orchestrator records.
       the hooks reference shows plugin agents as `<plugin>:<agent>`, so another plugin's agent of
       the same name is not held.
 - [x] `hooks/hooks.json` registers it under `SubagentStop` with timeout 10.
-- [x] `tests/verdict-guard.test.sh` covers a complete block, HEAD length bounds (6, 7, 40, 41 and
-      non-hex), a cleanup sentence, a missing HEAD and a non-numeric FINDINGS naming the line, bad
-      VERDICT and GATE values, markdown or prose wrapping, trailing space and CR, text after a
-      complete block, BLOCKED, bare and prefixed agent types, a non-gate subagent,
-      `stop_hook_active`, and an empty, absent or unparseable input.
-- [x] Each gate agent file carries the sentence: remove your probe and finish every tool call before
-      writing the verdict; the verdict block is the last text you emit.
+- [x] `tests/verdict-guard.test.sh` covers a complete block, malformed GATE, VERDICT, HEAD and
+      FINDINGS lines (each line's pattern is pinned at its boundary), BLOCKED, bare and prefixed
+      agent types, a non-gate subagent, `stop_hook_active`, and an empty, absent or unparseable
+      input.
+- [x] The reviewer baseline's probe rule says a reviewer removes its probe and finishes every tool
+      call before writing the verdict, the last text it emits.
 - [x] `context/tpm/gates.md` states that a result without the block is void until the gate resends
       it.
-- [x] The root README, `CLAUDE.md` and the CI `validate` job name the hook and its test.
+- [x] The root README describes the hook in one short paragraph linking the reviewer agent files and
+      the hook; `CLAUDE.md`, the process file's CI row and the CI `validate` job name the hook and
+      its test.
 - [x] Version bumped one minor step.
 
 ## Acceptance Criteria
