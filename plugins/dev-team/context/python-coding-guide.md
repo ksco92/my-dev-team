@@ -1255,5 +1255,6 @@ convention becomes a section above and leaves this list.
   with `readlines()` or `split("\n")`, never `str.splitlines()`: it also splits on U+2028/U+2029,
   which a string literal can carry, and the array desyncs from the compiler's `\n`-only numbering.
 - Measure a file's comment ratio with `tokenize` COMMENT tokens plus docstrings found by AST
-  position (the first string statement of a module, class or function); a scan for `#` lines or
-  triple quotes counts an embedded script or fixture string as prose.
+  position (the first string statement of a module, class or function), less their `:param:`,
+  `:return:` and `:raises:` lines; a scan for `#` lines or triple quotes counts an embedded script
+  or fixture string as prose.

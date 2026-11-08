@@ -65,9 +65,9 @@ rung. Ask, in order:
    one call site and one statement (`x.expect(...)`, a renamed stdlib call, a
    `predicate + raise`) is inlined however well it is named and documented; a private
    helper's doc comment longer than the body is the tell. Count call sites with grep
-   before accepting the helper. A helper whose body is one call forwarding its arguments
-   unchanged is an
-   alias: call the target at every site, whatever the call-site count.
+   before accepting the helper. A helper whose body is one call forwarding its
+   arguments unchanged is an alias: call the target at every site, whatever the
+   call-site count.
 7. **Minimum** — if code was genuinely needed, is this the least of it? Fewest files,
    shortest working diff, boring over clever, deletion over addition.
 
@@ -110,7 +110,7 @@ Implementers apply this ladder at write time (the code-economy section of
 7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A doc
    comment longer than the body it documents, a function doc past three lines of contract
    plus one constraint, or a module doc past ten lines is HIGH; the `:param:`, `:return:` and
-   `:raises:` lines a stack guide requires count toward neither cap. The recommended form names
+   `:raises:` lines a stack guide requires count toward none of these caps. The recommended form names
    the lines that carry the contract and deletes the rest. A doc that a repository rule names
    as the single home of a posture or rationale is exempt from the length cap only, and every
    restatement of it elsewhere becomes a one-line pointer.
@@ -138,10 +138,10 @@ Implementers apply this ladder at write time (the code-economy section of
 12. **Comment ratio.** A touched internal file (private, `pub(crate)`, `_underscored`) whose
     comment and doc lines exceed 40% of non-blank lines is HIGH; state the current and target
     ratio. The `:param:`, `:return:` and `:raises:` lines a stack guide requires are not
-    comment lines. Doctest fence bodies are not comment lines (state the prose-only ratio for a file
-    with doctests), while a string literal over five lines that interpolates no data and is
-    written into a tracked document is. The B8 file kinds are in scope: two lines of purpose
-    per target or key, mechanism in CONTRIBUTING.
+    comment lines. Doctest fence bodies are not comment lines (state the prose-only ratio for
+    a file with doctests), while a string literal over five lines that interpolates no data
+    and is written into a tracked document is. The B8 file kinds are in scope: two lines of
+    purpose per target or key, mechanism in CONTRIBUTING.
 13. **Pointers resolve.** Every file name, `crate::` or `Type::Variant` path, test name, "the
     doctest/table/test below", "Step N" or lettered "(a)" label, and "see X's doc for
     <reason>" pointer in prose resolves to the named artifact, and the target of a "for why"
@@ -254,8 +254,8 @@ Lines are code lines (no blanks, no comments), counted as the repo's length lint
 - **HIGH** — duplication or bespoke machinery with a one-line/stdlib/existing-util
   replacement; a single-call-site one-statement helper; a false docstring claim; an uncited
   provenance number; a comment essay that hides the purpose of load-bearing code; a doc
-  comment longer than its item; test evidence restated in prose; a touched internal file over
-  the 40% comment ratio.
+  comment longer than its item; test evidence restated in prose; a touched internal file
+  over the 40% comment ratio.
 - **MEDIUM** — review-fear or self-defense guards (removal recommended); alias-for-
   comment; unrequested abstraction with a concrete simpler form; a Part D finding, unless it is
   a second renderer (D9), a second worker pool (D10), a lint-dodge structure (D2), or a D1
