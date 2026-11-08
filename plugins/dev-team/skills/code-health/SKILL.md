@@ -63,10 +63,11 @@ rung. Ask, in order:
    (The predicate+raise wrapper class: a bespoke `_guard_x()` that is really
    `if pred(x): raise` belongs inline on a shared primitive.) Any language: a helper with
    one call site and one statement (`x.expect(...)`, a renamed stdlib call, a
-   `predicate + raise`) is inlined however well it is named and documented; a doc
-   comment longer than the body is the tell. Count call sites with grep before accepting
-   the helper. A helper whose body is one call forwarding its arguments unchanged is an
-   alias: call the target at every site, whatever the call-site count.
+   `predicate + raise`) is inlined however well it is named and documented; a private
+   helper's doc comment longer than the body is the tell. Count call sites with grep
+   before accepting the helper. A helper whose body is one call forwarding its
+   arguments unchanged is an alias: call the target at every site, whatever the
+   call-site count.
 7. **Minimum** — if code was genuinely needed, is this the least of it? Fewest files,
    shortest working diff, boring over clever, deletion over addition.
 
@@ -108,10 +109,11 @@ Implementers apply this ladder at write time (the code-economy section of
    drifts; phrase by constant name unless the literal sits immediately at the constant.
 7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A doc
    comment longer than the body it documents, a function doc past three lines of contract
-   plus one constraint, or a module doc past ten lines is HIGH. The recommended form names
-   the lines that carry the contract and deletes the rest. A doc that a repository rule names
-   as the single home of a posture or rationale is exempt from the length cap only, and every
-   restatement of it elsewhere becomes a one-line pointer.
+   plus one constraint, or a module doc past ten lines is HIGH; the `:param:`, `:return:` and
+   `:raises:` lines a stack guide requires count toward none of these caps. The recommended
+   form names the lines that carry the contract and deletes the rest. A doc that a repository
+   rule names as the single home of a posture or rationale is exempt from the length cap only,
+   and every restatement of it elsewhere becomes a one-line pointer.
 8. **Tests are the evidence.** Trial counts, fixture descriptions, the mutant a test kills,
    "confirmed empirically", "verified against version X", test names, or a reviewer question
    answered in advance duplicate the test: delete, HIGH. The rule covers every tracked prose
@@ -135,10 +137,11 @@ Implementers apply this ladder at write time (the code-economy section of
     or a one-line pointer, never a paragraph.
 12. **Comment ratio.** A touched internal file (private, `pub(crate)`, `_underscored`) whose
     comment and doc lines exceed 40% of non-blank lines is HIGH; state the current and target
-    ratio. Doctest fence bodies are not comment lines (state the prose-only ratio for a file
-    with doctests), while a string literal over five lines that interpolates no data and is
-    written into a tracked document is. The B8 file kinds are in scope: two lines of purpose
-    per target or key, mechanism in CONTRIBUTING.
+    ratio. The `:param:`, `:return:` and `:raises:` lines a stack guide requires are not
+    comment lines. Doctest fence bodies are not comment lines (state the prose-only ratio for
+    a file with doctests), while a string literal over five lines that interpolates no data
+    and is written into a tracked document is. The B8 file kinds are in scope: two lines of
+    purpose per target or key, mechanism in CONTRIBUTING.
 13. **Pointers resolve.** Every file name, `crate::` or `Type::Variant` path, test name, "the
     doctest/table/test below", "Step N" or lettered "(a)" label, and "see X's doc for
     <reason>" pointer in prose resolves to the named artifact, and the target of a "for why"

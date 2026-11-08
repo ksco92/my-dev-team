@@ -89,7 +89,13 @@ All function parameters and return types must have type hints.
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
-    """Run a SQL query in Athena."""
+    """
+    Run a SQL query in Athena.
+
+    :param query: SQL text, sent to Athena as written.
+    :param fetch_size: Rows requested per page; Athena caps it at 1000.
+    :return: One dictionary per row, keyed by column name.
+    """
     pass
 ```
 
@@ -127,7 +133,7 @@ the methods used, a JSON payload a recursive type alias.
 
 #### Complex Type Hints
 
-For complex return types, use full type specifications:
+For complex return types, use full type specifications (signature only; the docstring is omitted):
 
 ```python
 def initialize_job() -> tuple[
@@ -156,14 +162,12 @@ def initialize_job() -> tuple[
 #### Function and Method Docstrings
 
 A function is public when its name has no leading underscore and it lives outside a test module;
-every function in a test module follows the private rule.
+`__init__` counts as public and documents its own parameters; every function in a test module
+follows the private rule.
 
-- **`:param:`, `:return:` and `:raises:` lines appear only on a public function or method of more
-  than three statements**, in the Sphinx form below.
-- **A `_private` helper, or any function of three or fewer statements**, takes a one-line docstring
-  or none.
-- **No docstring is longer, in physical lines, than the body it documents.** When the Sphinx form
-  would be, keep the summary line and only the lines that state a constraint the signature cannot.
+- **Every public function or method carries the Sphinx `:param:`, `:return:` and `:raises:` lines
+  the Docstring Rules below describe**, however short its body.
+- **A `_private` helper, or a test function**, takes a one-line docstring or none.
 
 **Format**:
 
@@ -173,15 +177,16 @@ every function in a test module follows the private rule.
 - Return description (if not None)
 - Raises descriptions (if applicable)
 
-The bodies below are elided; each stands for more than three statements and outruns its docstring.
+The first three examples elide their bodies.
 
-**With Parameters and Return Value** (no `:param query:`: it would paraphrase the name):
+**With Parameters and Return Value**:
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
     """
     Run a SQL query in Athena and return every row.
 
+    :param query: SQL text, sent to Athena as written.
     :param fetch_size: Rows requested per page; Athena caps it at 1000.
     :return: One dictionary per row, keyed by column name.
     """
@@ -201,6 +206,7 @@ def __init__(
     Create the client.
 
     :param workgroup_name: Workgroup to run queries in; None uses the account's primary workgroup.
+    :param catalog_name: Data catalog the queries read.
     :param profile_name: Credentials profile; None uses the default credential chain.
     """
     ...
@@ -213,16 +219,32 @@ def download_files(self: Self, bucket_name: str, prefix: str, local_path: str) -
     """
     Download every object under a key prefix to a local directory.
 
+    :param bucket_name: Bucket to read from.
+    :param prefix: Key prefix; every object under it is downloaded.
     :param local_path: Directory to write into; it must already exist.
     :raises ValueError: When local_path does not exist.
     """
     ...
 ```
 
-**Three or Fewer Statements, or Private**:
+**Short Public Function** (the lines appear however short the body is):
 
 ```python
 def sum_nums(a: int, b: int) -> int:
+    """
+    Sum two numbers.
+
+    :param a: First addend.
+    :param b: Second addend.
+    :return: The sum.
+    """
+    return a + b
+```
+
+**Private Helper**:
+
+```python
+def _sum_nums(a: int, b: int) -> int:
     """Sum two numbers."""
     return a + b
 ```
@@ -240,16 +262,14 @@ def sum_nums(a: int, b: int) -> int:
 - **Structure first**: a docstring that describes more than one step is a numbered list of what
   happens, with rationale at most one trailing clause per step; deep rationale belongs at the line
   it justifies or in the PR.
-- **A `:param:` line carries what the name and type hint cannot** (a unit, an accepted range, what
-  `None` means); omit it when it would paraphrase the name, as `:param bucket_name: Name of the
-  bucket.` does.
-- **In the Sphinx form, document the return value unless it is None**
-- **In the Sphinx form, document exceptions that can be raised**: only the exceptions a function
-  raises with a literal `raise` statement in its own body. Don't tag exceptions that merely propagate
-  from a function it calls (e.g. a thin wrapper around a call that itself raises) — that
-  reading would eventually require `:raises:` on most functions in the codebase, since
-  exceptions propagate by default. Document propagation-only cases, if ever needed, at the
-  function that actually raises.
+- **Every parameter has a `:param:` line**: it says what the name and type hint cannot (a unit, an
+  accepted range, what `None` means), or a short noun phrase when it has none.
+- **A `:return:` line, unless the function returns None**
+- **A `:raises:` line for each exception the function raises with a literal `raise` statement in
+  its own body**. Don't tag exceptions that merely propagate from a function it calls (e.g. a thin
+  wrapper around a call that itself raises) — that reading would eventually require `:raises:` on
+  most functions in the codebase, since exceptions propagate by default. Document propagation-only
+  cases, if ever needed, at the function that actually raises.
 
 ### Classes
 
@@ -261,9 +281,13 @@ Classes should have a brief docstring describing their purpose.
 class AthenaClient:
     """Client for Athena operations."""
 
-    def __init__(self: Self, ...) -> None:
-        """Create the client."""
-        pass
+    def __init__(self: Self, workgroup_name: str) -> None:
+        """
+        Create the client.
+
+        :param workgroup_name: Workgroup to run queries in.
+        """
+        self.workgroup_name = workgroup_name
 ```
 
 #### Class Attributes
@@ -272,7 +296,11 @@ Initialize all instance attributes in `__init__` for clarity:
 
 ```python
 def __init__(self: Self, workgroup_name: str | None = None) -> None:
-    """Create the client for one Athena workgroup."""
+    """
+    Create the client for one Athena workgroup.
+
+    :param workgroup_name: Workgroup to run queries in; None uses the account's primary workgroup.
+    """
     self.workgroup_name = workgroup_name
     self.catalog_name = "AwsDataCatalog"
     self.profile_name = None
@@ -509,7 +537,13 @@ Be specific about error conditions:
 
 ```python
 def cpc_predictor(query_text: str | None = None) -> dict:
-    """Predict CPC codes based on query text."""
+    """
+    Predict CPC codes based on query text.
+
+    :param query_text: Text to classify, at most 1000 characters.
+    :return: CPC codes keyed by confidence.
+    :raises ValueError: When query_text is None or longer than 1000 characters.
+    """
     if query_text is None:
         raise ValueError("query_text is None.")
 
@@ -585,7 +619,15 @@ def __init__(
         aws_session_token: str | None = None,
         profile_name: str | None = None,
 ) -> None:
-    """Create S3 client."""
+    """
+    Create S3 client.
+
+    :param aws_region: Region of the client; None uses the session's default region.
+    :param aws_access_key_id: Access key; None uses the default credential chain.
+    :param aws_secret_access_key: Secret key paired with aws_access_key_id.
+    :param aws_session_token: Session token of temporary credentials; None for long-lived keys.
+    :param profile_name: Credentials profile; None uses the default credential chain.
+    """
     pass
 ```
 
@@ -597,7 +639,13 @@ Functions should return consistent types:
 
 ```python
 def list_files(self: Self, bucket_name: str, prefix: str) -> list[dict]:
-    """List all the files in a prefix."""
+    """
+    List all the files in a prefix.
+
+    :param bucket_name: Bucket to list.
+    :param prefix: Key prefix; every object under it is listed.
+    :return: One dictionary per object, as S3 returns it.
+    """
     return get_all_results(...)
 ```
 
@@ -607,7 +655,13 @@ Use early returns for error conditions:
 
 ```python
 def run_query(self: Self, query: str, fetch_size: int = 1000) -> list[dict]:
-    """Run a SQL query in Athena."""
+    """
+    Run a SQL query in Athena.
+
+    :param query: SQL text, sent to Athena as written.
+    :param fetch_size: Rows requested per page; Athena caps it at 1000.
+    :return: One dictionary per row, or an empty list for a statement without results.
+    """
     cursor = self._create_cursor()
     cursor.execute(query)
 
@@ -646,7 +700,7 @@ Use clear, descriptive names:
 
 #### Logical Grouping
 
-Group related functionality together:
+Group related functionality together; the docstrings below are abbreviated to their summary lines:
 
 ```python
 class S3Client:
@@ -694,9 +748,13 @@ available linter rule could enforce (the type-hint style, import order, an impor
 the repository's configuration does not enable is reported as a finding against the merge gate, not
 only against the code that breaks it.
 
-The missing-docstring, missing-parameter, missing-return and missing-raises codes (pydocstyle
-`D1xx`, darglint `DAR101`/`DAR201`/`DAR401`, pydoclint `DOC201`/`DOC501` under ruff, or their
-equivalents) stay disabled, so a tool never demands a docstring or line the Docstrings rules omit.
+The missing-parameter, missing-return and missing-raises codes are enabled through the pydoclint
+flake8 plugin with `style = sphinx`, `arg-type-hints-in-docstring = false`,
+`check-return-types = false`, `skip-checking-short-docstrings = false`,
+`skip-checking-private-functions = true`, `allow-init-docstring = true` and
+`check-class-attributes = false`; the test folder is exempt from the `DOC` codes through
+`per-file-ignores`, and the plugin reads its booleans in lowercase only. A repository on ruff runs
+pydoclint beside it for these codes.
 
 The following linters are used and their rules must be followed:
 
@@ -722,6 +780,7 @@ The following linters are used and their rules must be followed:
 **Enforced Rules**:
 
 - Docstring style: Sphinx
+- pydoclint: every public docstring lists its parameters, return and raises (see Docstrings)
 - Maximum line length: 130 characters
 - Flake8-commas: Enforces trailing commas
 - Flake8-multiline-containers: Enforces multiline formatting for lists, dicts, sets, tuples
@@ -1163,7 +1222,7 @@ These standards are enforced through:
 
 - **black**: Code formatting
 - **isort**: Import organization
-- **flake8**: Style checking (with plugins for docstrings, commas, multiline containers)
+- **flake8**: Style checking (with plugins for docstrings, pydoclint, commas, multiline containers)
 - **mypy**: Type checking
 - **pytest**: Testing with 95% coverage requirement
 - **ruff**: check and format
@@ -1196,5 +1255,6 @@ convention becomes a section above and leaves this list.
   with `readlines()` or `split("\n")`, never `str.splitlines()`: it also splits on U+2028/U+2029,
   which a string literal can carry, and the array desyncs from the compiler's `\n`-only numbering.
 - Measure a file's comment ratio with `tokenize` COMMENT tokens plus docstrings found by AST
-  position (the first string statement of a module, class or function); a scan for `#` lines or
-  triple quotes counts an embedded script or fixture string as prose.
+  position (the first string statement of a module, class or function), less their `:param:`,
+  `:return:` and `:raises:` lines; a scan for `#` lines or triple quotes counts an embedded script
+  or fixture string as prose.
