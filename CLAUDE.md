@@ -10,8 +10,8 @@ See the root README for what this repo is.
 - `plugins/dev-team/agents/`, the implementer and reviewer agent definitions.
 - `plugins/dev-team/context/`, the stack guides, TPM procedure references, harness policy,
   `DEV_PROCESS.md` contract, and built-in default process.
-- `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, and session-context Bash hooks and
-  `hooks.json`.
+- `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, and session-context
+  Bash hooks and `hooks.json`.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
@@ -34,6 +34,7 @@ git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
 bash plugins/dev-team/tests/dev-process.test.sh
 bash plugins/dev-team/tests/lesson-lint.test.sh
 bash plugins/dev-team/tests/merge-gate.test.sh
+bash plugins/dev-team/tests/verdict-guard.test.sh
 bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
 claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2

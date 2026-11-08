@@ -37,3 +37,11 @@ The Experiment section turns on an experiment mode when the owner asks for one: 
 merged into one experiment branch with no tickets, change requests, gates, tests, or CI, and its
 Results row names where raw data, logs, and the report live. The work re-enters the trunk as one
 gated change; a file whose section is absent or reads `Not allowed.` keeps the mode off.
+
+## Verdict guard
+
+The plugin registers a `SubagentStop` hook that refuses a review gate's first stop when its final
+message lacks the verdict block and asks it to resend once. The block is the one the five reviewer
+agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. The hook needs
+`jq` and does nothing without it; the exact patterns are in
+[`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
