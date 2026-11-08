@@ -693,9 +693,7 @@ Use clear, descriptive names:
 
 #### Logical Grouping
 
-Group related functionality together:
-
-The docstrings below are abbreviated to their summary lines.
+Group related functionality together; the docstrings below are abbreviated to their summary lines:
 
 ```python
 class S3Client:
