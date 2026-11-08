@@ -108,7 +108,8 @@ Implementers apply this ladder at write time (the code-economy section of
    drifts; phrase by constant name unless the literal sits immediately at the constant.
 7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A doc
    comment longer than the body it documents, a function doc past three lines of contract
-   plus one constraint, or a module doc past ten lines is HIGH. The recommended form names
+   plus one constraint, or a module doc past ten lines is HIGH; the `:param:`, `:return:` and
+   `:raises:` lines a stack guide requires count toward neither cap. The recommended form names
    the lines that carry the contract and deletes the rest. A doc that a repository rule names
    as the single home of a posture or rationale is exempt from the length cap only, and every
    restatement of it elsewhere becomes a one-line pointer.
@@ -251,7 +252,8 @@ Lines are code lines (no blanks, no comments), counted as the repo's length lint
 - **HIGH** — duplication or bespoke machinery with a one-line/stdlib/existing-util
   replacement; a single-call-site one-statement helper; a false docstring claim; an uncited
   provenance number; a comment essay that hides the purpose of load-bearing code; a doc
-  comment longer than its item; test evidence restated in prose; a touched internal file
+  comment longer than its item beyond the stack guide's required lines; test evidence restated
+  in prose; a touched internal file
   over the 40% comment ratio.
 - **MEDIUM** — review-fear or self-defense guards (removal recommended); alias-for-
   comment; unrequested abstraction with a concrete simpler form; a Part D finding, unless it is

@@ -156,14 +156,12 @@ def initialize_job() -> tuple[
 #### Function and Method Docstrings
 
 A function is public when its name has no leading underscore and it lives outside a test module;
-every function in a test module follows the private rule.
+`__init__` counts as public and documents its own parameters; every function in a test module
+follows the private rule.
 
-- **Every public function or method carries a `:param:` line for each parameter, a `:return:` line
-  unless it returns None, and a `:raises:` line for each exception it raises**, in the Sphinx form
-  below, however short its body.
+- **Every public function or method carries the Sphinx `:param:`, `:return:` and `:raises:` lines
+  the Docstring Rules below describe**, however short its body.
 - **A `_private` helper, or a test function**, takes a one-line docstring or none.
-- **Nothing else joins those lines**: the summary line, the parameter, return and raises lines, and
-  at most one constraint the signature cannot show.
 
 **Format**:
 
@@ -173,7 +171,7 @@ every function in a test module follows the private rule.
 - Return description (if not None)
 - Raises descriptions (if applicable)
 
-The bodies below are elided.
+The first three examples elide their bodies.
 
 **With Parameters and Return Value**:
 
@@ -258,11 +256,11 @@ def _sum_nums(a: int, b: int) -> int:
 - **Structure first**: a docstring that describes more than one step is a numbered list of what
   happens, with rationale at most one trailing clause per step; deep rationale belongs at the line
   it justifies or in the PR.
-- **A `:param:` line says what the name and type hint cannot** (a unit, an accepted range, what
-  `None` means) when there is such a thing, and a short noun phrase otherwise; it is never omitted.
-- **In the Sphinx form, document the return value unless it is None**
-- **In the Sphinx form, document exceptions that can be raised**: only the exceptions a function
-  raises with a literal `raise` statement in its own body. Don't tag exceptions that merely propagate
+- **Every parameter has a `:param:` line**: it says what the name and type hint cannot (a unit, an
+  accepted range, what `None` means), or a short noun phrase when it has none.
+- **A `:return:` line, unless the function returns None**
+- **A `:raises:` line for each exception the function raises with a literal `raise` statement in
+  its own body**. Don't tag exceptions that merely propagate
   from a function it calls (e.g. a thin wrapper around a call that itself raises) — that
   reading would eventually require `:raises:` on most functions in the codebase, since
   exceptions propagate by default. Document propagation-only cases, if ever needed, at the
@@ -278,9 +276,13 @@ Classes should have a brief docstring describing their purpose.
 class AthenaClient:
     """Client for Athena operations."""
 
-    def __init__(self: Self, ...) -> None:
-        """Create the client."""
-        pass
+    def __init__(self: Self, workgroup_name: str) -> None:
+        """
+        Create the client.
+
+        :param workgroup_name: Workgroup to run queries in.
+        """
+        self.workgroup_name = workgroup_name
 ```
 
 #### Class Attributes
@@ -289,7 +291,11 @@ Initialize all instance attributes in `__init__` for clarity:
 
 ```python
 def __init__(self: Self, workgroup_name: str | None = None) -> None:
-    """Create the client for one Athena workgroup."""
+    """
+    Create the client for one Athena workgroup.
+
+    :param workgroup_name: Workgroup to run queries in; None uses the account's primary workgroup.
+    """
     self.workgroup_name = workgroup_name
     self.catalog_name = "AwsDataCatalog"
     self.profile_name = None
@@ -711,12 +717,13 @@ available linter rule could enforce (the type-hint style, import order, an impor
 the repository's configuration does not enable is reported as a finding against the merge gate, not
 only against the code that breaks it.
 
-The missing-parameter, missing-return and missing-raises codes are enabled through pydoclint, as a
-flake8 plugin or under ruff, with `style = sphinx`, `arg-type-hints-in-docstring = false`,
+The missing-parameter, missing-return and missing-raises codes are enabled through the pydoclint
+flake8 plugin with `style = sphinx`, `arg-type-hints-in-docstring = false`,
 `check-return-types = false`, `skip-checking-short-docstrings = false`,
 `skip-checking-private-functions = true`, `allow-init-docstring = true` and
 `check-class-attributes = false`; the test folder is exempt from the `DOC` codes through
-`per-file-ignores`. The flake8 plugin reads its booleans in lowercase only.
+`per-file-ignores`, and the plugin reads its booleans in lowercase only. A repository on ruff runs
+pydoclint beside it for these codes.
 
 The following linters are used and their rules must be followed:
 
@@ -1184,7 +1191,7 @@ These standards are enforced through:
 
 - **black**: Code formatting
 - **isort**: Import organization
-- **flake8**: Style checking (with plugins for docstrings, commas, multiline containers)
+- **flake8**: Style checking (with plugins for docstrings, pydoclint, commas, multiline containers)
 - **mypy**: Type checking
 - **pytest**: Testing with 95% coverage requirement
 - **ruff**: check and format

@@ -107,9 +107,9 @@ the other homes for what you want to say. Most of it already lives in one of the
 
 - A function or type doc states the contract in one to three lines: what it does or returns, plus
   at most one constraint the signature cannot show (an ordering guarantee, a unit, an equality rule
-  that differs from the language's), plus the parameter, return and raises lines the stack guide
-  requires. Most private helpers need none; no doc justifies its item by
-  the lint or tool it satisfies ("stays under the argument limit", "split out so it is testable").
+  that differs from the language's). The stack guide's parameter, return and raises lines are in
+  addition. Most private helpers need none; no doc justifies its item by the lint or tool it
+  satisfies ("stays under the argument limit", "split out so it is testable").
 - A module doc is under ten lines: what the module is for, and one attribution line (upstream,
   version, license) when it ports or mirrors something. Design essays, "why this exists", and how
   the approach was chosen go in the PR body or a `docs/` page the repo already keeps.
@@ -131,7 +131,7 @@ the other homes for what you want to say. Most of it already lives in one of the
   next line does, why the change is correct, or why a guard is unnecessary here.
 - A helper with one call site and one statement (`predicate + raise`, `x.expect(...)`, a renamed
   stdlib call) is inlined, not named and documented. A one-statement helper earns a name only with
-  two or more call sites. A doc comment longer than the body it documents is the tell.
+  two or more call sites. A private helper's doc comment longer than its body is the tell.
 - A reviewer's "why is this safe?" is answered with a test, a tighter type, or a one-line pointer
   to where the proof lives, never with a paragraph added to a doc comment. A fix round never adds
   prose without removing at least as much.
