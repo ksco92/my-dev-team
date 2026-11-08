@@ -20,6 +20,9 @@ guide and skill prose. A formatter that owns line wrapping removes that finding 
 - [x] `CLAUDE.md` "Local checks" lists the `--check` command and says `--write` reformats.
 - [x] The code-health skill's prose rules state that line wrapping in a file a formatter owns is
       never a finding.
+- [x] `lesson-lint --added <base>` treats a bullet as added only when its whitespace-collapsed text
+      is absent from the merge base's copy of the same file, so a pure reflow is never linted; the
+      test script covers a reflowed bullet, a one-word change and a new bullet.
 - [x] The plugin version is one patch step above `main`'s at the final rebase.
 
 ## Acceptance Criteria
