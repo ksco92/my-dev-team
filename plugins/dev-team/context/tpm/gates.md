@@ -88,8 +88,9 @@ Read before the first gate of a run.
   the third attempt, and have the repo doc state the acceptance as a closed list of what is covered;
   later gates judge against that list, and a claim in it broader than the code reopens the loop.
 - Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
-  implementer's report; a mistyped SHA voids every verdict of the round and costs a correction
-  message per gate.
+  implementer's report, and `grep -n` the head for each prescribed code change the report says
+  landed before launching the re-gate round; a mistyped SHA voids every verdict of the round and
+  costs a correction message per gate.
 - Before briefing a test deletion that a gate asks for, check the test against the ticket's
   acceptance criteria; a test that pins a stated criterion stays even when the framework enforces
   the behaviour, because the criterion is the contract and the next gate will fail its absence. Then
@@ -115,4 +116,5 @@ Read before the first gate of a run.
 - A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
   truncated read reports a recorded accepted risk as missing.
 - A gate result that lacks the verdict block is void until the gate resends it; the `SubagentStop`
-  hook asks the gate once.
+  hook asks the gate once. Stop a gate whose transcript has not advanced for twenty minutes on its
+  final cleanup command, remove its probe yourself, and relaunch it at the same head.
