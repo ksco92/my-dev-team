@@ -268,9 +268,8 @@ def _sum_nums(a: int, b: int) -> int:
 - **A `:raises:` line for each exception the function raises with a literal `raise` statement in
   its own body**. Don't tag exceptions that merely propagate from a function it calls (e.g. a thin
   wrapper around a call that itself raises) — that reading would eventually require `:raises:` on
-  most functions in the codebase, since exceptions propagate by default. Document
-  propagation-only cases, if ever needed, at the
-  function that actually raises.
+  most functions in the codebase, since exceptions propagate by default. Document propagation-only
+  cases, if ever needed, at the function that actually raises.
 
 ### Classes
 
@@ -620,7 +619,15 @@ def __init__(
         aws_session_token: str | None = None,
         profile_name: str | None = None,
 ) -> None:
-    """Create S3 client."""
+    """
+    Create S3 client.
+
+    :param aws_region: Region of the client; None uses the session's default region.
+    :param aws_access_key_id: Access key; None uses the default credential chain.
+    :param aws_secret_access_key: Secret key paired with aws_access_key_id.
+    :param aws_session_token: Session token of temporary credentials; None for long-lived keys.
+    :param profile_name: Credentials profile; None uses the default credential chain.
+    """
     pass
 ```
 

@@ -16,7 +16,7 @@ missing-parameter codes kept disabled.
 - [x] "Docstring Rules": every parameter has a `:param:` line that says what the name and type hint cannot, or a short noun phrase when it has none.
 - [x] "Linter Configuration": the missing-parameter, missing-return and missing-raises codes are enabled through pydoclint with the options named, the test folder exempt; the Flake8 enforced-rules list names pydoclint.
 - [x] `context/agent-baseline.md` budget bullet admits the parameter, return and raises lines the stack guide requires.
-- [x] `skills/code-health/SKILL.md`, `agents/pr-reviewer.md`, the oss-reviewer skill and its tell catalog, and the baseline's helper bullet exempt the required lines from their length and restatement caps.
+- [x] `skills/code-health/SKILL.md`, `agents/pr-reviewer.md`, the oss-reviewer skill and its tell catalog, and the baseline's helper bullet exempt the required lines from their length, restatement and comment-ratio caps.
 - [x] Every public-function example in the guide shows the full form, or the example says its docstrings are abbreviated.
 - [x] `__init__` counts as public, and the class examples document its parameters.
 - [x] Version 0.9.11.
