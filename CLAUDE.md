@@ -10,8 +10,8 @@ See the root README for what this repo is.
 - `plugins/dev-team/agents/`, the implementer and reviewer agent definitions.
 - `plugins/dev-team/context/`, the stack guides, TPM procedure references, harness policy,
   `DEV_PROCESS.md` contract, and built-in default process.
-- `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, and session-context Bash hooks and
-  `hooks.json`.
+- `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, and session-context
+  Bash hooks and `hooks.json`.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.

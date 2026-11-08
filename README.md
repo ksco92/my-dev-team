@@ -33,10 +33,15 @@ command and says so. The operations it covers, and the forms the merge hook guar
 and `docs/examples/DEV_PROCESS.asana.md`. Run `plugins/dev-team/bin/dev-process` with no arguments
 for its usage.
 
-A `SubagentStop` hook keeps a review-gate subagent running until its last message carries the
-`GATE`, `VERDICT`, `HEAD` and `FINDINGS` lines (`GATE` and `VERDICT` alone for BLOCKED).
-
 The Experiment section turns on an experiment mode when the owner asks for one: slice branches are
 merged into one experiment branch with no tickets, change requests, gates, tests, or CI, and its
 Results row names where raw data, logs, and the report live. The work re-enters the trunk as one
 gated change; a file whose section is absent or reads `Not allowed.` keeps the mode off.
+
+## Verdict guard
+
+The plugin registers a `SubagentStop` hook that refuses the first stop of a review-gate subagent
+whose final message lacks the verdict block (`GATE`, `VERDICT: PASS|FAIL|BLOCKED`, `HEAD`,
+`FINDINGS`, each on its own line; BLOCKED needs only the first two) and asks it to resend; the
+retry is let through, as is a message with no readable text. The exact patterns are in
+`plugins/dev-team/hooks/verdict-guard.sh`.
