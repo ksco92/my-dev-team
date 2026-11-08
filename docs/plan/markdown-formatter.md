@@ -6,8 +6,8 @@ status: done
 
 ## Context
 
-Review gates repeatedly file findings about ragged rewraps and lines over the surrounding width in
-guide and skill prose. A formatter that owns line wrapping removes that finding class.
+Hand-wrapped prose drifts in width and rewrap style; a formatter that owns line wrapping removes
+that class of review comment.
 
 ## Requirements
 

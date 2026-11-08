@@ -24,6 +24,8 @@ See the root README for what this repo is.
 
 ## Local checks
 
+The checks need Node with `npx`, `shellcheck` and the `claude` CLI.
+
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
@@ -38,8 +40,7 @@ claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --
 claude plugin eval plugins/dev-team --case implementer-date-range-filter --scaffold --allow-tools Bash Write Edit --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 ```
 
-Prettier owns Markdown line wrapping; the same command with `--write` in place of `--check`
-reformats the files.
+Add `--write` in place of `--check` to reformat.
 
 ## Conventions
 

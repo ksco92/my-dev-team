@@ -260,8 +260,9 @@ when it's behind a feature flag or unused branch. HIGH for an ARN buried in a de
 clear `// override me` comment.
 
 Added by: oss-reviewer self-mutation on 2026-05-23 after observing `lib/arceus-stack.ts:57` —
-`new ArnPrincipal(\`arn:${this.partition}:iam::${this.account}:user/rodrigo\`)`hardcoded into the Lake Formation admin list of a demo CDK stack whose README invites strangers to`cdk
-deploy ArceusStack`.
+``new ArnPrincipal(`arn:${this.partition}:iam::${this.account}:user/rodrigo`)`` hardcoded into the
+Lake Formation admin list of a demo CDK stack whose README invites strangers to
+`cdk deploy ArceusStack`.
 
 ### 4.13 "This is the description." placeholder strings (CRITICAL)
 
@@ -1800,7 +1801,7 @@ of docs.
 
 Detection: for every added `lib/databases/<db>/<table>.json` (or equivalent child-artifact), READ
 the untouched parent `<db>/<db>.json` description and check (a) any table enumeration includes the
-newcomer, (b) any domain-property claim holds for it. Same rule generalizes to package **init**
+newcomer, (b) any domain-property claim holds for it. Same rule generalizes to package `__init__`
 docstrings, module indexes, service manifests.
 
 Exclude: parent descriptions written categorically with no enumeration or falsifiable property
@@ -3168,12 +3169,12 @@ the sibling E2E-family vars `E2E_EMAIL`, `E2E_INVITEE_EMAIL`, and `E2E_PASSWORD`
 ### 4.86 Cross-repo "no-op until #N lands" caveat left stale by the referenced issue actually landing (HIGH)
 
 A script or doc in repo A defers to unfinished work in a sibling repo B by name-and-number ("no-op
-until psyduck*frontend#85 lands", "not yet supported — see backend#42"), phrased as a present-tense
-fact rather than a dated snapshot. The two repos are developed in the same polyrepo workflow, often
-by the same orchestrator dispatching parallel PRs, so the referenced issue can close \_minutes*
-after the caveat is written — sometimes before the caveat's own PR even merges. Nothing in repo A
-re-checks repo B's state afterward: there is no CI link, no issue-tracker webhook, no test that
-would fail once #N lands. The caveat is accurate at the moment of authorship and silently false
+until `psyduck_frontend#85` lands", "not yet supported — see backend#42"), phrased as a
+present-tense fact rather than a dated snapshot. The two repos are developed in the same polyrepo
+workflow, often by the same orchestrator dispatching parallel PRs, so the referenced issue can close
+_minutes_ after the caveat is written — sometimes before the caveat's own PR even merges. Nothing in
+repo A re-checks repo B's state afterward: there is no CI link, no issue-tracker webhook, no test
+that would fail once #N lands. The caveat is accurate at the moment of authorship and silently false
 forever after, misdirecting exactly the debugging session it was written to help (a user sees no
 output and reads the comment's excuse instead of investigating the real cause, now that the
 dependency is actually satisfied).
@@ -3205,7 +3206,7 @@ whole premise is an external, unmonitored state that the author had no way to ke
 
 Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_cdk
 `scripts/dev-stack.sh:338-340,363` (head 9d1598c): the script's `copy_videos()` comment and its
-runtime log message both say video collection is "a no-op ... until psyduck_frontend#85 wires
+runtime log message both say video collection is "a no-op ... until `psyduck_frontend#85` wires
 PW_VIDEO through to Playwright's video option." `gh issue view 85 --repo ksco92/psyduck_frontend`
 showed the issue CLOSED via merged PR #86, and `playwright.config.ts:101` on that repo's default
 branch already reads `video: process.env['PW_VIDEO'] ? 'on' : 'off'` — the dependency landed about

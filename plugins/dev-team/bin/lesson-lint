@@ -4,7 +4,7 @@
 # Usage:
 #   lesson-lint <file>...                    every bullet under `## Learned patterns`, and every
 #                                            bullet of a context/tpm/*.md file
-#   lesson-lint --added <base-ref> <file>... only bullets with a line added since the merge base;
+#   lesson-lint --added <base-ref> <file>... only bullets whose whitespace-collapsed text is absent from the merge base's copy;
 #                                            every bullet of an untracked file
 #
 # Prints `<file>:<line>: <rule>: <first 60 chars>` per failure and exits 1 on any; a section
@@ -40,9 +40,8 @@ for file in "$@"; do
     function flush(   t) {
       if (start == 0) return
       t = body; gsub(/[[:space:]]+/, " ", t); sub(/^ /, "", t); sub(/ $/, "", t)
-      start = 0
-      if (inbase) { baseset[t] = 1; return }
-      n++; text[n] = t; line[n] = start_line; pick[n] = (mode != "added" || !(t in baseset))
+      if (inbase) { baseset[t] = 1; start = 0; return }
+      n++; text[n] = t; line[n] = start; start = 0; pick[n] = (mode != "added" || !(t in baseset))
     }
     function fail(i, rule) { printf "%s:%d: %s: %s\n", file, line[i], rule, substr(text[i], 1, 60); bad = 1 }
     FNR == 1 { flush(); fence = 0; insec = 0; filenum++; inbase = (mode == "added" && filenum == 1) }
@@ -54,13 +53,13 @@ for file in "$@"; do
       if (!whole && /^# /) insec = 0
       next
     }
-    /^[[:space:]]*[-*] / && (whole || insec) { flush(); start = FNR; start_line = FNR; body = $0; sub(/^[[:space:]]*[-*] /, "", body); next }
+    /^[[:space:]]*[-*] / && (whole || insec) { flush(); start = FNR; body = $0; sub(/^[[:space:]]*[-*] /, "", body); next }
     /^[[:space:]]*$/ { flush(); next }
     start { sub(/^[[:space:]]+/, ""); body = body " " $0; next }
     END {
       flush()
       for (i = 1; i <= n; i++) {
-        norm[i] = text[i]; count[text[i]]++
+        count[text[i]]++
       }
       if (n > budget) printf "%s: warning: budget: %d bullets, budget %d\n", file, n, budget > "/dev/stderr"
       for (i = 1; i <= n; i++) {
@@ -81,7 +80,7 @@ for file in "$@"; do
         }
         if (lpadded ~ /[^a-z](added after|after observing|observed in|learned from)[^a-z]/ || padded ~ /[^A-Za-z]in PR[^A-Za-z-]/)
           fail(i, "incident")
-        if (count[norm[i]] > 1) fail(i, "duplicate")
+        if (count[text[i]] > 1) fail(i, "duplicate")
         if (t ~ /^[a-z]/) fail(i, "lowercase")
       }
       exit bad

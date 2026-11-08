@@ -103,14 +103,14 @@ Implementers apply this ladder at write time (the code-economy section of
    (especially one cross-referenced from elsewhere, e.g. deployed metadata) is a finding.
 6. **No re-spelled constant values in prose.** "6 workers" next to `PARTITION_COUNT=6` drifts;
    phrase by constant name unless the literal sits immediately at the constant.
-7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A
-   doc comment longer than the body it documents, a function doc past three lines of contract plus
+7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`).
+   Line wrapping is never a finding in a file the repository's formatter owns (`.prettierrc.json`).
+   A doc comment longer than the body it documents, a function doc past three lines of contract plus
    one constraint, or a module doc past ten lines is HIGH; the `:param:`, `:return:` and `:raises:`
    lines a stack guide requires count toward none of these caps. The recommended form names the
    lines that carry the contract and deletes the rest. A doc that a repository rule names as the
    single home of a posture or rationale is exempt from the length cap only, and every restatement
-   of it elsewhere becomes a one-line pointer. Line wrapping in a file a formatter owns is never a
-   finding; the formatter decides it.
+   of it elsewhere becomes a one-line pointer.
 8. **Tests are the evidence.** Trial counts, fixture descriptions, the mutant a test kills,
    "confirmed empirically", "verified against version X", test names, or a reviewer question
    answered in advance duplicate the test: delete, HIGH. The rule covers every tracked prose file
@@ -325,8 +325,6 @@ The reviewed repo is read-only.
 - When a PR touches both a symbol's doc comment and a CLAUDE.md hunk about it, diff the rationale
   clauses, not just the facts; the "why" belongs in one home. Expect this on every slice of a
   feature sequence.
-- A literal swap in prose leaves the line past the file's wrap ceiling; measure against untouched
-  sibling lines, and expect it on every stale-reference fix round.
 - A seeded fuzz generator that reuses one `random.Random` stream across a loop can draw the same
   trivial input twice (two empty-list cases among "15 seeded"). Hash every new golden case's inputs
   against its siblings before trusting a case count, and read the generator's size draw for a zero
