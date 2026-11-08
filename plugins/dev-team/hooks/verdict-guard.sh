@@ -5,7 +5,7 @@
 set -uo pipefail
 
 # The sentinel keeps trailing newlines and an empty message from collapsing into the previous field.
-fields="$(jq -r '(.agent_type // ""), (.stop_hook_active // false), ((.last_assistant_message // "") + "\n.")' 2>/dev/null)" || exit 0
+fields="$(jq -r '(.agent_type // "" | gsub("[\\n\\r]"; " ")), (.stop_hook_active // false), ((.last_assistant_message // "") + "\n.")' 2>/dev/null)" || exit 0
 type="${fields%%$'\n'*}"
 rest="${fields#*$'\n'}"
 active="${rest%%$'\n'*}"

@@ -69,6 +69,8 @@ for agent in code-health-reviewer oss-readiness-reviewer security-reviewer readm
   check "dev-team:$agent is held" "$(code "dev-team:$agent" false "done")" "2"
 done
 
+check "type with a newline, stop_hook_active true" "$(code $'pr-reviewer\nx' true "done")" "0"
+check "type with a newline, stop_hook_active false" "$(code $'pr-reviewer\nx' false "done")" "0"
 check "stop_hook_active true" "$(code pr-reviewer true "The worktree is removed.")" "0"
 check "empty message" "$(code pr-reviewer false "")" "0"
 check "message absent" "$(raw '{"agent_type":"pr-reviewer"}')" "0"
