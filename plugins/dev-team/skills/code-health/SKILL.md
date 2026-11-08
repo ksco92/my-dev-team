@@ -110,10 +110,10 @@ Implementers apply this ladder at write time (the code-economy section of
 7. **Prose sized to the item** (the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A doc
    comment longer than the body it documents, a function doc past three lines of contract
    plus one constraint, or a module doc past ten lines is HIGH; the `:param:`, `:return:` and
-   `:raises:` lines a stack guide requires count toward none of these caps. The recommended form names
-   the lines that carry the contract and deletes the rest. A doc that a repository rule names
-   as the single home of a posture or rationale is exempt from the length cap only, and every
-   restatement of it elsewhere becomes a one-line pointer.
+   `:raises:` lines a stack guide requires count toward none of these caps. The recommended
+   form names the lines that carry the contract and deletes the rest. A doc that a repository
+   rule names as the single home of a posture or rationale is exempt from the length cap only,
+   and every restatement of it elsewhere becomes a one-line pointer.
 8. **Tests are the evidence.** Trial counts, fixture descriptions, the mutant a test kills,
    "confirmed empirically", "verified against version X", test names, or a reviewer question
    answered in advance duplicate the test: delete, HIGH. The rule covers every tracked prose

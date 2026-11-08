@@ -133,7 +133,7 @@ the methods used, a JSON payload a recursive type alias.
 
 #### Complex Type Hints
 
-For complex return types, use full type specifications:
+For complex return types, use full type specifications (signature only; the docstring is omitted):
 
 ```python
 def initialize_job() -> tuple[
