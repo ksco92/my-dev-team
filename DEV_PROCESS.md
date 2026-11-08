@@ -12,6 +12,7 @@ How changes reach `ksco92/my-dev-team`. The format is
 
 ## Tracker: files in the repository
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | ID format | The slug of `docs/plan/<slug>.md` (lowercase, hyphenated); cite as `plan <slug>`, never an ordinal |
@@ -56,6 +57,7 @@ status: open
 
 ## Code host: GitHub
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Repo key | `ksco92/my-dev-team`; this is the ledger's repo key, and the change id is the PR number |
@@ -96,6 +98,7 @@ Change request body template:
 
 ## Experiment
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Enter | Only when the owner says so; record it once in the session |
@@ -109,6 +112,7 @@ Change request body template:
 
 ## Workspace: git worktree
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Branch name | `<type>/<slug>` with `<type>` in `feature\|fix\|chore\|refactor\|docs` and `<slug>` the plan file's |
@@ -121,28 +125,28 @@ Change request body template:
 
 ## Gates and ledger
 
-All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`,
-`security-review`, `readme-writer`. Every finding at any severity blocks; nits included. Verdicts
-are recorded with `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record ksco92/my-dev-team <pr> <gate>
-<PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`, checked with `gate-ledger check ksco92/my-dev-team <pr> <head-sha>`, and listed
-with `gate-ledger show ksco92/my-dev-team <pr>`; a record at a new head resets the others.
+All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`, `security-review`,
+`readme-writer`. Every finding at any severity blocks; nits included. Verdicts are recorded with
+`${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record ksco92/my-dev-team <pr> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`,
+checked with `gate-ledger check ksco92/my-dev-team <pr> <head-sha>`, and listed with
+`gate-ledger show ksco92/my-dev-team <pr>`; a record at a new head resets the others.
 
 ## Commits
 
-No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small,
-logically grouped commits on the branch; the merge squashes them. The version bump follows the
-semver policy in the harness (major zero: breaking or feature → minor, otherwise patch) and is
-made once, in the final rebase before the merge.
+No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small, logically
+grouped commits on the branch; the merge squashes them. The version bump follows the semver policy
+in the harness (major zero: breaking or feature → minor, otherwise patch) and is made once, in the
+final rebase before the merge.
 
 ## Forbidden
 
-Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but
-the orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
+Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but the
+orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
 ledger, the hooks, or CI configuration inside a slice; deleting outside the workspace under work.
 
 ## Repository-specific constraints
 
 Every change bumps `plugins/dev-team/.claude-plugin/plugin.json` `version`; the `validate` check
 fails without it. The plugin's one-line description is one string, identical in the GitHub repo
-description, the root README, both marketplace descriptions, `plugin.json`, and the plugin
-README. Local checks before opening a change are the ones listed in `CLAUDE.md`.
+description, the root README, both marketplace descriptions, `plugin.json`, and the plugin README.
+Local checks before opening a change are the ones listed in `CLAUDE.md`.

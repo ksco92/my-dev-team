@@ -7,9 +7,9 @@ merge_method: squash
 
 # Development process
 
-Example for a machine whose tickets live in Asana, whose code lives on GitHub, and where
-worktrees cannot be used. Fill every `<...>` value, then place the file at a repository root or
-at `~/.claude/DEV_PROCESS.md`.
+Example for a machine whose tickets live in Asana, whose code lives on GitHub, and where worktrees
+cannot be used. Fill every `<...>` value, then place the file at a repository root or at
+`~/.claude/DEV_PROCESS.md`.
 
 Asana is reached through its official MCP server (OAuth), added once per machine:
 
@@ -36,6 +36,7 @@ Project `<project_gid>`. Custom fields: difficulty `<difficulty_field_gid>` with
 `<priority_field_gid>` with options `p0` `<p0_option_gid>`, `p1` `<p1_option_gid>`, `p2`
 `<p2_option_gid>`. Sections: in review `<in_review_section_gid>`.
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | ID format | The task GID, a numeric string never parsed as an integer; cite as `task <gid>`; permalinks `https://app.asana.com/0/<project_gid>/<task_gid>` or `https://app.asana.com/1/<workspace_gid>/project/<project_gid>/task/<task_gid>` are for display only |
@@ -73,6 +74,7 @@ Out of Scope
 
 ## Code host: GitHub
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Repo key | `<owner>/<repo>` from `gh repo view --json nameWithOwner -q .nameWithOwner`; this is the ledger's repo key, and the change id is the PR number |
@@ -116,6 +118,7 @@ Not allowed.
 
 ## Workspace: branch-in-place
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Branch name | `<type>/<task_gid>-<short-desc>` with `<type>` in `feature\|fix\|chore\|refactor\|docs` |
@@ -128,27 +131,26 @@ Not allowed.
 
 ## Gates and ledger
 
-All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`,
-`security-review`, `readme-writer`. Every finding at any severity blocks; nits included. Verdicts
-are recorded with `gate-ledger record <owner/repo> <pr> <gate> <PASS|FAIL|BLOCKED> <findings>
-<head-sha> <model>`, checked with `gate-ledger check <owner/repo> <pr> <head-sha>`, and listed
-with `gate-ledger show <owner/repo> <pr>`; a record at a new head resets the others.
+All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`, `security-review`,
+`readme-writer`. Every finding at any severity blocks; nits included. Verdicts are recorded with
+`gate-ledger record <owner/repo> <pr> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`,
+checked with `gate-ledger check <owner/repo> <pr> <head-sha>`, and listed with
+`gate-ledger show <owner/repo> <pr>`; a record at a new head resets the others.
 
 ## Commits
 
-No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small,
-logically grouped commits on the branch; the merge squashes them. The version bump follows the
-semver policy in the harness (major zero: breaking or feature → minor, otherwise patch) and is
-made once, in the final rebase before the merge.
+No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small, logically
+grouped commits on the branch; the merge squashes them. The version bump follows the semver policy
+in the harness (major zero: breaking or feature → minor, otherwise patch) and is made once, in the
+final rebase before the merge.
 
 ## Forbidden
 
-Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but
-the orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
+Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but the
+orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
 ledger, the hooks, or CI configuration inside a slice; deleting outside the workspace under work;
 parsing an Asana GID as an integer.
 
 ## Repository-specific constraints
 
-None at machine level. A repository states its own under this heading in its root
-`DEV_PROCESS.md`.
+None at machine level. A repository states its own under this heading in its root `DEV_PROCESS.md`.

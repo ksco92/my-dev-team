@@ -2,9 +2,11 @@
 
 ![CI](https://github.com/ksco92/my-dev-team/actions/workflows/ci.yml/badge.svg)
 
-Claude Code development harness: TPM orchestration, tiered implementers, five review gates, and stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
+Claude Code development harness: TPM orchestration, tiered implementers, five review gates, and
+stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
 
-It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and then to a built-in default.
+It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and
+then to a built-in default.
 
 ## Installation
 

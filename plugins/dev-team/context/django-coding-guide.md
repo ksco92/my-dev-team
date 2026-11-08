@@ -24,8 +24,8 @@ CLAUDE.md overrides.
   `QuerySet`), so `base_manager_name` names the guarded manager and the remaining unguarded set is
   stated as that class, never as a list.
 - A `ModelAdmin` that overrides `has_add_permission` but not `has_delete_permission` still lets
-  staff reach the delete action, which soft-deletes through the model. A claim that "nothing
-  deletes X today" is checked against the admin as well as the application code.
+  staff reach the delete action, which soft-deletes through the model. A claim that "nothing deletes
+  X today" is checked against the admin as well as the application code.
 
 ## 2. Authentication, Permissions and Throttles
 
@@ -58,27 +58,26 @@ CLAUDE.md overrides.
 
 ## 5. Request and Response Text
 
-- Middleware that stores request or response text decodes and parses bytes exactly as the
-  consuming parser does (`request.encoding` for the body, the query string and `parse_qsl`
-  percent-escapes; `response.charset` for the response) or stores a placeholder. Django accepts
-  any charset `codecs.lookup` resolves, including `base64`, `quopri`, `idna` and `undefined`, and
-  a lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
+- Middleware that stores request or response text decodes and parses bytes exactly as the consuming
+  parser does (`request.encoding` for the body, the query string and `parse_qsl` percent-escapes;
+  `response.charset` for the response) or stores a placeholder. Django accepts any charset
+  `codecs.lookup` resolves, including `base64`, `quopri`, `idna` and `undefined`, and a
+  lone-surrogate JSON escape survives a `json` round trip and raises at `.encode()`.
 - Under `DEBUG=True` such middleware placeholders every non-JSON error body:
   `technical_500_response` also serves a bad `Host` at status 400 with `POST` fields unfiltered, as
   `text/html` unless the `Accept` header prefers `text/plain`.
 - A redactor over text a downstream tokenizer splits (form fields at `&` and `=`) cannot redact by
-  key once a secret spans a split: store a placeholder for any field that opens as JSON (`{`, `[`
-  or `"` after a byte-order mark and JSON whitespace) but does not parse, and for a body declared
-  or opening as JSON that fails to parse or is too deep, never the raw scrubbed text. Parse JSON
-  found inside JSON strings and inside object keys the same way, recursively; clients encode
-  twice.
+  key once a secret spans a split: store a placeholder for any field that opens as JSON (`{`, `[` or
+  `"` after a byte-order mark and JSON whitespace) but does not parse, and for a body declared or
+  opening as JSON that fails to parse or is too deep, never the raw scrubbed text. Parse JSON found
+  inside JSON strings and inside object keys the same way, recursively; clients encode twice.
 - Match a secret-key name on the key as received, as stored, and on each decoded layer of a
   JSON-string key: re-serialisation keeps quotes so an anchored name never matches the stored
   spelling, and parsing can delete text (duplicate keys collapse) so the received spelling stays.
   Redact the value whenever the stored key gained a placeholder.
-- Charge every re-serialised string to one budget shared across the request, checked at every
-  level: nested escapes grow output geometrically, and decode depth is set by the escape the
-  attacker chooses, not the encoder.
+- Charge every re-serialised string to one budget shared across the request, checked at every level:
+  nested escapes grow output geometrically, and decode depth is set by the escape the attacker
+  chooses, not the encoder.
 
 ## 6. Management Commands
 
@@ -88,9 +87,9 @@ CLAUDE.md overrides.
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
-even one instructed to read this file; a subagent that notices something worth adding reports it
-under `Proposed learned pattern:` in its own output. Lessons here are true in any Django repo;
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker, even
+one instructed to read this file; a subagent that notices something worth adding reports it under
+`Proposed learned pattern:` in its own output. Lessons here are true in any Django repo;
 repo-specific facts go to that repo's `.claude/rules/`. Append an imperative bullet under
 `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after" tail),
 refine near-duplicates in place, keep the section under ~25 entries, promote a lesson that matures

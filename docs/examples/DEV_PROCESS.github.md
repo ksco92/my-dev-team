@@ -7,11 +7,12 @@ merge_method: squash
 
 # Development process
 
-Example for a machine whose tickets and code live on GitHub and whose slices run in git
-worktrees. Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
+Example for a machine whose tickets and code live on GitHub and whose slices run in git worktrees.
+Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
 
 ## Tracker: GitHub Issues
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | ID format | `#<n>`; permalink `https://github.com/<owner>/<repo>/issues/<n>`; in code and docs cite as `issue #<n>`, never an ordinal |
@@ -52,6 +53,7 @@ Ticket body template:
 
 ## Code host: GitHub
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Repo key | `<owner>/<repo>` from `gh repo view --json nameWithOwner -q .nameWithOwner`; this is the ledger's repo key, and the change id is the PR number |
@@ -92,6 +94,7 @@ Change request body template:
 
 ## Experiment
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Enter | Only when the owner says so; record it once in the session |
@@ -105,6 +108,7 @@ Change request body template:
 
 ## Workspace: git worktree
 
+<!-- prettier-ignore -->
 | Operation | Command / rule |
 | --- | --- |
 | Branch name | `<type>/<n>-<short-desc>` with `<type>` in `feature\|fix\|chore\|refactor\|docs` and `<n>` the ticket number |
@@ -117,27 +121,26 @@ Change request body template:
 
 ## Gates and ledger
 
-All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`,
-`security-review`, `readme-writer`. Every finding at any severity blocks; nits included. Verdicts
-are recorded with `gate-ledger record <owner/repo> <pr> <gate> <PASS|FAIL|BLOCKED> <findings>
-<head-sha> <model>`, checked with `gate-ledger check <owner/repo> <pr> <head-sha>`, and listed
-with `gate-ledger show <owner/repo> <pr>`; a record at a new head resets the others.
+All five gates run on every change: `pr-reviewer`, `code-health`, `oss-reviewer`, `security-review`,
+`readme-writer`. Every finding at any severity blocks; nits included. Verdicts are recorded with
+`gate-ledger record <owner/repo> <pr> <gate> <PASS|FAIL|BLOCKED> <findings> <head-sha> <model>`,
+checked with `gate-ledger check <owner/repo> <pr> <head-sha>`, and listed with
+`gate-ledger show <owner/repo> <pr>`; a record at a new head resets the others.
 
 ## Commits
 
-No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small,
-logically grouped commits on the branch; the merge squashes them. The version bump follows the
-semver policy in the harness (major zero: breaking or feature → minor, otherwise patch) and is
-made once, in the final rebase before the merge.
+No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small, logically
+grouped commits on the branch; the merge squashes them. The version bump follows the semver policy
+in the harness (major zero: breaking or feature → minor, otherwise patch) and is made once, in the
+final rebase before the merge.
 
 ## Forbidden
 
-Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but
-the orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
+Pushing any non-`main` ref onto `main`; force or delete pushes of `main`; merging by anyone but the
+orchestrator; commenting on, closing, or approving a change from a reviewer; editing the gate
 ledger, the hooks, or CI configuration inside a slice; deleting outside the workspace under work.
 
 ## Repository-specific constraints
 
-None at machine level. A repository states its own under this heading in its root
-`DEV_PROCESS.md` (a build tool that pins absolute paths, a monorepo that forbids worktrees, a
-different trunk name).
+None at machine level. A repository states its own under this heading in its root `DEV_PROCESS.md`
+(a build tool that pins absolute paths, a monorepo that forbids worktrees, a different trunk name).

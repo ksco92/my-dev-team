@@ -1,7 +1,7 @@
 # React/TypeScript Coding Standards Guide
 
-This document defines the React/TypeScript coding standards for Rodrigo's projects. These
-standards are enforced through ESLint and TypeScript strict mode.
+This document defines the React/TypeScript coding standards for Rodrigo's projects. These standards
+are enforced through ESLint and TypeScript strict mode.
 
 ---
 
@@ -18,8 +18,8 @@ standards are enforced through ESLint and TypeScript strict mode.
 
 ### Module Structure
 
-Each file should contain exactly one component, service, or utility. Name the file after its
-default export using PascalCase for components/services and camelCase for utilities.
+Each file should contain exactly one component, service, or utility. Name the file after its default
+export using PascalCase for components/services and camelCase for utilities.
 
 ### Imports
 
@@ -29,8 +29,8 @@ Organize imports into three groups separated by blank lines:
 2. **Third-party libraries** (`@mui/material`, `axios`, `react-select`)
 3. **Local imports** (components, services, utils)
 
-Each import group must have its destructured items on separate lines when importing multiple
-items (enforced by `object-curly-newline` rule with `minProperties: 1`).
+Each import group must have its destructured items on separate lines when importing multiple items
+(enforced by `object-curly-newline` rule with `minProperties: 1`).
 
 **Example:**
 
@@ -115,8 +115,8 @@ These rules are enforced by the ESLint configuration (`eslint.config.mjs`):
 
 #### Quotes
 
-Single quotes for all strings. Template literals are allowed. Use `avoidEscape` to avoid
-escaping single quotes inside strings.
+Single quotes for all strings. Template literals are allowed. Use `avoidEscape` to avoid escaping
+single quotes inside strings.
 
 ```typescript
 // Correct
@@ -130,8 +130,7 @@ const name = "AllerShare";
 
 #### Trailing Commas
 
-Required in multiline arrays, objects, imports, and exports. Not enforced on function
-parameters.
+Required in multiline arrays, objects, imports, and exports. Not enforced on function parameters.
 
 ```typescript
 // Correct
@@ -185,8 +184,8 @@ const handleClick = (_event: React.MouseEvent): void => {
 ### Comments
 
 - Write comments only when the logic is not self-evident.
-- JSDoc and comments follow the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` (Comment,
-  docstring, and helper budget): contract plus at most one constraint; no test evidence or
+- JSDoc and comments follow the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`
+  (Comment, docstring, and helper budget): contract plus at most one constraint; no test evidence or
   rationale essays; a one-statement helper with one call site is inlined.
 - Do not leave placeholder comments like `// Add this line` or `// NEW`.
 - Never remove multiline comment separators (`/// //////....`) used for readability.
@@ -248,17 +247,17 @@ interface AllergiesTableProps {
 
 ### Naming Conventions
 
-| Item | Convention | Example |
-|---|---|---|
-| Component files | PascalCase | `ProfilePage.tsx` |
-| Component names | PascalCase | `ProfilePage` |
-| Service files | PascalCase | `GroupService.tsx` |
-| Utility files | camelCase | `csrf.ts` |
-| Functions | camelCase | `fetchAllergens` |
-| Variables | camelCase | `isLoading` |
-| Interfaces/Types | PascalCase | `UserAllergy` |
-| Constants | UPPER_SNAKE_CASE | `API_BASE_URL` |
-| CSS class names | camelCase (via MUI `sx`) | N/A (no CSS files) |
+| Item             | Convention               | Example            |
+| ---------------- | ------------------------ | ------------------ |
+| Component files  | PascalCase               | `ProfilePage.tsx`  |
+| Component names  | PascalCase               | `ProfilePage`      |
+| Service files    | PascalCase               | `GroupService.tsx` |
+| Utility files    | camelCase                | `csrf.ts`          |
+| Functions        | camelCase                | `fetchAllergens`   |
+| Variables        | camelCase                | `isLoading`        |
+| Interfaces/Types | PascalCase               | `UserAllergy`      |
+| Constants        | UPPER_SNAKE_CASE         | `API_BASE_URL`     |
+| CSS class names  | camelCase (via MUI `sx`) | N/A (no CSS files) |
 
 ### Styling
 
@@ -272,8 +271,7 @@ Use MUI's `sx` prop for all styling. No separate CSS/SCSS files.
 }}>
 ```
 
-Use the MUI theme for colors and spacing. Access via `useTheme()` or `theme` prop when
-needed.
+Use the MUI theme for colors and spacing. Access via `useTheme()` or `theme` prop when needed.
 
 ---
 
@@ -289,8 +287,8 @@ Each backend resource gets its own service file:
 
 ### Service Structure
 
-Services export an object with async methods that return typed Promises. All API calls go
-through the centralized Axios instance from `api.ts`.
+Services export an object with async methods that return typed Promises. All API calls go through
+the centralized Axios instance from `api.ts`.
 
 ```typescript
 import api from './api';
@@ -414,22 +412,21 @@ test('fetches allergens on mount', async () => {
 
 ### ESLint 9 (Flat Config)
 
-The project uses ESLint 9 with `@typescript-eslint`. The configuration is in
-`eslint.config.mjs`.
+The project uses ESLint 9 with `@typescript-eslint`. The configuration is in `eslint.config.mjs`.
 
 ### Enforced Rules Summary
 
-| Rule | Setting | Description |
-|---|---|---|
-| `indent` | 4 spaces | Consistent indentation |
-| `quotes` | single | Single quotes everywhere |
-| `comma-dangle` | always-multiline | Trailing commas in multiline |
-| `array-bracket-newline` | minItems: 1 | One element per line |
-| `array-element-newline` | minItems: 1 | One element per line |
-| `object-curly-newline` | minProperties: 1 | One property per line |
-| `object-property-newline` | no same line | One property per line |
-| `quote-props` | as-needed | Quote only when required |
-| `@typescript-eslint/no-unused-vars` | error, ignore `_` | No unused variables |
+| Rule                                | Setting           | Description                  |
+| ----------------------------------- | ----------------- | ---------------------------- |
+| `indent`                            | 4 spaces          | Consistent indentation       |
+| `quotes`                            | single            | Single quotes everywhere     |
+| `comma-dangle`                      | always-multiline  | Trailing commas in multiline |
+| `array-bracket-newline`             | minItems: 1       | One element per line         |
+| `array-element-newline`             | minItems: 1       | One element per line         |
+| `object-curly-newline`              | minProperties: 1  | One property per line        |
+| `object-property-newline`           | no same line      | One property per line        |
+| `quote-props`                       | as-needed         | Quote only when required     |
+| `@typescript-eslint/no-unused-vars` | error, ignore `_` | No unused variables          |
 
 ### Running the Linter
 
@@ -463,13 +460,13 @@ These standards are enforced through:
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
-even one instructed to read this file; a subagent that notices something worth adding reports it
-under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
-any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
-imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after" tail),
-refine near-duplicates in place, keep the section under ~25 entries, and open a PR against the
-plugin repository (`ksco92/my-dev-team`).
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker, even
+one instructed to read this file; a subagent that notices something worth adding reports it under
+`Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in any repo
+of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an imperative bullet
+under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after"
+tail), refine near-duplicates in place, keep the section under ~25 entries, and open a PR against
+the plugin repository (`ksco92/my-dev-team`).
 
 ## Learned patterns
 
@@ -483,7 +480,9 @@ plugin repository (`ksco92/my-dev-team`).
   `storageState: { cookies: [], origins: [] }` explicitly and prove anonymity from the trace's
   request cookies. An E2E helper that triggers a re-rendering mutation ends on a deterministic
   settle point (the new entity's locator) before returning.
-- A heavily-async e2e helper that awaits `page.waitForResponse` must check `response.ok()`; unchecked, a 4xx becomes a locator timeout tens of lines away, and from a `finally` it discards the test's real failure.
+- A heavily-async e2e helper that awaits `page.waitForResponse` must check `response.ok()`;
+  unchecked, a 4xx becomes a locator timeout tens of lines away, and from a `finally` it discards
+  the test's real failure.
 - Assert that a request carries no header with exact equality on the headers object (`toEqual({})`);
   `toMatchObject({headers: {}})` matches any headers.
 - An auth-expiry handler triggered by a 403 can only sign the user out, never replace a signed-in
@@ -505,7 +504,7 @@ plugin repository (`ksco92/my-dev-team`).
 - In a module a jsdom test imports, derive paths from `import.meta.dirname`, never
   `fileURLToPath(new URL(..., import.meta.url))`; jsdom's `URL` is not a Node `file:` URL.
 - Give MUI `Breadcrumbs` an explicit `aria-label`; it renders a `nav` with no accessible name.
-- Close a modal drawer from an effect whose dependency is `useLocation().key`, not the pathname;
-  a click on the current page's link keeps the pathname.
-- Under jsdom, define `window.matchMedia` per test with a configurable `Object.defineProperty`
-  and delete it in `afterEach`; `vi.spyOn` throws because it is absent.
+- Close a modal drawer from an effect whose dependency is `useLocation().key`, not the pathname; a
+  click on the current page's link keeps the pathname.
+- Under jsdom, define `window.matchMedia` per test with a configurable `Object.defineProperty` and
+  delete it in `afterEach`; `vi.spyOn` throws because it is absent.

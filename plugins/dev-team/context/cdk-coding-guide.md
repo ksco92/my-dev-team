@@ -52,22 +52,22 @@ Standards and rules for the Psyduck CDK infrastructure project.
 
 - **VPC:** 10.0.0.0/16 CIDR across exactly 3 Availability Zones.
 - **Subnet types:** `PRIVATE_WITH_EGRESS` for compute/data, `PUBLIC` for load balancers and NAT.
-- **Compute instances in private subnets only.** RDS, EB EC2 instances, and Lambda functions
-  must always be placed in private subnets.
-- **Load balancers in public subnets.** The EB Application Load Balancer and the RDS Network
-  Load Balancer are internet-facing and placed in public subnets.
-- **NAT:** Use NAT instance (`NatProvider.instanceV2`) for cost efficiency in dev. Consider
-  NAT Gateway for production high availability.
+- **Compute instances in private subnets only.** RDS, EB EC2 instances, and Lambda functions must
+  always be placed in private subnets.
+- **Load balancers in public subnets.** The EB Application Load Balancer and the RDS Network Load
+  Balancer are internet-facing and placed in public subnets.
+- **NAT:** Use NAT instance (`NatProvider.instanceV2`) for cost efficiency in dev. Consider NAT
+  Gateway for production high availability.
 - **VPC Endpoints:** Always create a Secrets Manager VPC endpoint in private subnets.
 - **VPC Flow Logs:** All traffic logged to CloudWatch with 1-year retention.
 
 ### 2.3 Principle of Least Privilege (POLP)
 
-- **IAM roles:** Only attach the minimum managed policies needed.
-  EB EC2 role gets `AWSElasticBeanstalkWebTier` + `AWSElasticBeanstalkWorkerTier` only.
+- **IAM roles:** Only attach the minimum managed policies needed. EB EC2 role gets
+  `AWSElasticBeanstalkWebTier` + `AWSElasticBeanstalkWorkerTier` only.
 - **Secret access:** Only the EB role and the rotation Lambda can read the RDS secret.
-- **S3 access:** Block all public access (`BlockPublicAccess.BLOCK_ALL`).
-  CloudFront uses Origin Access Control (OAC), not public bucket policies.
+- **S3 access:** Block all public access (`BlockPublicAccess.BLOCK_ALL`). CloudFront uses Origin
+  Access Control (OAC), not public bucket policies.
 - **Security groups:** Explicit ingress rules only. No broad `0.0.0.0/0` except:
   - EB ALB on 443 (HTTPS from internet)
   - RDS NLB on 5432 (developer DB access)
@@ -151,8 +151,8 @@ psyduck_cdk/
 
 - **Stacks:** `PascalCaseStack` (e.g., `PsyduckStack`, `MonitoringStack`).
 - **Construct IDs:** PascalCase, descriptive (e.g., `RDSSecurityGroup`, `ACMCertificate`).
-- **Config files:** kebab-case (e.g., `general-configs.ts`, `rds-configs.ts`).
-  Exception: `ebConfigs.ts` (legacy naming).
+- **Config files:** kebab-case (e.g., `general-configs.ts`, `rds-configs.ts`). Exception:
+  `ebConfigs.ts` (legacy naming).
 - **Utility functions:** camelCase (e.g., `createKey`, `createBucket`, `createVpc`).
 - **Resource names:** Include stage suffix (e.g., `RDSNLB-dev`, `EBSecurityGroup-prod`).
 
@@ -233,17 +233,17 @@ afterEach(() => {
 
 ### 5.1 ESLint Rules
 
-| Rule | Setting |
-|---|---|
-| `indent` | 4 spaces |
-| `quotes` | Single (template literals allowed) |
-| `comma-dangle` | Always multiline |
-| `array-bracket-newline` | Multiline, minItems: 1 |
-| `array-element-newline` | Multiline, minItems: 1 |
-| `object-curly-newline` | Multiline, minProperties: 1 |
-| `object-property-newline` | Always (no same-line) |
-| `quote-props` | As needed |
-| `@typescript-eslint/no-unused-vars` | Error (except `_` prefixed) |
+| Rule                                | Setting                            |
+| ----------------------------------- | ---------------------------------- |
+| `indent`                            | 4 spaces                           |
+| `quotes`                            | Single (template literals allowed) |
+| `comma-dangle`                      | Always multiline                   |
+| `array-bracket-newline`             | Multiline, minItems: 1             |
+| `array-element-newline`             | Multiline, minItems: 1             |
+| `object-curly-newline`              | Multiline, minProperties: 1        |
+| `object-property-newline`           | Always (no same-line)              |
+| `quote-props`                       | As needed                          |
+| `@typescript-eslint/no-unused-vars` | Error (except `_` prefixed)        |
 
 ### 5.2 Running the Linter
 
@@ -280,10 +280,10 @@ CDK deploys infrastructure only. Application code is deployed separately:
 
 ### 6.3 Stage Configuration
 
-| Stage | Domain | Removal Policy |
-|---|---|---|
-| `dev` / `local` | `dev.allershare.com` | DESTROY |
-| `prod` | `allershare.com` | RETAIN |
+| Stage           | Domain               | Removal Policy |
+| --------------- | -------------------- | -------------- |
+| `dev` / `local` | `dev.allershare.com` | DESTROY        |
+| `prod`          | `allershare.com`     | RETAIN         |
 
 ---
 
@@ -293,47 +293,50 @@ When starting a new CDK or TypeScript repo, copy the tooling from these referenc
 re-deriving it. **arceus** is the CDK reference; **eevee** is the general TypeScript reference (same
 toolchain, non-CDK). The live files are the source of truth — read them and copy.
 
-- **arceus** — CDK L2 construct, npm package `cdk-glue-iceberg-table`: <https://github.com/ksco92/arceus>
+- **arceus** — CDK L2 construct, npm package `cdk-glue-iceberg-table`:
+  <https://github.com/ksco92/arceus>
 - **eevee** — TS validator + CLI, npm package `flexdataset` (package in `packages/core`):
   <https://github.com/ksco92/eevee>
 
 ### 7.1 Files to copy
 
 - **ESLint flat config** (`eslint.config.js`) — ESLint 9 flat config: base JS recommended +
-  `@typescript-eslint` recommended + `eslint-plugin-jest` for `*.test.ts`. Key rules: `indent` 4 with
-  `SwitchCase: 1`, single quotes, `comma-dangle: always-multiline`, `array-bracket-newline` minItems 1,
-  `array-element-newline` minItems 2, `object-curly-newline` minProperties 1, `object-property-newline`.
-  Lint script: `eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings=0 --fix
-  --ignore-pattern '**/*.d.ts'`. (arceus `eslint.config.js`; eevee `packages/core/eslint.config.js`.)
+  `@typescript-eslint` recommended + `eslint-plugin-jest` for `*.test.ts`. Key rules: `indent` 4
+  with `SwitchCase: 1`, single quotes, `comma-dangle: always-multiline`, `array-bracket-newline`
+  minItems 1, `array-element-newline` minItems 2, `object-curly-newline` minProperties 1,
+  `object-property-newline`. Lint script:
+  `eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings=0 --fix --ignore-pattern '**/*.d.ts'`.
+  (arceus `eslint.config.js`; eevee `packages/core/eslint.config.js`.)
 - **TypeScript config** (`tsconfig.json` + `tsconfig.build.json`) — `target ES2022`,
   `module`/`moduleResolution` `NodeNext`, `strict`, `declaration`, `inlineSourceMap`. A separate
-  `tsconfig.build.json` extends it with `outDir: dist`. **Gotcha:** to stop a bare `tsc` from emitting
-  stray `.js`/`.d.ts` next to sources (which then shadow the `.ts` under ts-jest and silently run stale
-  code), set `"noEmit": true` in the base `tsconfig.json` and `"noEmit": false` only in
-  `tsconfig.build.json` (see eevee). Build only via `npm run build`, never a bare `tsc`.
+  `tsconfig.build.json` extends it with `outDir: dist`. **Gotcha:** to stop a bare `tsc` from
+  emitting stray `.js`/`.d.ts` next to sources (which then shadow the `.ts` under ts-jest and
+  silently run stale code), set `"noEmit": true` in the base `tsconfig.json` and `"noEmit": false`
+  only in `tsconfig.build.json` (see eevee). Build only via `npm run build`, never a bare `tsc`.
 - **Jest** (`jest.config.js`) — `ts-jest`, `roots: [test]`, `testMatch: ['**/*.test.ts']`,
-  `collectCoverageFrom` over `lib/**/*.ts` (or `src/**/*.ts`), reporters including `lcov` for Codecov,
-  and a `coverageThreshold` of 95% on statements / branches / functions / lines.
-- **package.json scripts** — `build` (`tsc -p tsconfig.build.json`), `lint`, `test` (`jest`), `clean`,
-  `dev`, and `prepublishOnly` (`build && test`).
+  `collectCoverageFrom` over `lib/**/*.ts` (or `src/**/*.ts`), reporters including `lcov` for
+  Codecov, and a `coverageThreshold` of 95% on statements / branches / functions / lines.
+- **package.json scripts** — `build` (`tsc -p tsconfig.build.json`), `lint`, `test` (`jest`),
+  `clean`, `dev`, and `prepublishOnly` (`build && test`).
 
 ### 7.2 CI/CD
 
-Badges, the CI workflow, the npm publish workflow (OIDC trusted publishing, version-guarded on `main`),
-and the version-bump-per-PR rule are in [`npm-publishing-pattern.md`](npm-publishing-pattern.md). Copy
-`ci.yml` and `publish.yml` from arceus (single package) or eevee (monorepo — note the package
-`working-directory`). A CDK construct repo (like arceus) may also keep an integration-test workflow that
-runs a real `cdk deploy`; that is CDK-specific and gated, separate from this base.
+Badges, the CI workflow, the npm publish workflow (OIDC trusted publishing, version-guarded on
+`main`), and the version-bump-per-PR rule are in
+[`npm-publishing-pattern.md`](npm-publishing-pattern.md). Copy `ci.yml` and `publish.yml` from
+arceus (single package) or eevee (monorepo — note the package `working-directory`). A CDK construct
+repo (like arceus) may also keep an integration-test workflow that runs a real `cdk deploy`; that is
+CDK-specific and gated, separate from this base.
 
 ## Self-mutation rule
 
-Maintained by the orchestrating session only, never by a delegated subagent or headless worker,
-even one instructed to read this file; a subagent that notices something worth adding reports it
-under `Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in
-any repo of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an
-imperative bullet under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after" tail),
-refine near-duplicates in place, keep the section under ~25 entries, and open a PR against the
-plugin repository (`ksco92/my-dev-team`).
+Maintained by the orchestrating session only, never by a delegated subagent or headless worker, even
+one instructed to read this file; a subagent that notices something worth adding reports it under
+`Proposed learned pattern:` in its own output. Lessons here are stack-specific and true in any repo
+of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an imperative bullet
+under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after"
+tail), refine near-duplicates in place, keep the section under ~25 entries, and open a PR against
+the plugin repository (`ksco92/my-dev-team`).
 
 ## Learned patterns
 
@@ -344,9 +347,8 @@ plugin repository (`ksco92/my-dev-team`).
   tuple; pin the alpha to the construct's exact alpha line, let stable `aws-cdk-lib` float, and
   install all three in one `npm install`; a consumer of a library that peers on the alpha settles
   the same pin with an `npm install` in a temp dir before the slice is written. Before raising an
-  alpha floor, run
-  `npm view <pkg>@<version> stability` across the bump range; a `stability` of `deprecated` means
-  the module graduated into `aws-cdk-lib`.
+  alpha floor, run `npm view <pkg>@<version> stability` across the bump range; a `stability` of
+  `deprecated` means the module graduated into `aws-cdk-lib`.
 - When swapping an alpha L2 for its stable counterpart, diff the constructors' defaults as well as
   the typings by synthesizing both against the base; a stable promotion can flip a default (a
   removal policy gaining RETAIN) on a fixed-name resource that destroy-then-redeploy then trips
@@ -355,11 +357,11 @@ plugin repository (`ksco92/my-dev-team`).
   nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
   requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
   an untouched field keeps its id, any change makes a new field with a never-used id.
-- `cdk-glue-iceberg-table` ≥ 0.11.0: Glue `UpdateTable` reuses a history schema whose fields match and
-  keeps its identifier-field-ids, so an identifier-only change is dropped and the construct's `(PK) `
-  doc marker is what carries the ids. A `fieldId`-only partition change is a no-op (a new transform is
-  applied), and a V2 to V3 `formatVersion` change updates the `format-version` property while the
-  metadata stays 2.
+- `cdk-glue-iceberg-table` ≥ 0.11.0: Glue `UpdateTable` reuses a history schema whose fields match
+  and keeps its identifier-field-ids, so an identifier-only change is dropped and the construct's
+  `(PK) ` doc marker is what carries the ids. A `fieldId`-only partition change is a no-op (a new
+  transform is applied), and a V2 to V3 `formatVersion` change updates the `format-version` property
+  while the metadata stays 2.
 - A construct that promises files stay under one location rejects the Iceberg properties that
   relocate data or metadata (`write.*.path`, `write.location-provider.impl`).
 - A CloudWatch `Dashboard` body is an `Fn::Join` with region tokens and L2 dimensions render as
@@ -390,10 +392,10 @@ plugin repository (`ksco92/my-dev-team`).
 - Lake Formation gives the principal that creates a table (the CloudFormation execution role) its
   own permissions on it, so a "no grant to the execution role" criterion is judged on the templates,
   never on `list-permissions`.
-- Lake Formation admin status grants no `CREATE_TABLE` on a database, so an engine's
-  `CREATE TABLE` through the Glue catalog fails with `Required Create Table on <database>` even
-  for an admin principal; create integration tables through the construct's own stack and grant
-  the test principal on them.
+- Lake Formation admin status grants no `CREATE_TABLE` on a database, so an engine's `CREATE TABLE`
+  through the Glue catalog fails with `Required Create Table on <database>` even for an admin
+  principal; create integration tables through the construct's own stack and grant the test
+  principal on them.
 - An L1 property left unset still takes the service default on the live resource (an Athena
   workgroup without `enforceWorkGroupConfiguration` enforces); docs say the property is unset, never
   what the service then does.
@@ -456,8 +458,8 @@ plugin repository (`ksco92/my-dev-team`).
 - `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
   `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
 - A Glue job's `Code.fromAsset` takes one file; ship a folder as an `Asset` with a `.py`-only
-  exclude list and `Code.fromBucket`, with an `__init__.py` in every package folder, because the
-  CDK CLI zips files only and `zipimport` before Python 3.14 finds no namespace package without
+  exclude list and `Code.fromBucket`, with an `__init__.py` in every package folder, because the CDK
+  CLI zips files only and `zipimport` before Python 3.14 finds no namespace package without
   directory entries. Validate such a folder at synth with `readdirSync` exact-name regular-file
   matches and `lstatSync` symlink rejection: `existsSync` passes a case variant and a directory on
   macOS, and a name-based exclude is escaped by glob characters in a link name.

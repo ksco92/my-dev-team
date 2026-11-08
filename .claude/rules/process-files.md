@@ -1,1 +1,3 @@
-An Integrate row of a process file prescribes only a form the merge hook refuses on `main` or `master`; a form it does not gate (a cherry-pick, a commit, a bare push) is never the prescribed integration step.
+An Integrate row of a process file prescribes only a form the merge hook refuses on `main` or
+`master`; a form it does not gate (a cherry-pick, a commit, a bare push) is never the prescribed
+integration step.

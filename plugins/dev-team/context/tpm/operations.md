@@ -1,16 +1,16 @@
 # tpm operations rules
 
-Binding rules for processes, workspaces, shell environment, and the shared machine: background
-runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the first brief of a run.
+Binding rules for processes, workspaces, shell environment, and the shared machine: background runs,
+resuming subagents, and heavy jobs. Read with `briefing.md` before the first brief of a run.
 
-- Never pipe a backgrounded command through `tail`/`head` — the pipe reports the filter's exit,
-  not the command's. Redirect to a file, echo `EXIT=$?`, and read that line first; success lines
-  also appear during rollbacks.
+- Never pipe a backgrounded command through `tail`/`head` — the pipe reports the filter's exit, not
+  the command's. Redirect to a file, echo `EXIT=$?`, and read that line first; success lines also
+  appear during rollbacks.
 - A subagent that backgrounds a long run with a self-notifying waiter returns to you and does not
-  auto-resume — its work sits uncommitted. Recognize it from its own "kicked off in the
-  background" ping; verify from your side (`ps`, `git status`), then `SendMessage` the same agent
-  with fast-ops-only instructions. Plan for gates that outlast a foreground call: the implementer
-  hands the run back, you watch the process, you resume it.
+  auto-resume — its work sits uncommitted. Recognize it from its own "kicked off in the background"
+  ping; verify from your side (`ps`, `git status`), then `SendMessage` the same agent with
+  fast-ops-only instructions. Plan for gates that outlast a foreground call: the implementer hands
+  the run back, you watch the process, you resume it.
 - When a delegated fan-out is blocked by a recoverable environment issue, fix it and
   `SendMessage`-resume each finished agent rather than relaunching — they keep their context.
 - Serialize heavy local jobs (Spark, simulators, multi-hour training) on the shared box; a
@@ -22,14 +22,14 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   per-client permission dialog (Postgres.app on macOS), so it fails only on requests that open a
   connection; start it with the tool's own background mode, and ask the owner to approve the
   interpreter binary once rather than editing the app's preferences from a probe.
-- When no owner is present to approve a client, `initdb` a new cluster in the session's own
-  scratch directory with password authentication and a password made up for that run, start it
-  from the app's own binaries on another port with `listen_addresses=127.0.0.1` and no unix
-  socket, and point only the workspaces' `.env` at it; it holds test databases and never an
-  existing cluster. Stop it by the pid recorded at start when the run ends.
+- When no owner is present to approve a client, `initdb` a new cluster in the session's own scratch
+  directory with password authentication and a password made up for that run, start it from the
+  app's own binaries on another port with `listen_addresses=127.0.0.1` and no unix socket, and point
+  only the workspaces' `.env` at it; it holds test databases and never an existing cluster. Stop it
+  by the pid recorded at start when the run ends.
 - When a probe or implementer mutation-tests a file that carries uncommitted edits, it reverts the
-  mutant from a copy saved beforehand, never with `git checkout -- <file>`, which discards the
-  edit under test along with the mutant.
+  mutant from a copy saved beforehand, never with `git checkout -- <file>`, which discards the edit
+  under test along with the mutant.
 - Carrying a verdict by object-hash or diff proof (gates.md, SKILL.md 5.2) is the rule; when Claude
   Code's auto-mode permission classifier refuses that `gate-ledger record ... PASS` as a verdict
   without a gate run, re-run the gates on the head (a docs-only delta is a short round) rather than
@@ -39,8 +39,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   ask the agent for the missing evidence as its final message, sent after any backgrounded push
   returns.
 - Brief every subagent to keep scratch files in its own workspace or its own `mktemp -d`, never a
-  fixed name in the shared `$TMPDIR`. Package caches are the exception: one `npm_config_cache`
-  and one `UV_CACHE_DIR` per run under the session scratchpad, removed when the run ends, never a
+  fixed name in the shared `$TMPDIR`. Package caches are the exception: one `npm_config_cache` and
+  one `UV_CACHE_DIR` per run under the session scratchpad, removed when the run ends, never a
   `mktemp -d` per call; a gate or measurement that builds a native extension (gates.md,
   measurements.md) and a post-publish smoke install (verification.md) each use their own cache.
 - Brief every subagent to re-read a PR body immediately before editing it.
@@ -52,8 +52,8 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
   `git branch -D <branch>` (a squash leaves the branch unmerged for `-d`) and, if the remote branch
   remains, `git push origin --delete <branch>`; never re-run the merge.
 - On macOS, brief in-place edits as `sed -i '' -e` or `perl -pi -e`, with a `git diff` check that
-  the edit landed before the commit; a bare `-i` takes the next argument as the backup suffix, and
-  a multi-line edit goes through the Edit tool or a Python `str.replace` guarded by
+  the edit landed before the commit; a bare `-i` takes the next argument as the backup suffix, and a
+  multi-line edit goes through the Edit tool or a Python `str.replace` guarded by
   `assert old in text`.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
@@ -64,9 +64,9 @@ runs, resuming subagents, and heavy jobs. Read with `briefing.md` before the fir
 - Brief every step that loads assumed-role credentials into a shell to `unset AWS_PROFILE`, never
   set it empty; an empty `AWS_PROFILE=` fails every AWS CLI call with "The config profile () could
   not be found" before the step under test runs.
-- When a guard hook refuses an operation a brief requires (a trunk push in an experiment-mode
-  repo), the agent stops that step, finishes everything else, and hands back the exact command for
-  the owner to run from that repo's own working directory; no other form of the operation is tried.
+- When a guard hook refuses an operation a brief requires (a trunk push in an experiment-mode repo),
+  the agent stops that step, finishes everything else, and hands back the exact command for the
+  owner to run from that repo's own working directory; no other form of the operation is tried.
 - GitHub host: renaming a PR's branch through the API closes the PR, and the closed PR cannot be
   reopened; open a new PR from the renamed branch and close the old one with a pointer to it.
 - Before taking over a PR another session opened, message that session and wait for its

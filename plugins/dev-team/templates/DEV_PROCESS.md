@@ -13,6 +13,7 @@ Place this file at a repository root or at ~/.claude/DEV_PROCESS.md. -->
 
 ## Tracker: <name>
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | ID format | | the ID's shape, its permalink, how code and docs cite it |
@@ -33,6 +34,7 @@ Ticket body template:
 
 ## Code host: <name>
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Repo key | | the ledger's repo key, and what the change id is |
@@ -59,6 +61,7 @@ Change body template:
 
 <!-- Or the single line "Not allowed." when the mode is off. -->
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Enter |  | how the owner's statement enters the mode, or "Not allowed" |
@@ -72,6 +75,7 @@ Change body template:
 
 ## Workspace: <name>
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Branch name | | pattern from type, ticket ID, short description |
@@ -84,6 +88,7 @@ Change body template:
 
 ## Gates and ledger
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Gate roster | | gates run on every change; every finding blocks |
@@ -93,6 +98,7 @@ Change body template:
 
 ## Commits
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Attribution | | no AI-attribution strings in commits or change bodies |
@@ -101,12 +107,14 @@ Change body template:
 
 ## Forbidden
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Forbidden actions | | actions no role takes; see the contract's minimum list |
 
 ## Repository-specific constraints
 
+<!-- prettier-ignore -->
 | Operation | Command / rule | Hint |
 | --- | --- | --- |
 | Constraints | | what this repository does differently, or "None" |

@@ -17,17 +17,16 @@ path or PR and the scope: `--scope=full --severity=all` on a PR's first cycle, `
 re-review cycles. Clone the exact head, or read it in a reviewer probe (Reviewer probe operation),
 for the bootstrap test; never modify the repo under review and never commit anywhere.
 
-Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin;
-the orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`)).
-List each proposed pattern in the report's "Skill self-mutation" section in the catalog's own
-format so the orchestrator can land it.
+Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin; the
+orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`)). List
+each proposed pattern in the report's "Skill self-mutation" section in the catalog's own format so
+the orchestrator can land it.
 
 Repo-specific exemptions confirmed in earlier reviews (a deliberate convention that looks like a
 tell) live in `<repo>/.claude/rules/` and the repo `CLAUDE.md`; read them before flagging, and treat
 the `# ponytail:` marker (`${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`) as the harness's own
-convention, never a tell. You
-have no write tools by design: propose a new exemption under `Proposed repo rule:` and the
-orchestrator lands it.
+convention, never a tell. You have no write tools by design: propose a new exemption under
+`Proposed repo rule:` and the orchestrator lands it.
 
 End your final message with the skill's report, preceded by:
 

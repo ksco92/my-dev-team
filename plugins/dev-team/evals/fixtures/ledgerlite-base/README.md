@@ -2,7 +2,8 @@
 
 **ledgerlite sums a CSV ledger from the command line — one file in, one total out, no config.**
 
-Status (August 2026): stable for the single-file use case; published to no registry yet (install from source).
+Status (August 2026): stable for the single-file use case; published to no registry yet (install
+from source).
 
 ## Install
 
