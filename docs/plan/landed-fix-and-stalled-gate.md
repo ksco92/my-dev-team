@@ -6,18 +6,15 @@ status: done
 
 ## Context
 
-An implementer's report can describe a change that is not in the pushed head, and every gate then
-re-finds it. A gate subagent can hang on its last command after writing its findings, leaving no
-verdict and no notification.
+Both rules are orchestrator checks between a fix round and the next gate round, the phase
+`context/tpm/gates.md` governs; each folds into the existing bullet whose subject it shares.
 
 ## Requirements
 
-- [x] The `context/tpm/gates.md` bullet on grep-verifying a gate's factual claims also covers an
-      implementer's report that a prescribed change landed, checked by `grep -n` on the head before
-      the re-gate round.
-- [x] The `context/tpm/gates.md` bullet on a gate result without the verdict block says a gate whose
-      transcript stops advancing on its final cleanup command is stopped, its probe removed by the
-      orchestrator, and relaunched at the same head.
+- [x] The `context/tpm/gates.md` bullet beginning "Read the head SHA..." carries the landed-fix
+      check.
+- [x] The `context/tpm/gates.md` bullet beginning "A gate result that lacks the verdict block..."
+      carries the stalled-gate rule.
 - [x] Version bumped one patch step.
 
 ## Acceptance Criteria
