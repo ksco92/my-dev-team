@@ -179,6 +179,8 @@ PASS requires every criterion met and zero findings of any severity. On BLOCKED 
 Do not post anything on the PR. Your full structured verdict is your final message — that is what
 drives the fix loop and the gate ledger.
 
+Remove your probe and finish every tool call before writing the verdict; the verdict block is the last text you emit.
+
 ## Re-review
 
 List every finding from your previous verdict, mark each addressed / partial / not-addressed from

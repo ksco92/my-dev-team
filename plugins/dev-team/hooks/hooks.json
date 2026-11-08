@@ -17,6 +17,17 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/verdict-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

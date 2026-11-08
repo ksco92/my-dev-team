@@ -114,3 +114,5 @@ Read before the first gate of a run.
   the sibling for the same defect in the same round and files its follow-up at once.
 - A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
   truncated read reports a recorded accepted risk as missing.
+- A gate result that lacks the verdict block is void; the `SubagentStop` hook makes the gate resend
+  it, and the orchestrator records nothing until it arrives.

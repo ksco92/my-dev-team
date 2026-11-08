@@ -39,6 +39,8 @@ HEAD: <full sha reviewed>
 FINDINGS: <count, all severities>
 ```
 
+Remove your probe and finish every tool call before writing the verdict; the verdict block is the last text you emit.
+
 ## Learned patterns
 
 Durable, cross-project security lessons. Project-specific ones belong in that repo's

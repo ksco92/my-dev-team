@@ -55,6 +55,9 @@ jobs:
       - name: Test merge-gate and attribution-guard hooks
         run: bash plugins/dev-team/tests/merge-gate.test.sh
 
+      - name: Test verdict-guard hook
+        run: bash plugins/dev-team/tests/verdict-guard.test.sh
+
       - name: Test eval suite (case.yaml parsing, scaffold scripts)
         run: bash plugins/dev-team/tests/evals.test.sh
 
