@@ -172,6 +172,9 @@ For every guard, tripwire, retry, fallback, or normalization in scope:
 3. **Numeric provenance claims** ("3x-recurring", "measured ~10 min") and performance figures in
    code comments ("tens of microseconds", "negligible") must be citable from a committed measurement
    or the repo record, not from anyone's memory. Uncited figures are findings.
+4. **A mutation-tested claim is not provenance.** A mutation test proves a branch is reachable from
+   the test's input, not from production, so each defensive branch still needs a real input named in
+   the ticket or the PR body.
 
 What never gets cut (ponytail's floor, kept verbatim in spirit): input validation at trust
 boundaries; error handling that prevents data loss; security and accessibility; explicitly requested

@@ -65,3 +65,6 @@ before its gates.
   and compare its request parameters and caller context with a call that succeeded; and when
   changing the grant leaves the request and the denial identical, stop varying grants, the denial is
   not from the grant.
+- An acceptance criterion that depends on a live failure fixture ("show the skip line for the
+  unreadable X") names the API call that fails on X, checked before dispatch; a refused
+  `GetDatabase` leaves `GetTables` returning an empty list, so a list-only path never trips it.

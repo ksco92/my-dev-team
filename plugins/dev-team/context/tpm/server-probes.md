@@ -25,3 +25,7 @@ before the first gate on such a PR.
   that exercises the plugin, not with a ready log line or a listening port, and test the first start
   from an empty cache on its own; a jar that joins the class path once the JVM runs is unusable for
   the whole run.
+- When a program's output stream is part of its documented contract and it runs as a child of
+  another runtime (a spark-submit driver, a supervisor, a pipe-merging launcher), run the real
+  binary with stdout and stderr in separate files before accepting what an in-process capture shows;
+  Spark's `PythonRunner` merges the driver's stderr into the JVM's stdout.
