@@ -25,7 +25,9 @@ run.
   count overflows `timedelta` into a traceback); and when a PR edits a line already over the column
   convention, the PR owns the line's new length.
 - When a PR justifies an input rule by a collision it prevents, probe the trivial form across
-  entries: two equal values, and one nested in another.
+  entries: two equal values, and one nested in another; probe a dedupe or log-once set keyed by a
+  display name with an object named after its container (a database named like the catalog), since
+  two kinds of object sharing one key silence each other for the run.
 - Check a uniqueness guard on a name that becomes a physical resource name against the service's own
   folding rule, not `===`.
 - A symmetric check written as two one-directional clauses (`A.startsWith(B) || B.startsWith(A)`)
@@ -88,3 +90,8 @@ run.
 - A stub for a function whose return value the code under test must consume returns a value that
   cannot be the real one; a stub equal to the real value lets a hard-coded copy of it pass the
   suite.
+- When code catches a framework's converted exception type around calls into a foreign runtime
+  (PySpark's `CapturedException`, a gRPC status wrapper), trigger one real refusal live and check
+  its Python class before trusting the handler or its tests; converters pass unrecognised foreign
+  exceptions through raw, and a test fake that subclasses the caught type is blind to that by
+  construction.

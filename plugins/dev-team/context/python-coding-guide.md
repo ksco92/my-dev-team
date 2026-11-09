@@ -1251,3 +1251,6 @@ section above and leaves this list.
   position (the first string statement of a module, class or function), less their `:param:`,
   `:return:` and `:raises:` lines; a scan for `#` lines or triple quotes counts an embedded script
   or fixture string as prose.
+- A mutation run that rewrites a module repeatedly sets `PYTHONDONTWRITEBYTECODE=1` and clears
+  `__pycache__` first; bytecode staleness is checked by whole-second mtime and size, so two
+  same-length mutants written in one second reuse the first one's `.pyc` and read as survivors.
