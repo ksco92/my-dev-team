@@ -48,7 +48,8 @@ before its gates.
   number.
 - A mutation is applied with an edit that fails when its pattern is absent and confirmed with
   `git diff` before a green run is trusted; BSD `sed '0,/re/'` leaves the file unchanged without an
-  error.
+  error, and a Python mutant runs with `PYTHONDONTWRITEBYTECODE=1` or a cleared `__pycache__`, since
+  a same-size mutant restored within a second leaves a stale `.pyc` that keeps loading.
 - A test that compares a real response with its documented schema compares keys at every nested
   level, with data that makes each nested object non-null and each list non-empty, and checks each
   documented alternative against the caller that should receive it; top-level keys, a null, an empty

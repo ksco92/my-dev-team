@@ -181,8 +181,9 @@ of the baseline explicitly; a `low` slice is where an over-build is cheapest to 
 ## Phase 5 — Gates, fix loop, merge
 
 Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md` and
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run; re-read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` before each fix brief.
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run, and
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/server-probes.md` when a slice starts a server, a child process
+or a JVM; re-read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` before each fix brief.
 
 You drive this for every PR, including a local branch→main merge in a repo with no remote — that
 merge _is_ the PR for gate purposes, and the hook guards `git merge` on main the same way.
@@ -304,10 +305,11 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: _would this be true in a different repo?_
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
-  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name,
-  no incident narrative — the git log keeps the archaeology). A change to the procedure itself goes
-  into the phase text of this file, and a rule already stated there is never repeated as a bullet.
+  `gates`, `review-probes`, `server-probes`, `verification`, `measurements`, `operations`,
+  `experiment`) or the relevant agent file, as a rule (imperative, one sentence, two at most; no
+  date, repo, or PR name, no incident narrative — the git log keeps the archaeology). A change to
+  the procedure itself goes into the phase text of this file, and a rule already stated there is
+  never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or the
   agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the normal PR
