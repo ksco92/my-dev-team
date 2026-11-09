@@ -77,17 +77,14 @@ run.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
-- A gate that may start a server holding cloud credentials launches it from a scrubbed environment:
-  every credential-chain variable unset (static keys and session token, profile, web identity,
-  container credentials), instance metadata disabled, placeholder static keys, the config and
-  credentials file variables pointed at scratch files, and a dead SDK endpoint. Every client the run
-  builds must be refused by that endpoint; one refused first call proves one client.
 - Mutate a widened range matcher to its single canonical member; fixtures use the canonical member,
   so the widened range survives unnoticed.
 - Mutate a result cache behind a worker pool into a cold concurrent request; sequential fixtures
   never see one call per worker.
-- A guard added to one middleware is proven on the real server with the raw bad request sent through
-  the whole chain; a sibling registered earlier can parse the same input unguarded.
-- A startup check moved into a function a dev server re-runs on an in-process restart is proven by
-  changing a scratch copy of its backing file, never the owner's own, and restarting in the same
-  process; a module-level cache in the dependency keeps the check stale.
+- When a fix builds a hostname from a region or a similar id, compare the id pattern with the
+  partitions it admits (a `cn-*` region's hosts end in `.com.cn`) and check whether a sibling URL in
+  the same flow already hardcodes the suffix, which decides whether the gap is new or an existing
+  limit.
+- A stub for a function whose return value the code under test must consume returns a value that
+  cannot be the real one; a stub equal to the real value lets a hard-coded copy of it pass the
+  suite.

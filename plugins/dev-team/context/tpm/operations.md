@@ -54,7 +54,8 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
 - On macOS, brief in-place edits as `sed -i '' -e` or `perl -pi -e`, with a `git diff` check that
   the edit landed before the commit; a bare `-i` takes the next argument as the backup suffix, and a
   multi-line edit goes through the Edit tool or a Python `str.replace` guarded by
-  `assert old in text`.
+  `assert old in text`; a multi-file `perl -pi -e` keyed on `$.` needs `close ARGV if eof`, or every
+  file after the first is left unchanged.
 - In zsh, `$SHA:<path>` applies a history modifier when the path starts with a modifier letter;
   write `${SHA}:<path>` in every `git show <rev>:<path>` proof command.
 - In zsh, an ARN built as `$ACCT:role/...` loses `:r` to the history modifier; brace every expansion
