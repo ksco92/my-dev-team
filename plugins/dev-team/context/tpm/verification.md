@@ -81,3 +81,9 @@ before its gates.
 - Expected values in a live-proof ticket (the order of a run's log lines, a row count after a step
   that may repeat) are copied from the code path at the head, and a "repeat when" step states the
   values for both outcomes.
+- GitHub host: a PR body holds 65,536 characters, so before a live proof whose outputs go in the
+  body, run the largest block's command first (a `cdk diff`), add the block sizes up against the
+  cap, and have the ticket name the author comment that carries what does not fit.
+- A helper script whose output a PR body cites prints each command it runs, or its source is posted
+  with the PR, and it is frozen before its first saved output; a later edit is recorded beside the
+  outputs it produced.

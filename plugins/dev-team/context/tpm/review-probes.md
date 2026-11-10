@@ -7,9 +7,6 @@ run.
 - A PR body that calls a state unreachable ("nothing soft-deletes X today") is checked against the
   admin surface as well as the application paths: a `ModelAdmin` that overrides add but not delete
   permission still reaches the state, and the gate reproduces it before accepting the claim.
-- Reviewing a rules or policy file that describes code, compare every mechanism word ("literal table
-  name", "aborts", "placeholder") against the line it describes at the head; text drafted from an
-  earlier proposal keeps the wording of an implementation a later PR replaced.
 - Reviewing a redactor or parser fix, re-run every earlier regression input with the parser's
   delimiters placed inside the secret and with the payload at every position the parser splits (a
   later field, a value, the query string); after a normalising step is added in front of a check
@@ -62,9 +59,6 @@ run.
 - A numeric claim about a library's limit (a size cap, a split threshold) is checked by grepping the
   constant's name across the library's installed source, never against a recalled vendor number: the
   value may sit in a sibling file and differ from the documented limit.
-- A README or doc bullet that restates an upstream dependency's guarantee is checked against the
-  upstream's precondition and known-limitations sections; the downstream copy tends to drop the
-  precondition.
 - A claim that a change now always reaches a deployed resource is checked against the resource's
   pre-fix history; an old state identical to a new one collides.
 - A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
@@ -73,9 +67,6 @@ run.
 - When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules,
   not only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote
   (DQDL `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
-- When a PR adds properties to a resource whose builder's doc comment lists the resulting state,
-  compare that list with the property block at the head; README edits land, the API doc beside the
-  code drifts.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
@@ -95,3 +86,10 @@ run.
   its Python class before trusting the handler or its tests; converters pass unrecognised foreign
   exceptions through raw, and a test fake that subclasses the caught type is blind to that by
   construction.
+- When a job filters one period with `==` and then keeps the latest run by a maximum timestamp,
+  mutate `==` to `>=` as well as `<=`; only a fixture with a later period that holds a later-created
+  run, on each side of a join, fails the `>=` mutant.
+- A timeout or capacity claim for a larger fan-out is sized from the deployed function's own report
+  records (a Lambda's `platform.report` durations under the JSON log format, cold and warm), never
+  from a call-count estimate. The gate pulls the same log window and recomputes the extremes and
+  each figure derived from them, since a range read from a subset is quoted as the whole window.

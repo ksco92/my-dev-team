@@ -48,11 +48,6 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
 - When briefing a recurring mechanical chore (version bump, release prep, changelog roll), derive
   the file checklist from the previous instance's actual commit (`git show <sha> --stat`), never
   from the documented convention alone; the precedent commit shows every real touch-point.
-- When prescribing a doc reword, give the exact old and new text so the round closes on a diff
-  proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
-  <version>"; any observed state it asserts (a package list, a count) is reproduced at the head
-  first, not typed from the previous head; and a fragment replacement is written out as the whole
-  resulting line, so a phrase the sentence already carries is not spliced in twice.
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is the
@@ -84,31 +79,17 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
 - When a fix adds an exception subclass of a builtin to a shared primitive, check every sibling open
   PR that catches the base class; the rebase brief names the new condition and re-derives its
   reachability from the caller's preconditions.
-- An explanatory clause added in a fix round to make a sample output fit is where an invented
-  mechanism slips in; the brief prescribes the rule sentence from the code, a ticket-dictated
-  rules-file sentence included, and the reviewer checks the database state at that step, not only
-  the final output.
 - When a fix centralises a predicate into a helper, brief the correctness gate to break the helper's
   definition and to remove its use at each call site in turn; a test that fails on the broken
   definition proves one call site only.
 - Brief every mutation run to check the mutant for undefined names, and that it compiles under the
   project's own settings, before trusting a failure; a mutant that swaps in an unimported symbol or
   fails the compile fails every test and reads as killed.
-- When a code-economy finding trims a rules paragraph to a pointer, list the facts the pointed-to
-  file does not hold and brief them kept; a rules file names every change that needs review, even a
-  field that a description elsewhere already mentions.
 - Send a change you already know you will ask for (an implementer's open question, a stale test
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open; a brief that rewrites a mechanism
   likewise names the PR body sentences that describe the old form.
-- Brief every doc and rules-file edit to state what the code does without a cause clause (`because`,
-  `which makes`, `as for any`) unless the cause was checked against the source; an unverified
-  explanation is the next round's finding.
-- Every doc-trim brief requires an empty diff once comment and doc lines are stripped, a moved
-  list's new home that does not point back at the old one, and a re-read of the lead-in of every
-  list it shortens; a brief that adds rule sentences to a README states each rule once, in the
-  section that owns the type, with pointer bullets elsewhere.
 - When a fix brief lets the implementer choose between two forms, name the file's existing shape as
   the tie-breaker, never a line count; the shorter form with a side effect is the next round's
   finding.
@@ -117,3 +98,6 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   otherwise the test file itself fails the grep.
 - A brief's claim about a vendor's product carries the page URL, and the implementer quotes the page
   rather than the brief's paraphrase.
+- A fact a gate brief states about the PR body or the head (a block that is present, a command that
+  is shown) is printed from the host's copy before the brief goes out; gates build on a brief's
+  context, and a false statement there comes back as a finding against the brief.

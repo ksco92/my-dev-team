@@ -62,9 +62,6 @@ Read before the first gate of a run.
 - A PR body's own preservation or fix checklist is not proof: reproduce it from the diff (every
   number-plus-unit token, every named symbol) before recording a verdict; the checklist lists what
   the author remembered to check.
-- Brief every gate on a doc restructure or move to diff the set of sentences between base and head,
-  not the layout: each dropped sentence has a new home or is a deletion the ticket asked for, and a
-  figure another file cites is found at its new home.
 - Check a PR against every issue-specific numeric criterion as well as the repo's general bar; the
   same computed figure can clear the general ceiling and miss the issue's tighter target.
 - Two gates that read one delta differently (one as narrative, one as rule-mandated content) are not

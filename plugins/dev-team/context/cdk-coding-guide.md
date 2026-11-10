@@ -466,3 +466,8 @@ the plugin repository (`ksco92/my-dev-team`).
 - A Data Quality evaluation run started from a job needs `glue:GetPartitions` on the target table,
   `glue:PublishDataQuality` and `kms:Decrypt` on the catalog key besides the ruleset actions; write
   the job role's policy explicitly, since `AWSGlueServiceRole` grants `glue:*` on every resource.
+- A Step Functions `Choice` rule that compares a field the input may omit pairs the comparison with
+  an `IsPresent` check in an `And`
+  (`Condition.and(Condition.isPresent(path), Condition.stringEquals(path, value))`): a bare
+  comparison on a missing path fails the execution with `States.Runtime` instead of taking
+  `Default`, and `aws stepfunctions test-state` with the state inline shows it without a deploy.
