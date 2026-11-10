@@ -68,3 +68,16 @@ before its gates.
 - An acceptance criterion that depends on a live failure fixture ("show the skip line for the
   unreadable X") names the API call that fails on X, checked before dispatch; a refused
   `GetDatabase` leaves `GetTables` returning an empty list, so a list-only path never trips it.
+- A ticket that asks for live evidence in the PR body names the commands whose output the body
+  carries as a closed list, and every command a plural item covers is counted from the run's saved
+  logs before the body is posted; "every command and its output" is a universal each read extends.
+- Build a PR body that carries command output by script from the saved outputs, with exact-once
+  replacements and each command line taken from the command that ran, never from a label the log
+  echoed, and apply it from a file; a fix round then closes on a diff of the host's copy against
+  that file.
+- Every number or observation in the prose between a PR body's evidence blocks (an interval, a
+  latency range, a count of earlier runs) is recomputed from the outputs shown or left out, and the
+  first gate read of the body is briefed to recompute each.
+- Expected values in a live-proof ticket (the order of a run's log lines, a row count after a step
+  that may repeat) are copied from the code path at the head, and a "repeat when" step states the
+  values for both outcomes.
