@@ -1254,3 +1254,6 @@ section above and leaves this list.
 - A mutation run that rewrites a module repeatedly sets `PYTHONDONTWRITEBYTECODE=1` and clears
   `__pycache__` first; bytecode staleness is checked by whole-second mtime and size, so two
   same-length mutants written in one second reuse the first one's `.pyc` and read as survivors.
+- `patch("<module>.time.sleep")` sets `sleep` on the one shared `time` module, so another thread
+  that sleeps during the test consumes the mock's side effects; patch the module's own name
+  (`patch("<module>.time")`) and set `sleep` on that mock.

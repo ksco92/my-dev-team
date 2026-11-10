@@ -80,3 +80,5 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
   path resolves beside the probe; stage a `git archive` of the head plus a sibling symlink to the
   real `x` inside the probe's own directory, never beside the live checkout, where the symlink shows
   up as an untracked file.
+- Run a guarded merge as the only command in its Bash call; a `;` after it is read into the `--repo`
+  value, and the hook's refusal reads as a failed `gh pr view`.
