@@ -72,6 +72,10 @@ Standards and rules for the Psyduck CDK infrastructure project.
   - EB ALB on 443 (HTTPS from internet)
   - RDS NLB on 5432 (developer DB access)
 - **IMDSv2:** Always disable IMDSv1 on EC2 instances (`DisableIMDSv1: true`).
+- **Policy claims:** Check a claim that every statement of a kind carries a condition against the
+  statements of a fully synthesized template, root and nested stacks, not a grep of the source; an
+  L2 construct adds statements the source never writes (`Trail` adds bucket `Allow`s with no
+  `aws:SourceArn`).
 
 ### 2.4 Removal Policies
 

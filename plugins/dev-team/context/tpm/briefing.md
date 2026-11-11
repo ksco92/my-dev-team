@@ -69,7 +69,8 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   pushed (plain `-u origin <branch>` on the first push): the merge gate refuses a `-C` push that
   names no remote and literal non-trunk refspec, and its refusal reads as a permission error.
 - Every rebase brief says: run the full `make check` (all targets, clippy included) and any CI leg
-  that main added on the rebased head before the push.
+  that main added on the rebased head before the push, and re-derive at that head every line-number
+  cite and pasted diff stat in the PR body.
 - When a fix brief asks for a test that kills a surviving mutant and the implementer instead deletes
   the guarded code on an equivalence argument, treat the deletion as a design change that needs its
   own gate round, not as the test fix; two gates disproved one such argument in a round.
@@ -89,7 +90,8 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open; a brief that rewrites a mechanism
-  likewise names the PR body sentences that describe the old form.
+  likewise names the PR body sentences that describe the old form and, where the squash message is
+  built from the commit messages, the PR title and each earlier commit message that does.
 - When a fix brief lets the implementer choose between two forms, name the file's existing shape as
   the tie-breaker, never a line count; the shorter form with a side effect is the next round's
   finding.
