@@ -91,7 +91,8 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open; a brief that rewrites a mechanism
   likewise names the PR body sentences that describe the old form and, where the squash message is
-  built from the commit messages, the PR title and each earlier commit message that does.
+  built from the commit messages, the PR title and each earlier commit message that does; the final
+  rebase of a multi-commit branch then leaves one commit whose subject is the PR title.
 - When a fix brief lets the implementer choose between two forms, name the file's existing shape as
   the tie-breaker, never a line count; the shorter form with a side effect is the next round's
   finding.

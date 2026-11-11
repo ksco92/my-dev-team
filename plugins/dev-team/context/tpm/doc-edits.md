@@ -9,9 +9,9 @@ that changes it.
   proof; the new text states the rule only, never "pinned by <test>" or "confirmed against
   <version>"; any observed state it asserts (a package list, a count) is reproduced at the head
   first, not typed from the previous head; and a fragment replacement is written out as the whole
-  resulting line, so a phrase the sentence already carries is not spliced in twice. The new line is
-  no longer than the one it replaces and carries no fact another paragraph of the file holds: grep
-  the file for each fact it states and put the detail in the paragraph that owns it.
+  resulting line, so a phrase or a number the sentence already carries is not spliced in twice. The
+  new line is no longer than the one it replaces and carries no fact another paragraph of the file
+  holds: grep the file for each fact it states and put the detail in the paragraph that owns it.
 - An explanatory clause added in a fix round to make a sample output fit is where an invented
   mechanism slips in; the brief prescribes the rule sentence from the code, a ticket-dictated
   rules-file sentence included, and the reviewer checks the database state at that step, not only
@@ -45,3 +45,8 @@ that changes it.
   comment and skill line that states the form, not only the hunks, and require each to hold for
   every path that produces the value (scheduled, derived, manual); every section a rewritten
   sentence cites still carries the claim.
+- When a fix round moves a check into a new function, grep every doc and rules file for the sentence
+  that names the check's old home and brief it reworded in the same round; before a brief names a
+  single-use helper in a doc, ask whether the helper should exist.
+- A doc sentence about a randomised wait gives the range and what draws from it, states the
+  distribution beside any figure that depends on one, and never says two callers cannot coincide.
