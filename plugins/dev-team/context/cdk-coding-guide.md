@@ -462,7 +462,8 @@ the plugin repository (`ksco92/my-dev-team`).
 - `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
   `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
 - A Glue job's `Code.fromAsset` takes one file; ship a folder as an `Asset` with a `.py`-only
-  exclude list and `Code.fromBucket`, with an `__init__.py` in every package folder, because the CDK
+  exclude list under `ignoreMode: IgnoreMode.GIT` (a negated pattern stages nothing in the default
+  glob mode) and `Code.fromBucket`, with an `__init__.py` in every package folder, because the CDK
   CLI zips files only and `zipimport` before Python 3.14 finds no namespace package without
   directory entries. Validate such a folder at synth with `readdirSync` exact-name regular-file
   matches and `lstatSync` symlink rejection: `existsSync` passes a case variant and a directory on
@@ -475,3 +476,12 @@ the plugin repository (`ksco92/my-dev-team`).
   (`Condition.and(Condition.isPresent(path), Condition.stringEquals(path, value))`): a bare
   comparison on a missing path fails the execution with `States.Runtime` instead of taking
   `Default`, and `aws stepfunctions test-state` with the state inline shows it without a deploy.
+- Parse the `Cause` of a failed `glue:startJobRun.sync` task as the `JobRun` object itself, with
+  `JobRunState` and `ErrorMessage` at the top level and no wrapper key, and keep any other `Cause`
+  as text: a job that never starts fails with a `Glue.*` error and a plain-text `Cause`.
+- Read the object key of an EventBridge S3 `Object Created` event as it arrives: EventBridge
+  delivers the key raw, with a `:` as a `:`, where an S3 bucket notification URL-encodes it.
+- Measure in a synthesized template any policy statement that lists one ARN per resource: CDK moves
+  whole statements into overflow managed policies and never splits one, so a statement past the
+  6,144 characters a managed policy holds fails the deploy; state in the README the resource count
+  that reaches it.
