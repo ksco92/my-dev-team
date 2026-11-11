@@ -239,8 +239,10 @@ the whole set to the slice's implementer at its current tier as a fix brief quot
 on the new head. Two proofs carry every gate's verdict to the new head without a re-run: when a
 cycle's only prescribed change is mechanical (delete these lines, fix this PR body), a deterministic
 diff proof (`git diff -w old..new` shows exactly the prescribed edit); and for a clean rebase,
-per-path object-hash equality for every file the PR touches, onto a main that added no file or CI
-leg the PR must pass. Anything with semantic content re-runs every gate.
+per-path object-hash equality for every file the PR touches, or for a file the trunk changed outside
+the PR's hunks an equal `git patch-id` of the PR's diff of that file against the old base and
+against the new one, onto a main that added no file or CI leg the PR must pass. Anything with
+semantic content re-runs every gate.
 
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof

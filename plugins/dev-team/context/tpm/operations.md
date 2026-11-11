@@ -15,7 +15,8 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
   `SendMessage`-resume each finished agent rather than relaunching — they keep their context.
 - Serialize heavy local jobs (Spark, simulators, multi-hour training) on the shared box; a
   concurrent heap kills the longest-running one, and `pgrep -f` false-negatives on long command
-  lines, so guard with a full-line `ps` scan.
+  lines, so guard with a full-line `ps` scan. While several agents share the box, brief each to run
+  only the test files it touched, in one worker; a full parallel test run can hang without failing.
 - `mkdir -p` the log dir before a backgrounded compound command and verify the log exists after
   launch; a failed `cd` writes the EXIT marker elsewhere and reports success.
 - A server a probe starts detached from the GUI session cannot answer a desktop database app's

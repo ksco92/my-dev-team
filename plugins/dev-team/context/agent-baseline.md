@@ -142,7 +142,8 @@ in one of them.
   per-release before/after deltas go in the PR body, not the tracked document.
 
 Before opening the PR, check every file you touched: comment and doc lines well under code lines, or
-trim before pushing.
+trim before pushing. Recount the code lines of every function you added a statement to against the
+project's length limit; one added call can cross it.
 
 ## Testing
 
