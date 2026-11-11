@@ -53,6 +53,9 @@ before its gates.
 - A mutant's count of failed tests is taken only from a run that ends with no collection or fixture
   error and no deselected test; a `-k` filter that skips the slow tests reports fewer failures than
   the full suite a reviewer runs.
+- A test that sends generated neighbours of a valid value is checked two ways: no generated value
+  matches the pattern under test, and every candidate the generator leaves out does; an exclusion
+  applied at every position hides a widening where the excluded character is not valid.
 - A test that compares a real response with its documented schema compares keys at every nested
   level, with data that makes each nested object non-null and each list non-empty, and checks each
   documented alternative against the caller that should receive it; top-level keys, a null, an empty

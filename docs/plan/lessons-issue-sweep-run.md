@@ -7,8 +7,9 @@ status: done
 ## Context
 
 A run that worked six small tickets of one library through the gates (rules files, a lint preset, a
-retry policy, test cleanup, a handler fix) returned five lessons with evidence. Three land as folds
-into existing text and two as new bullets.
+retry policy, test cleanup, a handler fix), and then a UI slice whose API patterns took four review
+rounds, returned eight lessons with evidence. Five land as folds into existing text and three as new
+bullets.
 
 ## Requirements
 
@@ -31,6 +32,17 @@ into existing text and two as new bullets.
       rules-file line said every grant to a service principal carried a source condition; the
       template of a stack with a `Trail` holds bucket `Allow` statements with none, which the source
       never writes).
+- [x] The universal-negative paragraph of `skills/tpm/SKILL.md` says the closed list of a pattern
+      criterion is generated and its remainder is one accepted risk (evidence: three review rounds
+      each found a hand-written reject row missing; a case-insensitive flag on the run date pattern
+      passed all 101 tests, and the accepted risks covered only values more than one edit away).
+- [x] The regex-guard bullet of `context/tpm/review-probes.md` gains single positions, literal
+      classes and flags (evidence: 153 token-level mutants were all killed while a gate showed seven
+      widenings of one position each passing every test).
+- [x] `context/tpm/verification.md` carries the two-way check of a neighbour generator (evidence: a
+      generator that never substituted a hex digit, at any position, left keys with a letter in the
+      time or in place of a separator unsent; after the exclusion was scoped, the 580 candidates
+      left out all matched the pattern and none of the 11578 sent did).
 - [x] Version bumped one patch step.
 
 ## Acceptance Criteria
