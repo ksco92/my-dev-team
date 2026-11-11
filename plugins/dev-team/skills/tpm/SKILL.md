@@ -57,7 +57,10 @@ wrong; put the model to the owner before briefing the workaround.
 When a criterion is a universal negative ("must never leak", "never loses a row"), write the
 acceptance at intake as a closed list of the inputs it covers and have the slice record the
 remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gates judge the slice
-against that list, and without it every review round finds a neighbouring input.
+against that list, and without it every review round finds a neighbouring input. When the criterion
+is that a pattern rejects every value off its form, the list is generated (every value one edit from
+each valid sample, sent through each input the pattern guards) and one accepted risk covers every
+value outside the list.
 
 When the request is framed as an experiment or exploration ("for starters", "we'll take it from
 there", "see if this works") and the resolved process file's Experiment section allows the mode,
@@ -124,10 +127,10 @@ consumer's tests for every count or per-resource loop the new version changes.
 A recipe's test list covers each operand of a compound guard on its own and varies every
 pass-through parameter at least once at every call that forwards it, a nested factory included, so a
 literal in place of the parameter fails a test; a thrown message it prescribes names the remedy as
-well as the condition; and it prescribes no assertion the type system already guarantees. Check
-every exact-string assertion a recipe prescribes against the existing fixture before dispatch; a
-fixture row that already carries the new marker makes the assertion unsatisfiable and the
-implementer rewrites the fixture to fit.
+well as the condition, a remedy that holds for each kind of object the message can name; and it
+prescribes no assertion the type system already guarantees. Check every exact-string assertion a
+recipe prescribes against the existing fixture before dispatch; a fixture row that already carries
+the new marker makes the assertion unsatisfiable and the implementer rewrites the fixture to fit.
 
 ## Phase 4 — Delegation
 

@@ -43,8 +43,9 @@ run.
   at a time and require a test to fail for each; a fixture with one sample of every allowed
   character usually leaves out a class.
 - Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
-  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group); a mutant caught
-  because the message changed failed on text, not behaviour.
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group, each position of a
+  counted class alone, each literal as a class of itself and a neighbouring class, each flag); a
+  mutant caught because the message changed failed on text, not behaviour.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
 - When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial
