@@ -8,6 +8,7 @@
     {
       "name": "dev-team",
       "source": "./plugins/dev-team",
+      "license": "Apache-2.0",
       "description": "Claude Code development harness: TPM orchestration, tiered implementers, five review gates, and stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md"
     }
   ]

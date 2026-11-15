@@ -32,7 +32,7 @@ Severity: BLOCKER — the project doesn't install + supply-chain attack vector. 
 resolve but have <10 total downloads or age <30 days (potential typosquats deserving manual review,
 HIGH).
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.2 Committed coding-agent transcripts (CRITICAL)
 
@@ -57,7 +57,7 @@ files, NOT transcripts); `.cursorrules`, `.github/copilot-instructions.md` (rule
 
 Severity: CRITICAL. Direct evidence + potential secret leak + privacy issue.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.3 Placeholder author identity in package metadata (CRITICAL)
 
@@ -77,7 +77,7 @@ Exclude: template-of files explicitly named (`templates/pyproject.toml`, `exampl
 Severity: CRITICAL. The package ships to PyPI / npm / crates.io literally identifying its uploader
 as "Your Name <you@example.com>".
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.4 Tool configs for languages not present in the repo (HIGH)
 
@@ -95,7 +95,7 @@ Exclude: monorepos where each package owns its own configs; meta-repos _about_ a
 Severity: HIGH. Cargo-culted scaffolding from "modern project setup" templates the AI emitted
 without checking.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.5 Built / generated artifacts committed (HIGH)
 
@@ -123,7 +123,7 @@ the README explicitly documenting that `dist/` is shipped.
 Severity: HIGH. Artifacts in `git ls-files` mean the author committed tool output instead of just
 source.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.6 Personal-environment paths leaked into committed configs (HIGH)
 
@@ -145,7 +145,7 @@ Exclude: documentation that references example paths inside fenced code blocks;
 Severity: HIGH for paths baked into config values; INFO for committed `.DS_Store` / `.idea/` alone
 (mostly noise but signals an uncurated `.gitignore`).
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.7 AI-session-shape git history composite (HIGH / CRITICAL by signal count)
 
@@ -190,7 +190,7 @@ composite is the high-confidence finding.
 Exclude: repos announcing a "ported from <X>, opened YYYY" history in README; repos using
 release-please / squash-merge workflows that legitimately compress history.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.8 Docs-template scaffold with no content (CRITICAL)
 
@@ -213,7 +213,7 @@ docs explicitly marked WIP in `docs/README.md`.
 Severity: CRITICAL. A docs scaffold with no content is worse than no docs — it implies completeness
 that doesn't exist.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.9 Stale CHANGELOG (HIGH / INFO)
 
@@ -234,7 +234,7 @@ config.
 
 Severity: HIGH for stale + active git; INFO for marketing-phrased entries alone.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.10 Examples that don't run (CRITICAL)
 
@@ -254,7 +254,7 @@ Exclude: examples explicitly marked WIP in an `examples/README.md`.
 Severity: CRITICAL. Examples that don't run are docs that lie. Catches AI sessions that scaffold
 examples to "round out the project" without executing them.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.11 Untrimmed template scaffolding (HIGH)
 
@@ -276,7 +276,7 @@ Exclude: explicit tutorial / hello-world repos.
 
 Severity: HIGH. The AI scaffolded a project then never trimmed the scaffold.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.12 Directory-bloat scaffolding (HIGH)
 
@@ -290,7 +290,7 @@ the split.
 Severity: HIGH. A 200-line project does not need a `controllers/` directory with one file. The AI
 applied "layered architecture" because tutorials say to, not because the problem needs it.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 5.13 Public repo without branch protection on `main` (BLOCKER for public repos)
 
@@ -320,7 +320,7 @@ Exclude: nothing for public repos — this is a hard gate.
 Severity: BLOCKER (public repo, no PR-only protection on `main`); INFO (private repo, as a
 pre-public reminder, or when verification is not possible).
 
-Added on 2026-06-05 per maintainer policy: public repos must have branch protection on `main`.
+Per maintainer policy: public repos must have branch protection on `main`.
 
 ### 5.14 Same-target version bump across concurrently open PRs (HIGH under bump-per-PR policy)
 
@@ -340,9 +340,9 @@ Exclude: repos without a bump-per-PR convention; lockfile-only version echoes.
 Severity: HIGH where the repo mandates per-PR bumps (the history lies about what shipped under which
 version); INFO otherwise.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PRs #63 and #64 (plus #65),
-briefed in parallel from the same base, all took 0.22.0/0.17.0 while merged PR #62 had already
-consumed pyproject 0.17.0 — every later-landing PR would have shipped a silent no-op bump.
+Added by: oss-reviewer self-mutation after three PRs, briefed in parallel from the same base, all
+took the same next version while an already-merged PR had consumed one of them; every later-landing
+PR would have shipped a silent no-op bump.
 
 ### 5.15 No `.gitignore` with build/IDE artifacts already sitting in the working tree (HIGH)
 
@@ -374,11 +374,9 @@ where it's cheap to prevent. Downgrade to the §5.5 finding (still HIGH) once an
 been committed — at that point the question is no longer prevention but cleanup
 (`git rm -r --cached` + add the ignore file).
 
-Added by: oss-reviewer self-mutation on 2026-07-19 after observing the `grimer` repo review: no
-`.gitignore` anywhere in the tree while `.venv/`, `.idea/`, `__pycache__/`, `.pytest_cache/`, and
-`.coverage` all sat in the working directory of a repo with zero commits — the project's own
-`git status` already showed these as untracked, one `git add -A` away from being permanently
-committed.
+Added by: oss-reviewer self-mutation after a Python repo review: no ignore file anywhere in the tree
+while a virtualenv, IDE settings, bytecode, test caches and a coverage file sat in the working
+directory of a repo with zero commits, one add-all away from being committed.
 
 ### 5.16 Single-PR version bump exceeds one minor step under a bump-per-PR semver policy (HIGH)
 
@@ -415,11 +413,9 @@ against as "one prior bump").
 Severity: HIGH when the policy is stated as binding/MUST (nothing else catches the drift — it's a
 convention, not a CI check); INFO when the policy is advisory.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing grimer PR #11 bump
-`pyproject.toml` `version = "0.3.0"` -> `"0.6.0"` for one feature (universe-aware queries) against
-the repo owner's global `CLAUDE.md` policy, which states a single `0.y.z` feature/ architectural
-change moves `y` by exactly 1 (expected `0.4.0`); the PR body describes only the one change and does
-not itemize a second or third bump-worthy item.
+Added by: oss-reviewer self-mutation after a Python CLI PR bumped its version by three minor steps
+for one feature, against the owner's policy that a single feature moves the minor version by one;
+the PR body listed only that change.
 
 ### 5.17 Undocumented stateful-resource exhaustion makes a repeatable test suite look regression-prone (HIGH)
 
@@ -491,22 +487,14 @@ Severity: INFO when the doc is clearly a one-off historical report with no other
 pointing at it. HIGH when the doc is linked from README.md/CLAUDE.md or otherwise presented as
 current architecture reference — then the dead path actively misleads.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing `improvements.md:113` (references
-`reactSelectStyles`) and `improvements.md:133,146` (references `src/hooks/useApi.ts` and lists
-"Hooks: useApi" as a tested item) in a PR (psyduck-fe #87) that deletes `src/hooks/useApi.ts`, its
-test, and the `reactSelectStyles` prop/variable from `AddAllergyForm.tsx`/`AllergiesSection.tsx` as
-dead code. `improvements.md` is not linked from README.md or CLAUDE.md, so this graded INFO rather
-than HIGH.
+Added by: oss-reviewer self-mutation after a narrative improvements doc still referenced a style
+prop and an API hook, listing the hook as tested, in a frontend PR that deleted both as dead code;
+the doc was linked from neither the README nor the contributor doc, so the finding graded INFO.
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing the psyduck_frontend PR #55
-review: `psyduck_backend`'s `REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]` (`anon` 60/min, `user`
-1000/hour, `public_profile` 30/hour) is backed by the default per-process `LocMemCache` and is not
-stage-aware; three consecutive `npm run e2e` runs against the same backend process produced
-cascading `429 Request was throttled` failures (by the third run, even sign-in failed), while two
-runs after a backend restart were clean (9 passed, 9 passed). Neither `psyduck_frontend`'s
-README/CLAUDE.md/`ui_test_flow.md` nor `psyduck_backend`'s own docs mention the throttle or the
-restart-to-recover step, so a contributor rerunning the suite a few times sees what looks like a
-real regression.
+Added by: oss-reviewer self-mutation after a frontend PR review: the backend's per-process,
+non-stage-aware throttle rates made three consecutive E2E runs against one backend process fail with
+cascading 429s (by the third run even sign-in failed), while two runs after a restart were clean (9
+passed each); neither repo's docs mention the throttle or the restart.
 
 ### 5.19 Hedged closing keyword in a PR body still triggers GitHub's unconditional auto-close (CRITICAL)
 
@@ -548,19 +536,16 @@ unconfirmed/hypothesis-directed (see the PR's own "could not reproduce" section)
 tracking issue anyway destroys the paper trail the hedge was written to preserve, and does so
 silently since the merge itself gives no warning.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing `psyduck_backend` PR #39's body
-closing paragraph — "Closes #25 if review agrees the evidence above is sufficient; otherwise treat
-as hardening and leave #25 open with this PR's findings attached" — while
-`gh api graphql ... closingIssuesReferences` on the open, unmerged PR already returns issue #25,
-proving GitHub parsed the hedge as a plain unconditional close. The PR's own "Empirical
-verification" section explicitly states the literal #25 symptom could not be reproduced, making the
-auto-close the opposite of what the author's careful phrasing intended.
+Added by: oss-reviewer self-mutation after a backend PR body's closing paragraph said it closes an
+issue only if review agreed the evidence sufficed, while GitHub's closing-references query on the
+open PR already listed that issue; the PR's own verification section said the issue's symptom could
+not be reproduced.
 
 ### 5.20 New operational script added to a documented scripts/ directory without a matching docs entry (INFO / HIGH)
 
 A repo establishes the convention that every script under `scripts/` gets a one-line (or multi-line
 usage block) entry in the project's own docs — typically a `## Commands` section in `CLAUDE.md`
-and/or a dedicated section in `README.md` — for an _existing_ script (e.g. `scripts/dev-stack.sh` is
+and/or a dedicated section in `README.md` — for an _existing_ script (e.g. `scripts/<script>.sh` is
 listed with its flags in both places). A PR then adds a **new** script to the same directory
 (`scripts/<new>.sh`) with its own `--help` but never touches `CLAUDE.md` / `README.md` to add the
 matching entry. The new script works fine standalone, so nothing breaks — but the docs now silently
@@ -589,11 +574,9 @@ Severity: HIGH when the new script is user-invokable and mutates state (deploy, 
 a stranger has no way to discover it exists short of reading `scripts/`. INFO when the script is
 read-only/reporting and low-stakes to miss.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing `scripts/kms-orphan-audit.sh` (PR
-adding a read-only + optional `--schedule-deletion` KMS audit script) land with a complete `--help`
-block while `CLAUDE.md`'s `## Commands` section documents `scripts/dev-stack.sh` (including all
-three of its flag variants) and says nothing about the new script — the sibling-script convention is
-established but not followed for the new addition.
+Added by: oss-reviewer self-mutation after a new read-only KMS audit script with an optional
+deletion flag landed with a complete help block while the contributor doc's commands section, which
+documents a sibling script and its flags, said nothing about it.
 
 ### 5.21 PR body attributes an unmet acceptance criterion to an out-of-scope note that names a different metric (HIGH)
 

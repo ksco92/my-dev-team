@@ -1,7 +1,8 @@
 # React/TypeScript Coding Standards Guide
 
-This document defines the React/TypeScript coding standards for Rodrigo's projects. These standards
-are enforced through ESLint and TypeScript strict mode.
+Standards and rules for React/TypeScript projects, binding for any repo where React is written
+unless the repo's own CLAUDE.md overrides. These standards are enforced through ESLint and
+TypeScript strict mode.
 
 ---
 
@@ -67,11 +68,11 @@ Every function and component must have a JSDoc docstring.
 
 ```typescript
 /**
- * Fetch the list of allergens from the backend.
- * @param includeInactive Whether to include inactive allergens.
- * @returns A promise resolving to an array of Allergen objects.
+ * Fetch the list of items from the backend.
+ * @param includeInactive Whether to include inactive items.
+ * @returns A promise resolving to an array of Item objects.
  */
-const fetchAllergens = async (includeInactive: boolean): Promise<Allergen[]> => {
+const fetchItems = async (includeInactive: boolean): Promise<Item[]> => {
     // implementation
 };
 ```
@@ -79,15 +80,15 @@ const fetchAllergens = async (includeInactive: boolean): Promise<Allergen[]> => 
 **Interface documentation:**
 
 ```typescript
-export interface Allergen {
-    /** Unique identifier for the allergen. */
+export interface Item {
+    /** Unique identifier for the item. */
     id: number;
 
-    /** Display name of the allergen (e.g., "Peanuts"). */
+    /** Display name of the item (e.g., "Pencils"). */
     name: string;
 
     /**
-     * Whether the allergen is currently active.
+     * Whether the item is currently active.
      * @default true
      */
     isActive?: boolean;
@@ -120,12 +121,12 @@ single quotes inside strings.
 
 ```typescript
 // Correct
-const name = 'AllerShare';
+const name = 'Acme';
 const greeting = `Hello, ${name}!`;
 const message = "It's a sunny day";
 
 // Incorrect
-const name = "AllerShare";
+const name = "Acme";
 ```
 
 #### Trailing Commas
@@ -134,17 +135,17 @@ Required in multiline arrays, objects, imports, and exports. Not enforced on fun
 
 ```typescript
 // Correct
-const allergens = [
-    'Peanuts',
-    'Shellfish',
-    'Dairy',
+const items = [
+    'Pencils',
+    'Erasers',
+    'Rulers',
 ];
 
 // Incorrect
-const allergens = [
-    'Peanuts',
-    'Shellfish',
-    'Dairy'
+const items = [
+    'Pencils',
+    'Erasers',
+    'Rulers'
 ];
 ```
 
@@ -229,19 +230,19 @@ export default ProfilePage;
 Define a typed interface for component props. Document each prop with JSDoc.
 
 ```typescript
-/** Props for the AllergiesTable component. */
-interface AllergiesTableProps {
-    /** List of user allergies to display. */
-    allergies: UserAllergy[];
+/** Props for the UserItemsTable component. */
+interface UserItemsTableProps {
+    /** List of user items to display. */
+    userItems: UserItem[];
 
-    /** Available intolerance levels for the dropdown. */
-    levels: IntoleranceLevel[];
+    /** Available priority levels for the dropdown. */
+    levels: PriorityLevel[];
 
-    /** Callback fired when the user changes an allergy's intolerance level. */
-    onLevelChange: (allergyId: number, newLevelId: number) => void;
+    /** Callback fired when the user changes an item's priority level. */
+    onLevelChange: (itemId: number, newLevelId: number) => void;
 
-    /** Callback fired when the user deletes an allergy. */
-    onDelete: (allergyId: number) => void;
+    /** Callback fired when the user deletes an item. */
+    onDelete: (itemId: number) => void;
 }
 ```
 
@@ -253,9 +254,9 @@ interface AllergiesTableProps {
 | Component names  | PascalCase               | `ProfilePage`      |
 | Service files    | PascalCase               | `GroupService.tsx` |
 | Utility files    | camelCase                | `csrf.ts`          |
-| Functions        | camelCase                | `fetchAllergens`   |
+| Functions        | camelCase                | `fetchItems`       |
 | Variables        | camelCase                | `isLoading`        |
-| Interfaces/Types | PascalCase               | `UserAllergy`      |
+| Interfaces/Types | PascalCase               | `UserItem`         |
 | Constants        | UPPER_SNAKE_CASE         | `API_BASE_URL`     |
 | CSS class names  | camelCase (via MUI `sx`) | N/A (no CSS files) |
 
@@ -282,8 +283,8 @@ Use the MUI theme for colors and spacing. Access via `useTheme()` or `theme` pro
 Each backend resource gets its own service file:
 
 - `GroupService.tsx` — Group CRUD
-- `UserAllergyService.tsx` — User allergy CRUD
-- `DietaryPreferenceService.tsx` — Dietary preference CRUD
+- `UserItemService.tsx` — User item CRUD
+- `TagService.tsx` — Tag CRUD
 
 ### Service Structure
 
@@ -293,8 +294,8 @@ the centralized Axios instance from `api.ts`.
 ```typescript
 import api from './api';
 
-/** Response shape for an Allergen from the backend. */
-interface Allergen {
+/** Response shape for an Item from the backend. */
+interface Item {
     /** Unique identifier. */
     id: number;
 
@@ -303,20 +304,20 @@ interface Allergen {
 }
 
 /**
- * Service for allergen API operations.
+ * Service for item API operations.
  */
-const AllergenService = {
+const ItemService = {
     /**
-     * Fetch all allergens.
-     * @returns A promise resolving to an array of allergens.
+     * Fetch all items.
+     * @returns A promise resolving to an array of items.
      */
-    listAllergens: async (): Promise<Allergen[]> => {
-        const response = await api.get('/allergens/');
+    listItems: async (): Promise<Item[]> => {
+        const response = await api.get('/items/');
         return response.data;
     },
 };
 
-export default AllergenService;
+export default ItemService;
 ```
 
 ### CSRF and Authentication
@@ -385,12 +386,12 @@ import api from '../../services/api';
 jest.mock('../../services/api');
 const mockedAPI = api as jest.Mocked<typeof api>;
 
-test('fetches allergens on mount', async () => {
+test('fetches items on mount', async () => {
     mockedAPI.get.mockResolvedValueOnce({
         data: [
             {
                 id: 1,
-                name: 'Peanuts',
+                name: 'Pencils',
             },
         ],
     });

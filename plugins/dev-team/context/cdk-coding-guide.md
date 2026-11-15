@@ -137,7 +137,7 @@ Standards and rules for AWS CDK infrastructure projects written in TypeScript.
 ### 3.1 Directory Layout
 
 ```
-psyduck_cdk/
+my_app_cdk/
 ├── bin/                   # CDK app entry point
 ├── lib/                   # Stack definitions and utilities
 │   ├── configs/           # Stage-aware configuration objects
@@ -152,7 +152,7 @@ psyduck_cdk/
 
 ### 3.2 Naming Conventions
 
-- **Stacks:** `PascalCaseStack` (e.g., `PsyduckStack`, `MonitoringStack`).
+- **Stacks:** `PascalCaseStack` (e.g., `AppStack`, `MonitoringStack`).
 - **Construct IDs:** PascalCase, descriptive (e.g., `RDSSecurityGroup`, `ACMCertificate`).
 - **Config files:** kebab-case (e.g., `general-configs.ts`, `rds-configs.ts`). Exception:
   `ebConfigs.ts` (legacy naming).
@@ -195,12 +195,12 @@ psyduck_cdk/
 
 ```typescript
 // Stack test pattern
-describe('PsyduckStack', () => {
+describe('AppStack', () => {
     let template: Template;
 
     beforeAll(() => {
         const app = new App();
-        const stack = new PsyduckStack(app, 'TestStack', { env: { region: 'us-east-1' } });
+        const stack = new AppStack(app, 'TestStack', { env: { region: 'us-east-1' } });
         template = Template.fromStack(stack);
     });
 
@@ -278,30 +278,25 @@ npx cdk deploy --all --require-approval=never
 CDK deploys infrastructure only. Application code is deployed separately:
 
 - **Backend:** `eb deploy` or CodePipeline to the EB environment
-- **Frontend:** `aws s3 sync build/ s3://psyduckui-{stage}/` + CloudFront invalidation
+- **Frontend:** `aws s3 sync build/ s3://<app>-ui-{stage}/` + CloudFront invalidation
 - **Infrastructure:** `cdk deploy` via CodePipeline CDK step
 
 ### 6.3 Stage Configuration
 
-| Stage           | Domain               | Removal Policy |
-| --------------- | -------------------- | -------------- |
-| `dev` / `local` | `dev.allershare.com` | DESTROY        |
-| `prod`          | `allershare.com`     | RETAIN         |
+| Stage           | Domain            | Removal Policy |
+| --------------- | ----------------- | -------------- |
+| `dev` / `local` | `dev.example.com` | DESTROY        |
+| `prod`          | `example.com`     | RETAIN         |
 
 ---
 
-## 7. Reference Tooling Setup (copy from arceus / eevee)
+## 7. Reference Tooling Setup
 
-When starting a new CDK or TypeScript repo, copy the tooling from these reference repos rather than
-re-deriving it. **arceus** is the CDK reference; **eevee** is the general TypeScript reference (same
-toolchain, non-CDK). The live files are the source of truth — read them and copy.
+When starting a new CDK or TypeScript repo, set up the tooling below rather than re-deriving it; it
+is one working arrangement, the same for a CDK construct library and a non-CDK TypeScript package,
+whether the package sits at the repo root or in a monorepo directory such as `packages/core`.
 
-- **arceus** — CDK L2 construct, npm package `cdk-glue-iceberg-table`:
-  <https://github.com/ksco92/arceus>
-- **eevee** — TS validator + CLI, npm package `flexdataset` (package in `packages/core`):
-  <https://github.com/ksco92/eevee>
-
-### 7.1 Files to copy
+### 7.1 Files to set up
 
 - **ESLint flat config** (`eslint.config.js`) — ESLint 9 flat config: base JS recommended +
   `@typescript-eslint` recommended + `eslint-plugin-jest` for `*.test.ts`. Key rules: `indent` 4
@@ -309,13 +304,12 @@ toolchain, non-CDK). The live files are the source of truth — read them and co
   minItems 1, `array-element-newline` minItems 2, `object-curly-newline` minProperties 1,
   `object-property-newline`. Lint script:
   `eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings=0 --fix --ignore-pattern '**/*.d.ts'`.
-  (arceus `eslint.config.js`; eevee `packages/core/eslint.config.js`.)
 - **TypeScript config** (`tsconfig.json` + `tsconfig.build.json`) — `target ES2022`,
   `module`/`moduleResolution` `NodeNext`, `strict`, `declaration`, `inlineSourceMap`. A separate
   `tsconfig.build.json` extends it with `outDir: dist`. **Gotcha:** to stop a bare `tsc` from
   emitting stray `.js`/`.d.ts` next to sources (which then shadow the `.ts` under ts-jest and
   silently run stale code), set `"noEmit": true` in the base `tsconfig.json` and `"noEmit": false`
-  only in `tsconfig.build.json` (see eevee). Build only via `npm run build`, never a bare `tsc`.
+  only in `tsconfig.build.json`. Build only via `npm run build`, never a bare `tsc`.
 - **Jest** (`jest.config.js`) — `ts-jest`, `roots: [test]`, `testMatch: ['**/*.test.ts']`,
   `collectCoverageFrom` over `lib/**/*.ts` (or `src/**/*.ts`), reporters including `lcov` for
   Codecov, and a `coverageThreshold` of 95% on statements / branches / functions / lines.
@@ -326,10 +320,10 @@ toolchain, non-CDK). The live files are the source of truth — read them and co
 
 Badges, the CI workflow, the npm publish workflow (OIDC trusted publishing, version-guarded on
 `main`), and the version-bump-per-PR rule are in
-[`npm-publishing-pattern.md`](npm-publishing-pattern.md). Copy `ci.yml` and `publish.yml` from
-arceus (single package) or eevee (monorepo — note the package `working-directory`). A CDK construct
-repo (like arceus) may also keep an integration-test workflow that runs a real `cdk deploy`; that is
-CDK-specific and gated, separate from this base.
+[`npm-publishing-pattern.md`](npm-publishing-pattern.md), which describes `ci.yml` and `publish.yml`
+for a single package and for a monorepo (set the package `working-directory`). A CDK construct repo
+may also keep an integration-test workflow that runs a real `cdk deploy`; that is CDK-specific and
+gated, separate from this base.
 
 ## Self-mutation rule
 

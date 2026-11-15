@@ -7,13 +7,13 @@ template-test lessons; its self-mutation rule governs this file, with the same ~
 
 ## Learned patterns
 
-- `cdk-glue-iceberg-table` ≥ 0.5.0 requires explicit top-level `IcebergColumn.id` and allocates
-  nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
-  requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
-  an untouched field keeps its id, any change makes a new field with a never-used id.
-- `cdk-glue-iceberg-table` ≥ 0.11.0: Glue `UpdateTable` reuses a history schema whose fields match
-  and keeps its identifier-field-ids, so an identifier-only change is dropped and the construct's
-  `(PK) ` doc marker is what carries the ids. A `fieldId`-only partition change is a no-op (a new
+- When an Iceberg table construct takes explicit top-level column ids and allocates nested ids by
+  counter, pin only top-level ids and verify nested ones by synth. A partition field id (≥ 1000) is
+  unique across the table's whole spec history: an untouched field keeps its id, any change makes a
+  new field with a never-used id.
+- Glue `UpdateTable` reuses a history schema whose fields match and keeps its identifier-field-ids,
+  so an identifier-only change is dropped; a construct carries the ids by changing the key columns'
+  docs too (a `(PK) ` doc marker). A partition change of the field id alone is a no-op (a new
   transform is applied), and a V2 to V3 `formatVersion` change updates the `format-version` property
   while the metadata stays 2.
 - A construct that promises files stay under one location rejects the Iceberg properties that

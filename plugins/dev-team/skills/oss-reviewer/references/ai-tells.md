@@ -154,7 +154,7 @@ Severity: HIGH. Configuration spread is the canonical "AI generated each file in
 
 - Direct instantiation of concrete classes where an interface would do (e.g. `PostgresBackend()`
   hardcoded in 5+ places instead of routing through an entry-point registry).
-- Cross-module imports that violate layering (e.g. `pag.connectors` importing from `pag.cli`).
+- Cross-module imports that violate layering (e.g. `<pkg>.connectors` importing from `<pkg>.cli`).
 - Hardcoded file paths (`/Users/...`, `C:\\Users\\...`) in source.
 
 Severity: HIGH. These create extension blockers that need big refactors to remove.
@@ -259,10 +259,8 @@ S3 bucket policy principal, IAM-grant target) — the deploy will fail for any o
 when it's behind a feature flag or unused branch. HIGH for an ARN buried in a default value with a
 clear `// override me` comment.
 
-Added by: oss-reviewer self-mutation on 2026-05-23 after observing `lib/arceus-stack.ts:57` —
-``new ArnPrincipal(`arn:${this.partition}:iam::${this.account}:user/rodrigo`)`` hardcoded into the
-Lake Formation admin list of a demo CDK stack whose README invites strangers to
-`cdk deploy ArceusStack`.
+Added by: oss-reviewer self-mutation after a demo CDK stack hardcoded its author's IAM user ARN into
+its Lake Formation admin list while its README invited strangers to deploy it.
 
 ### 4.13 "This is the description." placeholder strings (CRITICAL)
 
@@ -280,9 +278,8 @@ key).
 Severity: CRITICAL. The literal `'This is the description.'` shipping in a Glue `Database`
 description field is a documentation-equivalent slop: AI scaffolding the author forgot to fill in.
 
-Added by: oss-reviewer self-mutation on 2026-05-23 after observing `lib/arceus-stack.ts:214` —
-`description: 'This is the description.'` shipping as the live Glue database description on a
-public-facing demo stack.
+Added by: oss-reviewer self-mutation after a public demo stack shipped the literal "This is the
+description." as its live Glue database description.
 
 ### 4.14 Caller-ARN shell-parsing in quickstart (HIGH)
 
@@ -307,10 +304,9 @@ Severity: HIGH. Quickstart silently produces a wrong-but-plausible value, the do
 surfaces only at deploy time as a cryptic `Principal not found`. Flag whenever the one-liner is
 documented as a default and the README doesn't gate it on caller type.
 
-Added by: oss-reviewer self-mutation on 2026-05-23 after observing `README.md:55` —
-`DEVELOPER_IAM_USER="$(aws sts get-caller-identity --query Arn --output text | awk -F/ '{print $NF}')"`
-works for the author (IAM-user `rodrigo`) and would produce `session-name` for any SSO caller,
-silently breaking the LF deploy.
+Added by: oss-reviewer self-mutation after a README derived an IAM user name by slicing the caller
+ARN with awk; it worked for the author, an IAM user, and would yield the session name for any SSO
+caller, breaking the Lake Formation deploy.
 
 ### 4.15 Stale test-output transcript pasted into README (CRITICAL)
 
@@ -336,11 +332,9 @@ provably wrong); INFO if Phase 1 couldn't run the command and the transcript can
 fix is either to drop the numbers ("`npx jest` — see jest.config.js for the coverage floor") or
 replace the transcript with a CI badge whose value floats.
 
-Added by: oss-reviewer self-mutation on 2026-05-30 after observing `README.md:64` /
-`README.md:508-514` — claims `167 tests, 100% line coverage` and pastes a
-`Tests: 167 passed, 167 total / Statements: 100% (411/411) / Branches: 100% (146/146) / Lines: 100% (408/408)`
-transcript while Phase 1's `npx jest` reports `184 passed, 184 total / 479/479 / 223/223 / 477/477`.
-The jsii-compatible-types PR added 17 tests and the numbers were never updated.
+Added by: oss-reviewer self-mutation after a README claimed 167 tests and 100% line coverage, with a
+pasted transcript, while a fresh test run reported 184 tests; a PR had added 17 tests and nobody
+updated the numbers.
 
 ### 4.16 GitHub fragment URL pointing at a non-existent comment / review / commit ID (CRITICAL)
 
@@ -369,7 +363,7 @@ comments on the parent issue
 ID — its absence is the finding.
 
 Exclude: links whose surrounding prose explicitly names the parent issue/PR as the target (e.g. "see
-the discussion on aws/aws-cdk#29660" — no fragment); fragment IDs interpolated from a script
+the discussion on <owner>/<repo>#N" — no fragment); fragment IDs interpolated from a script
 (`#issuecomment-${ID}`).
 
 Severity: CRITICAL. The README prose makes a specific claim ("manmartgarc's comment documents the
@@ -377,11 +371,9 @@ only working shape") and the link delivers a different artifact (or nothing). A 
 link sees a 600-comment thread, not the claimed evidence, and the document silently loses
 credibility.
 
-Added by: oss-reviewer self-mutation on 2026-05-30 after observing `README.md:10` —
-`[\`manmartgarc\`'s comment](https://github.com/aws/aws-cdk/issues/29660#issuecomment-3243988858)`.
-`gh api repos/aws/aws-cdk/issues/comments/3243988858` returns 404; the actual manmartgarc comment on
-issue 29660 is id `4411359248`. The round-4 fix that introduced this permalink shipped pointing at a
-comment ID that does not exist.
+Added by: oss-reviewer self-mutation after a README linked a named commenter's comment on a public
+upstream issue by a comment id that returned 404; the commenter's real comment had a different id,
+and the fix round that introduced the permalink never opened it.
 
 ### 4.17 Lint script wired to a tsconfig that excludes lintable files (CRITICAL)
 
@@ -420,14 +412,10 @@ fails on first push. The fix is one of: widen `tsconfig.json` `include:` and use
 `tsconfig.build.json` for the publish path, OR add `tsconfig.eslint.json` whose `include:` covers
 everything lint walks, OR scope the lint script to the same directories the tsconfig covers.
 
-Added by: oss-reviewer self-mutation on 2026-05-30 after observing `tsconfig.json:30`
-(`"include": ["lib/iceberg/**/*.ts"]`) + `eslint.config.js:86` (`project: './tsconfig.json'`) +
-`package.json:39` (`"lint": "eslint . --ext .ts,.tsx ..."`) + `.github/workflows/ci.yml:19`
-(`- run: npm run lint`). `npm run lint` in the fresh clone errors out with 9 "TSConfig does not
-include this file" parse errors covering `bin/`, `lib/arceus-stack.ts`,
-`lib/iceberg-evolution-stack.ts`, and all 6 test files. The publishing commit narrowed the tsconfig
-for the build path but did not also narrow the lint script — and the CI workflow was added in the
-very next commit to invoke that lint script unconditionally.
+Added by: oss-reviewer self-mutation after a tsconfig narrowed to one source directory for
+publishing while ESLint's typed parser still pointed at it and the lint script walked the whole
+repo: a fresh clone's lint run failed with 9 parse errors covering the entry point, two stack files
+and all 6 test files, and the CI workflow added in the next commit ran that lint unconditionally.
 
 ### 4.18 README install command for a package that isn't on the registry yet (CRITICAL)
 
@@ -473,12 +461,9 @@ stages itself as a release candidate. The fix is either (a) publish the package,
 disclaimer ("0.1.0 will be published when [PR/issue] lands; meanwhile install from git"), or (c)
 defer adding the install block until the first tag is pushed.
 
-Added by: oss-reviewer self-mutation on 2026-05-30 after observing `README.md:24-28` —
-`npm install cdk-glue-iceberg-table` shipping as the headline install command while
-`https://registry.npmjs.org/cdk-glue-iceberg-table` returns 404 and the two shields.io badges in the
-header render "package not found". The publish workflow (`.github/workflows/publish.yml`) is wired
-to publish on `v*.*.*` tag push, but no tag has been cut yet — the README is written for the
-post-publish state while the package is still pre-publish.
+Added by: oss-reviewer self-mutation after a README's headline install command named a package the
+registry answered 404 for, with two badges rendering "package not found", because the publish
+workflow fires on a version tag and no tag had been cut.
 
 ### 4.19 Sycophancy + AI scratchpad markers in source (CRITICAL)
 
@@ -496,7 +481,7 @@ strings containing sample dialogue.
 Severity: CRITICAL. Near-zero false-positive rate. Sycophancy phrases are leftovers from a chat
 reply pasted into the wrong place; planning markers are the AI's literal scratchpad.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.20 Numbered-step narrative comments in implementation code (HIGH)
 
@@ -515,7 +500,7 @@ Exclude: tutorial code in `**/examples/**`, `**/docs/**`, README code blocks, fi
 Severity: HIGH. Humans break sequential logic into named functions; AI breaks it into numbered
 comments inside one function — the "disguised listicle" fingerprint.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.21 Status emojis in production print / log statements (HIGH)
 
@@ -532,7 +517,7 @@ banner code.
 Severity: HIGH. Production logs do not need rocket emojis. Tutorial-style print noise is a Claude /
 Cursor fingerprint.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.22 Test-suite anti-patterns (CRITICAL)
 
@@ -559,7 +544,7 @@ tests named `test_*_idempotent` / `test_*_deterministic`; tests that mock a help
 Severity: CRITICAL. Each shape produces false coverage that masks regressions and inflates the
 coverage signal.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.23 Manager / Helper / Service noun-suffix proliferation (HIGH)
 
@@ -580,7 +565,7 @@ members.
 Severity: HIGH. The "AI-Java" tic — wrap every operation in a noun-suffixed class. Senior engineers
 prefer free functions or domain-named modules.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.24 Comment-to-code ratio outlier in internal modules (HIGH)
 
@@ -601,9 +586,9 @@ Exclude: public API modules consumed downstream; `examples/` and `tutorials/`; e
 and `:raises:` lines a stack guide requires, subtracted from the comment count.
 
 Severity: HIGH. > 40% comments in internal code is the AI "explain every line" fingerprint. Industry
-catalogs consistently list over-commenting as the #1 LLM anti-pattern.
+catalogs consistently list over-commenting as the top LLM anti-pattern.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.25 Docstrings restating the function signature verbatim (HIGH)
 
@@ -629,7 +614,7 @@ type hint say everything.
 Severity: HIGH. Restated docstrings add zero information; the pattern signals docstrings were filled
 mechanically rather than by an author with intent.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.26 Identical multi-line file-header docstring template (HIGH)
 
@@ -647,7 +632,7 @@ convention).
 Severity: HIGH. Humans don't rubber-stamp every file with the same multi-line header. The residue of
 "run Claude across the folder to add docstrings everywhere."
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 Also counts: the same doc sentence on three or more helpers in one file; a two-file template pair
 restating a third file; four sibling item docs that differ by one word.
@@ -670,7 +655,7 @@ Exclude: scripts, CLI entry points, explicit `examples/` directory contents.
 Severity: INFO. The AI's "and here's how you'd use this" footer learned from blog posts. Not
 damaging but a tell.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.28 Single-use over-typed private helpers (INFO / HIGH at cluster)
 
@@ -688,7 +673,7 @@ require isolation); hot-path helpers in performance-critical modules.
 
 Severity: INFO per occurrence; HIGH when a single file has ≥3 such helpers.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.29 Prose tells, extended
 
@@ -762,7 +747,7 @@ Real OSS READMEs assume a peer-engineer reader.
 (?im)^#{1,4}\s+(why\s+[A-Z]\w*\??|what\s+is\s+[A-Z]\w*\??|the\s+(problem|solution|vision))\s*$
 ```
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.30 Language-specific tells
 
@@ -972,7 +957,7 @@ present in the tree. Severities and excludes vary per pattern.
 - **Per-target `.PHONY` (INFO).** ≥3 single-target `.PHONY: foo\nfoo:` pairs instead of one
   consolidated declaration.
 
-Added by: research synthesis on 2026-05-23.
+Added by: research synthesis.
 
 ### 4.31 In-repo consumer pin drifts behind parent package version (HIGH)
 
@@ -1017,13 +1002,9 @@ range and accept that the test runs against whatever the npm cache resolves, (c)
 to a workspace dep so it tracks source instead of the registry — at the cost of losing the
 "round-trip via npm" property.
 
-Added by: oss-reviewer self-mutation on 2026-05-30 after observing `e2e-consumer/package.json:12` —
-pins `cdk-glue-iceberg-table` at exact `0.1.3` while the root `package.json:3` declares
-`version: 0.1.7`. The e2e job is supposed to catch breakage in the **published** surface, but 4
-patch versions later it is silently testing a 4-release-stale shape against the latest source. The
-contract is documented in `README.md:79` ("depends on the **published** … version … proves that a
-fresh install … works") and the gap between the pin and the live version has not been raising the
-alarm the contract was meant to raise.
+Added by: oss-reviewer self-mutation after an e2e consumer package pinned the published library at a
+version four patches behind the root manifest, so the job meant to test the published surface tested
+a stale one while the README promised it proves a fresh install works.
 
 ### 4.32 Coverage-exclusion list outgrows the documented exclusion set (HIGH)
 
@@ -1066,13 +1047,10 @@ binds it. The underlying exclusion may still be a legitimate exemption (a zero-b
 wrapper exercised by an integration step is fine) — but the _doc drift_ is the finding, and the fix
 is to update the enumerated list in the same PR that widens the config.
 
-Added by: oss-reviewer self-mutation on 2026-06-04 after observing `packages/core/jest.config.js:29`
-— the diagrams PR adds `'!src/diagram/render.ts'` as a third `collectCoverageFrom` exclusion while
-`CLAUDE.md:82` still describes the gate as covering `src/**/*.ts` "(minus the CLI entry and the
-barrel)" — two exclusions. The render.ts exemption itself is sound (a 7-line zero-branch
-`await import('@hpcc-js/wasm-graphviz')` wrapper, exercised by the CI `self-validate` render step),
-but CLAUDE.md's own "update CLAUDE.md if the change touches … the coverage rule" policy was not
-honoured, so the documented exclusion list silently fell behind the config.
+Added by: oss-reviewer self-mutation after a PR added a third coverage exclusion while the repo's
+contributor doc still described the gate as having two exclusions, against the doc's own rule to
+update it when the coverage rule changes; the exempted file itself was a sound zero-branch wrapper
+exercised by CI.
 
 ### 4.33 Publish/install package name is squatted by an unrelated existing package (CRITICAL)
 
@@ -1082,9 +1060,9 @@ the registry (unpublished). This pattern is the _inverse and more dangerous_ cas
 resolves to **200** on the registry — but it's owned by _someone else_. §4.18's "404 = lie" rule
 passes it clean (200 looks published), yet two things are broken: (a) the release workflow's publish
 step will fail with `403 Forbidden / you do not have permission`, and (b) the README's
-`npm install -g <name>` / `pip install <name>` hands every user a _stranger's_ package — a 2015
+`npm install -g <name>` / `pip install <name>` hands every user a _stranger's_ package — an old
 stub, a typosquat, or an actively malicious drop — not this project. Short, generic, dictionary-word
-names (`fdd`, `dag`, `core`, `cli`) are the ones most likely already taken.
+names (`dag`, `core`, `cli`) are the ones most likely already taken.
 
 Detection rule: pull `name` from the root `package.json` / `setup.py` / `pyproject.toml` /
 `Cargo.toml` (the name the release workflow publishes, not just the README install string). Hit the
@@ -1121,18 +1099,16 @@ package). HIGH if the name appears only in an internal manifest with no publish 
 doc. The fix is to rename the package to an available name (scoped `@org/name`, or a distinct
 unclaimed name) before advertising any install command or wiring a publish workflow.
 
-Added by: oss-reviewer self-mutation on 2026-06-04 after observing `packages/core/package.json:2`
-(`"name": "fdd"`, version `0.3.0`) + `.github/workflows/release.yml:62`
-(`npm publish --access public`) + `README.md:26` (`npm install -g fdd`).
-`https://registry.npmjs.org/fdd` returns 200 — but it's an unrelated 2015 package
-(`description: "just for a test"`, maintainer `aowu`, latest `1.0.0`, created 2015-07-24, years
-before this repo). §4.18's 404-check passes it; the release pipeline's `npm publish` would 403, and
-`npm install -g fdd` installs the stranger's stub. The PyPI name `fdd` 404s (publishable but the
-Python README's headline `pip install fdd` has no "not yet published" disclaimer).
+Added by: oss-reviewer self-mutation after a monorepo's package manifest, release workflow and
+README install command all used a short name the registry already held: an unrelated package
+published years before the repo, with the description "just for a test" and latest version 1.0.0.
+The 404 check passes it, the release pipeline's publish would 403, and the install command installs
+the stranger's stub; the same name was free on PyPI, where the Python README's install line had no
+"not yet published" disclaimer.
 
 ### 4.34 Package/module rename leaves a stale path in a CI invocation (HIGH)
 
-A rename of a published package's import module / source directory (`src/fdd` → `src/flexdataset`,
+A rename of a published package's import module / source directory (`src/oldname` → `src/newname`,
 `pkg/old` → `pkg/new`) that updates the local dev scripts (`scripts/test.sh`, `Makefile`, `tox.ini`)
 but misses a _parallel_ invocation of the same tool in the CI workflow. The most damaging shape is a
 coverage flag still pointing at the old path: `pytest --cov=<old-module-path>` (or `--cov=<old>`,
@@ -1168,11 +1144,9 @@ collected) that looks like a coverage regression rather than a stale path, costi
 contributor a debugging session. The fix is to update the CI invocation in the same commit as the
 rename, or to derive the cov path from a single shared variable both the script and CI read.
 
-Added by: oss-reviewer self-mutation on 2026-06-04 after observing `.github/workflows/ci.yml:84`
-(`python3 -m pytest tests/ --cov=src/fdd --cov-fail-under=95`) while the `flexdataset` rename moved
-the module to `src/flexdataset` (the dir `src/fdd` no longer exists) and the local
-`packages/python/scripts/test.sh:5` was correctly updated to `--cov=src/flexdataset`. CI would
-collect 0% coverage against the dead `src/fdd` path and fail the 95% gate on every push.
+Added by: oss-reviewer self-mutation after a package rename updated the local test script's coverage
+path but not the CI workflow's, so CI would measure 0% coverage against a directory that no longer
+existed and fail the 95% gate on every push.
 
 ### 4.35 Runtime `__version__` / version constant drifts behind the manifest version on a version-bump PR (HIGH)
 
@@ -1202,10 +1176,9 @@ __version__\s*=\s*["']([0-9]+\.[0-9]+\.[0-9]+[^"']*)["']
 (?:const|let|var|public)?\s*VERSION\s*[:=]\s*["']([0-9]+\.[0-9]+\.[0-9]+[^"']*)["']
 ```
 
-Special case (added 2026-07-05, charmander PR #67): a version bump that touches no npm dependency
-forces no lock rewrite, so package-lock.json's TWO version fields silently stay behind the manifest
-— check them explicitly on every bump-only diff; `npm ci` exits 0 on the drift, so CI never flags
-it.
+Special case: a version bump that touches no npm dependency forces no lock rewrite, so
+package-lock.json's TWO version fields silently stay behind the manifest — check them explicitly on
+every bump-only diff; `npm ci` exits 0 on the drift, so CI never flags it.
 
 Exclude: projects where the runtime constant is _derived_ at build time from the manifest
 (`importlib.metadata.version(__name__)`, `pkg_resources.get_distribution`, a `setuptools_scm` /
@@ -1218,13 +1191,10 @@ the project's own lockstep history shows the bump is meant to be atomic); INFO i
 the PR and the PR doesn't touch versions. The fix is to bump the runtime constant in the same PR as
 the manifest, or better, derive it from the manifest so it cannot drift.
 
-Added by: oss-reviewer self-mutation on 2026-06-05 after observing PR #9
-(`feature/column-nullability`) on `ksco92/eevee`: the commit bumps `packages/python/setup.py:7`
-(`version="0.6.0"`), `packages/core/package.json:3`, and `packages/core/package-lock.json` to
-`0.6.0` but leaves `packages/python/src/flexdataset/__init__.py:7` at `__version__ = "0.5.0"`. Every
-prior release (0.3.0 → 0.5.0) moved `setup.py` `version=` and `__init__.py` `__version__` together;
-this PR is the first to drift them, so the published `flexdataset` wheel would report `0.5.0` at
-runtime while its PyPI metadata says `0.6.0`.
+Added by: oss-reviewer self-mutation after a monorepo PR bumped the Python setup file, the npm
+manifest and its lockfile to a new version but left the Python package's runtime version constant
+one release behind; every earlier release had moved the setup version and the constant together, so
+the published wheel would report the old version at runtime.
 
 ### 4.36 "DEFERRED" / "future PR" / "v2 lift" crumbs (CRITICAL)
 
@@ -1255,10 +1225,8 @@ one finding; file ONE finding per pattern per file even if the file has multiple
 count + the first file:line). The pattern is strong-signal — a single `# DEFERRED:` in a public API
 docstring tells a stranger the code is unfinished.
 
-Added by: oss-reviewer self-mutation on 2026-05-16 after observing `src/pag/engine/identity.py:167`,
-`src/pag/cli/init.py:198`, and a 16-instance spread across
-`src/pag/{engine,cli,storage,connectors}/` of `# DEFERRED:` / "future PR" / "v2 lift" markers in the
-pag review.
+Added by: oss-reviewer self-mutation after a Python CLI review found 16 deferral markers
+("DEFERRED", "future PR", "v2 lift") spread across the engine, CLI, storage and connector packages.
 
 Also match the §4.142 phrases ("implemented so far", "would be added the same way") and
 (case-insensitive):
@@ -1283,7 +1251,7 @@ matches OR identifier-rename-only matches are the finding.
 ^def\s+_\w+\(    # helper-style underscore-prefixed module-level def
 ```
 
-Then `grep -l "^def _admin_engine"` (or whatever helper-name) across the test tree; count hits.
+Then `grep -l "^def _create_test_db"` (or whatever helper-name) across the test tree; count hits.
 
 Exclude:
 
@@ -1293,25 +1261,23 @@ Exclude:
 
 Severity: HIGH at a threshold of >= 5 duplicated copies; INFO at 3-4. The threshold reflects the
 cost trade-off: extracting a helper is cheap; 5+ copies means the author wasn't reading their own
-test tree. Sharper variant at ANY count (added 2026-07-05, charmander PR #67): same-NAME private
-helpers across sibling modules with silently DIVERGENT edge-case contracts (one `_as_optional_float`
-raises on "", another returns None) — name implies contract; the divergence traps both readers and
-the eventual consolidation. HIGH regardless of copy count.
+test tree. Sharper variant at ANY count: same-NAME private helpers across sibling modules with
+silently DIVERGENT edge-case contracts (one `_as_optional_float` raises on "", another returns None)
+— name implies contract; the divergence traps both readers and the eventual consolidation. HIGH
+regardless of copy count.
 
-Added by: oss-reviewer self-mutation on 2026-05-16 after observing `_admin_engine` /
-`_create_fresh_db` / `_drop_db` duplicated identically across 11 test files in
-`tests/pag/storage/postgres/` and `tests/pag/skills/` in the pag review.
+Added by: oss-reviewer self-mutation after a Python CLI review found three database setup and
+teardown helpers duplicated identically across 11 test files of its storage and skills test
+packages.
 
 ### 4.38 Test reads user env for "default" assertions (CRITICAL)
-
-(Renumbered from a colliding "4.14" added by self-mutation on 2026-05-18.)
 
 Tests that assert a CLI's default value matches a string literal but DO NOT isolate the user
 environment first. The pattern:
 
 - The CLI under test reads `os.environ.get("FOO", "<default>")`.
 - The test asserts `result == "<default>"`.
-- The test fixture sets _some_ env vars (e.g. `PAG_HOME`) but forgets to
+- The test fixture sets _some_ env vars (e.g. `TOOL_HOME`) but forgets to
   `monkeypatch.delenv("FOO", raising=False)` for any OTHER env var the CLI also reads.
 - On the author's machine, `FOO` is unset, so the test passes.
 - On a contributor's machine where `FOO` IS set (often because the README told them to set it before
@@ -1322,7 +1288,7 @@ default-token strings, then audit the fixture for the matching `monkeypatch.dele
 asymmetry — fixture deletes one env var but not the sibling vars the CLI reads — is the smoking gun.
 
 ```
-monkeypatch\.setenv\(["'](PAG_HOME|XDG_\w+|HOME)
+monkeypatch\.setenv\(["'](\w+_HOME|XDG_\w+|HOME)
 ```
 
 Then for each match, check whether the SAME fixture also calls `monkeypatch.delenv` (or `setenv` to
@@ -1337,11 +1303,9 @@ own determinism — the README literally tells strangers to set the env var, the
 breaks because they did. This is the cleanest possible reproducer of "works on the author's
 machine."
 
-Added by: oss-reviewer self-mutation on 2026-05-18 after observing `tests/pag/cli/test_init.py`
-failing 4 tests on a stranger's machine because the `pag_home_dir` fixture sets `PAG_HOME` but not
-`DATABASE_URL` — and the README's quickstart literally tells users to set `DATABASE_URL` before
-running `pag init`. Tests asserted the URL equals the hardcoded default
-`postgresql+psycopg:///pag_dev`.
+Added by: oss-reviewer self-mutation after 4 CLI tests failed on a stranger's machine because their
+fixture set the tool's home variable but not the database URL the README's quickstart tells users to
+set, and the tests asserted the hardcoded default URL.
 
 ### 4.39 Linter-config excludes naming directories absent from the repo (INFO)
 
@@ -1365,9 +1329,9 @@ Severity: INFO. One stale entry is noise; three or more distinct project-specifi
 the author doesn't use, a `local_stuff/` from a different repo) show the config was pasted, not
 written.
 
-Added by: oss-reviewer self-mutation on 2026-07-03 after observing `.flake8:4-8` in charmander
-excluding `.idea`, `.run`, and `local_stuff` — none of which exist in the tree; the block is a
-byte-level carry-over from the pikachu project's setup.cfg the toolchain was ported from.
+Added by: oss-reviewer self-mutation after a flake8 config excluded three directories that did not
+exist in the tree, a byte-level carry-over from the setup file of the earlier project the toolchain
+was ported from.
 
 ### 4.40 Well-known fixtures type-annotated as `object` to satisfy an annotations linter (INFO)
 
@@ -1388,9 +1352,8 @@ avoid importing pytest types for typing-only use and document it.
 Severity: INFO per file; HIGH when the pattern covers every annotated fixture in the test tree (the
 suite's typing is uniformly decorative).
 
-Added by: oss-reviewer self-mutation on 2026-07-03 after observing
-`test_python/databases/gdelt/test_file_list.py:38` (`tmp_path: object`) across a charmander test
-file, with `str(tmp_path)` casts working around the opaque annotation.
+Added by: oss-reviewer self-mutation after a test file annotated the pytest temporary-path fixture
+as object and cast it to a string to work around the opaque annotation.
 
 ### 4.41 Per-partition dedupe presented as a global uniqueness guarantee (CRITICAL)
 
@@ -1426,10 +1389,9 @@ Severity: CRITICAL. The first load into an empty target masks it (insert path sk
 merge-cardinality checks), so the violation ships silently and detonates on the next incremental
 run.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing
-`src/charmander/databases/eodhd/news.py:314` — a per-partition `seen` set guarding a (title, symbol)
-primary key while cross-attribution made overlapping keys arrive in different partitions; live table
-held 5,052,858 rows but only 2,124,467 distinct pairs.
+Added by: oss-reviewer self-mutation after a per-partition seen set guarded a two-column primary key
+while cross-attribution sent overlapping keys to different partitions; the live table held 5,052,858
+rows but only 2,124,467 distinct pairs.
 
 ### 4.42 Auto-fixing lint script used as the CI gate (HIGH)
 
@@ -1452,10 +1414,8 @@ script being the gate); workflows that run the fixer and then `git diff --exit-c
 Severity: HIGH. The project claims an enforced style gate; the gate is decorative, which is the
 §4.17/§4.32 gate-integrity family in its most silent form.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing `package.json:31` in charmander
-(`"lint": "eslint . ... --max-warnings=0 --fix ..."`) invoked as the CI gate by
-`.github/workflows/ci.yml:24` — auto-fixable violations of the project's own 4-space/single-quote
-rules could never fail CI.
+Added by: oss-reviewer self-mutation after a lint script carrying the auto-fix flag was the CI gate,
+so violations of the project's own indentation and quote rules could never fail CI.
 
 ### 4.43 Constant-echo tests (INFO / HIGH at ≥3 per suite)
 
@@ -1479,10 +1439,9 @@ cross-constant consistency checks).
 
 Severity: INFO per instance; HIGH when ≥3 across the suite — systematic coverage padding.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing
-`test_python/utils/fred/test_fred_api.py:20-40` in charmander duplicating a 19-element `SERIES_IDS`
-list verbatim and asserting it equal, plus six more constant-echo sites across `test_news.py`,
-`test_events.py`, `test_api.py`, and `test_symbol_universe.py`.
+Added by: oss-reviewer self-mutation after a data-provider client's test duplicated a 19-element
+list of series ids verbatim and asserted it equal, with six more constant-echo sites across four
+other test files.
 
 ### 4.44 Predecessor-repo diff narration (HIGH / INFO)
 
@@ -1508,11 +1467,9 @@ Severity: HIGH when the narration replaces behavior documentation in an API docs
 template-stamped across ≥3 files; INFO for a file-header provenance note that accompanies real
 documentation.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing
-`src/charmander/databases/eodhd/news.py:202` ("the corrected paging math (the legacy code added a
-stray `+ 1`…)"), `src/charmander/utils/fred/api.py:25` ("ported verbatim from the source system"),
-and one provenance sentence stamped verbatim across six `lib/databases/**/*.json` model descriptions
-in charmander.
+Added by: oss-reviewer self-mutation after a job module's comment narrated "the corrected paging
+math" against legacy code, a client module said it was "ported verbatim from the source system", and
+one provenance sentence was stamped across six model descriptions.
 
 ### 4.45 Delivery-plan vocabulary in deployed resource descriptions (CRITICAL)
 
@@ -1536,9 +1493,9 @@ there; README roadmap sections explicitly headed as such.
 Severity: CRITICAL in shipped model/IaC files (matches §4.36); the fix is to describe what the
 resource contains NOW and put the plan in the tracker.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing `lib/databases/sec/sec.json:4` in
-charmander shipping "and, in later slices, the 8-K and Form 4 filing datasets" as the live Glue
-database description on a PR produced by a slice-decomposed agentic workflow.
+Added by: oss-reviewer self-mutation after a database model shipped "and, in later slices," two more
+datasets as its live Glue database description, in a PR produced by a slice-decomposed agentic
+workflow.
 
 ### 4.46 Sibling-target comment references a gate exclusion the diff just removed (HIGH)
 
@@ -1567,13 +1524,10 @@ Severity: HIGH. The code the trigger was gating (here, ~300 lines of new CLI arg
 logic) ships with zero coverage from the second gate while the comment insists the narrow scope is
 still deliberate.
 
-Added by: oss-reviewer self-mutation on 2026-08-31 after observing `Makefile:33-37` in onix: the
-`mutants` target's comment says onix-cli/src/main.rs is "the same logic-free shim excluded from
-`make coverage` above (see that target's comment)" and "widen back to `--workspace` once M5 gives
-the CLI real behavior plus its own tests" — while the `coverage` target's own comment three lines
-above (line 15-17) says the opposite: M5a already gave onix-cli real logic + tests and removed the
-coverage exclusion (confirmed at 100% lines). `mutants` is still scoped `-p onix-core` only; the
-trigger it names fired in this exact commit but the target was never widened.
+Added by: oss-reviewer self-mutation after a Rust workspace's Makefile comment on its mutation
+target still called the CLI crate a logic-free shim and promised to widen the scope once a milestone
+gave it behaviour, while the coverage target's comment three lines above said that milestone had
+shipped and its exclusion was gone; the mutation target stayed scoped to the core crate.
 
 ### 4.46 Closed-inventory doc table missed by a checklist-driven add (HIGH)
 
@@ -1595,10 +1549,9 @@ Severity: HIGH when the inventory is presented as complete (the reader counts N 
 has N+1 units); the durable fix is BOTH the missing row and adding the enumeration doc to the
 add-a-unit checklist.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #40 adding
-`sec.cik_map` with `scripts/run_all_etls.sh` and `row_counts_query.sql` dutifully updated (both
-named in CLAUDE.md's add-a-table checklist) while the README "Current datasets" table — not named in
-the checklist — gained no row.
+Added by: oss-reviewer self-mutation after a PR adding a table updated the run-all script and the
+row-count query its contributor checklist names, while the README's dataset table, which the
+checklist does not name, gained no row.
 
 ### 4.47 Inverted-semantics justification comment on a config choice (HIGH)
 
@@ -1610,16 +1563,15 @@ trusts the wrong mental model when changing the setting.
 
 Detection is structural, not grep-able: for every comment of the form "chose X because Y would
 <miss/break/capture/leak>...", verify the alternative's claimed behavior against the SDK docs or an
-empirical synth/run. Same family (added 2026-07-04, from charmander PR #55): extraction-shape tables
-mapping keys to named API operations where a named operation actually uses a different key —
-behavior often survives via coalesce/fallback, so only checking each key→operation claim against the
-API reference catches it (GetPartitions sends TableName, not name). Also in-family: relation-word
-claims about named helpers — "the exact inverse of / same as / mirror of <function>" — must be
-verified against the named function's actual direction; a relation-inverted claim restated in both
-source and PR body is near-certain generation residue (charmander PR #58: a same-direction transform
-documented as "the exact inverse"). Two instances of the same wrong claim in one PR (source + test
-restating it) is near-certain generation residue. Also in-family (added 2026-07-05, charmander PR
-#81): composite-key / dedupe rationales claiming a source "re-emits the same id across
+empirical synth/run. Same family: extraction-shape tables mapping keys to named API operations where
+a named operation actually uses a different key — behavior often survives via coalesce/fallback, so
+only checking each key→operation claim against the API reference catches it (GetPartitions sends
+TableName, not name). Also in-family: relation-word claims about named helpers — "the exact inverse
+of / same as / mirror of <function>" — must be verified against the named function's actual
+direction; a relation-inverted claim restated in both source and PR body is near-certain generation
+residue (seen: a same-direction transform documented as "the exact inverse"). Two instances of the
+same wrong claim in one PR (source + test restating it) is near-certain generation residue. Also
+in-family: composite-key / dedupe rationales claiming a source "re-emits the same id across
 streams/feeds" — probe real source ids before accepting; formats that namespace their streams (GDELT
 GKG translation ids all carry a "-T" sequence marker, so an id can never repeat across the two
 streams) make the claimed collision impossible, and the invented rationale tends to ship twice
@@ -1631,11 +1583,10 @@ behavior notes ("as of SDK vX, Y defaults to...") that were true when written.
 Severity: HIGH when the misdocumented setting is security- or data-capture-relevant (audit trails,
 encryption modes, event capture); INFO otherwise.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #41:
-`lib/cost-estimation.ts:167` justified CloudTrail `ReadWriteType.ALL` with "read-only would miss the
-per-table access counts entirely" (READ_ONLY captures GetTable reads; WRITE_ONLY is what would miss
-them), and `test/cost-estimation.test.ts:125` restated the same inversion ("renders no ReadWriteType
-override" — synth shows an explicit `ReadWriteType: "All"`).
+Added by: oss-reviewer self-mutation after a CDK cost-estimation stack justified CloudTrail's
+read-write type ALL by claiming read-only would miss per-table access counts (read-only captures
+those reads; write-only is what misses them), and its test restated the inversion while synth showed
+an explicit value.
 
 ### 4.48 Unfalsifiable downstream-invariant test (INFO / HIGH at cluster)
 
@@ -1656,14 +1607,13 @@ placement.
 
 Severity: INFO per instance; HIGH when ≥3 in a suite (systematic padding).
 
-Specialization (added 2026-07-04, from charmander PR #52): a dedupe/uniqueness test whose assertions
-read THROUGH a container keyed on the deduped column (`{row[pk]: row for row in df.collect()}` then
-asserting on the dict) — the container collapses duplicates itself, so the assertion passes even
-with the dedupe deleted. Require a count assertion (`df.count() == N`) for any uniqueness claim.
+Specialization: a dedupe/uniqueness test whose assertions read THROUGH a container keyed on the
+deduped column (`{row[pk]: row for row in df.collect()}` then asserting on the dict) — the container
+collapses duplicates itself, so the assertion passes even with the dedupe deleted. Require a count
+assertion (`df.count() == N`) for any uniqueness claim.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #46
-`test_eight_k_filings.py:413` asserting output accession uniqueness when `enforce_unique_accessions`
-raises on any duplicate before the DataFrame exists.
+Added by: oss-reviewer self-mutation after a test asserted output id uniqueness when the function
+under test already raised on any duplicate before the frame existed.
 
 ### 4.49 Inclusive-comparison early-stop at the source's pagination granularity (HIGH)
 
@@ -1684,10 +1634,9 @@ strictly-monotonic unique keys (no equal values to straddle).
 
 Severity: HIGH — silent, deterministic data loss at one specific value.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #46
-`eight_k_filings.py:265` stopping pagination when the recent block's oldest filing_date `<=` the
-2018-01-01 floor while EDGAR pages split by count, so same-day filings continuing on the next page
-would never be fetched.
+Added by: oss-reviewer self-mutation after a filings job stopped paging when the oldest filing date
+on a page reached its fixed floor date with an inclusive comparison, while EDGAR splits pages by
+count, so same-day filings continuing on the next page would never be fetched.
 
 ### 4.50 Tolerant coercer feeding a non-nullable schema slot (HIGH)
 
@@ -1709,36 +1658,33 @@ explicitly validate-and-raise with row context before the write.
 Severity: HIGH — a data-quality landmine that unit tests with well-formed fixtures never step on;
 CRITICAL in resumable batch pipelines (deterministic re-crash wedge).
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #47
-`form4_transactions.py`: `_parse_sec_date` → None stored by `build_submission_index` and emitted
-into `filing_date` declared `StructField(..., False)`, while
-ISSUERCIK/ACCESSION_NUMBER/NONDERIV_TRANS_SK all got skip-guards.
+Added by: oss-reviewer self-mutation after a filings job's date parser returned None into a
+filing-date column declared non-nullable, while three sibling key fields all got skip-guards.
 
 ### 4.51 Wrong-domain proper noun in a stamped model description (CRITICAL)
 
 A new data-model/resource description containing a proper noun from a SIBLING domain that cannot
-apply — "the SEC-unique event_id" on a CloudTrail table, "the EODHD sentiment payload" on a weather
-table. Near-proof of cross-dataset template stamping: the author copied a sibling model's
+apply — "the <SourceA>-unique event_id" on a CloudTrail table, "the <SourceB> sentiment payload" on
+a weather table. Near-proof of cross-dataset template stamping: the author copied a sibling model's
 description shape and the domain qualifier rode along. The factually-garbled sentence deploys
 verbatim into live catalog metadata.
 
 ```
 # grep each new model/description for sibling-domain tokens outside their home dir,
-# e.g. in a lake with sec/, eodhd/, fred/, gdelt/, misc/ domains:
-(SEC|EDGAR|EODHD|FRED|GDELT)[- ](unique|assigned|provided|sourced)
+# e.g. in a lake with one domain directory per source (<source-a>/, <source-b>/, misc/):
+(<SOURCE_A>|<SOURCE_B>)[- ](unique|assigned|provided|sourced)
 ```
 
 Generalize per repo: build the token list from the repo's own domain/dataset names and flag any
 appearance outside that domain's directory.
 
-Exclude: genuine cross-references ("joins to sec.cik_map on cik") — the tell is the noun used as the
-AUTHORITY/qualifier for the wrong domain's identifier, not a join note.
+Exclude: genuine cross-references ("joins to <db>.<table> on <key>") — the tell is the noun used as
+the AUTHORITY/qualifier for the wrong domain's identifier, not a join note.
 
 Severity: CRITICAL in deployed descriptions (a lie in live metadata); HIGH in code comments.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #52
-`lib/databases/ops/cloudtrail_events.json:4` describing CloudTrail's eventID as "the SEC-unique
-event_id (a UUID)" — stamped from the sec/ sibling models.
+Added by: oss-reviewer self-mutation after a CloudTrail table's model described its event id as
+unique to another source domain, stamped from that sibling domain's models.
 
 ### 4.52 Phantom-successor doc on a deletion (HIGH)
 
@@ -1760,10 +1706,9 @@ contents).
 
 Severity: HIGH — deleted capability + dangling doc is a double loss that coverage gates cannot see.
 
-Added by: oss-reviewer self-mutation on 2026-07-04 after observing charmander PR #52: three files
-referencing "a downstream view [that] turns the per-table Glue request counts into the final cost
-estimate" while the deleted cost_estimate_query.sql's COALESCE extraction and unit prices existed
-nowhere else in the tree (successor was a queued issue, not a view).
+Added by: oss-reviewer self-mutation after three files of a PR referred to a downstream view that
+turns per-table Glue request counts into the final cost estimate, while the deleted query that held
+the extraction and unit prices existed nowhere else and its successor was only a queued issue.
 
 ### 4.53 Conjoined-subject overclaim in provenance comments (HIGH)
 
@@ -1786,10 +1731,9 @@ verify the shared origin exists).
 Severity: HIGH — a factual claim about code that is wrong for at least one named subject; CRITICAL
 if it ships in deployed resource metadata.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after observing charmander PR #58
-`features_edgar.sql:20-23` claiming eight_k_filings AND form4_transactions "each carry a
-REPRESENTATIVE ticker … only the lexicographically first S&P member ticker" — true for 8-K's
-build_universe, false for form4's read_cik_symbol_map (no S&P filter, lowest cik_map symbol).
+Added by: oss-reviewer self-mutation after a feature query's comment claimed two filing tables each
+carry only the lexicographically first index-member ticker, true for one table's universe builder
+and false for the other's symbol-map reader.
 
 ### 4.54 Parent-scope deployed description falsified by an artifact-adding PR (HIGH)
 
@@ -1811,10 +1755,9 @@ claim.
 Severity: HIGH (deploys as live metadata); pin the parent description in a test where the repo pins
 such strings, so the next addition fails loudly.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after the same shape fired in TWO sibling
-charmander PRs in one pass: #63 (gdelt.json still enumerating "file_list plus events" while
-org_aliases arrives, eodhd-derived) and #64 (misc.json claiming "no specific external source" while
-geomagnetic/sunspots each have exactly one).
+Added by: oss-reviewer self-mutation after the same shape fired in two sibling PRs in one pass: a
+source domain's description still listed its two original tables while a third arrived, and a misc
+domain's description claimed "no specific external source" while two of its tables each had one.
 
 ### 4.55 Wide-range job validated only inside the dependency's comfortable sub-range (BLOCKER-class)
 
@@ -1836,10 +1779,9 @@ edge behavior is explicitly documented and asserted.
 Severity: BLOCKER-class when the crash/degradation is reproducible at the range edge; HIGH when
 merely unproven.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PR #65: misc.market_holidays
-declared 1900-2060, all real-calendar tests used post-2000 windows, the get_data_frame test mocked
-the loader — and the real build crashed on its first row (zero rule-derived holidays pre-1970 due to
-the pandas clip).
+Added by: oss-reviewer self-mutation after a holidays table declared 1900 to 2060, its real-calendar
+tests used post-2000 windows and the assembly test mocked the loader, and the real build crashed on
+its first row because pandas holiday rules yield nothing before 1970.
 
 ### 4.56 Source-gap rationalized as source honesty (HIGH; §4.47 sub-family)
 
@@ -1858,9 +1800,9 @@ Exclude: gap explanations backed by a citation to the source's own documentation
 
 Severity: HIGH; CRITICAL when the rationalization ships in deployed metadata.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PR #65 shipped "its historical
-record differs from the modern holiday set" (docstring + model description + PR body) for absences
-caused entirely by the pandas 1970 rule clip.
+Added by: oss-reviewer self-mutation after a PR explained absences in derived holiday data as the
+source's historical record differing from the modern set, in a docstring, a model description and
+its body, when the pandas 1970 rule clip caused all of them.
 
 ### 4.57 Missing-object status and retention window never probed on a file-per-period feed (BLOCKER-class)
 
@@ -1869,8 +1811,8 @@ that success-case probes never touch: (a) WHAT STATUS a missing period returns �
 S3/CloudFront-backed feeds without ListBucket return **403 AccessDenied**, not 404, for absent keys,
 so a 404-only skip branch is unreachable and the first holiday kills the job; (b) the endpoint's
 RETENTION WINDOW — the feed's documented history start is not the CDN's rolling retention, so a
-hardcoded floor can 403 on request #1, and an anti-join resume cursor turns permanently-missing
-periods into an every-run re-fetch treadmill.
+hardcoded floor can 403 on the first request, and an anti-join resume cursor turns
+permanently-missing periods into an every-run re-fetch treadmill.
 
 Detection: for any such job, demand probe evidence for BOTH a known-missing period (a
 holiday/weekend — what status?) and the declared floor date itself (does it serve?). Mocks/tests
@@ -1882,8 +1824,8 @@ evidence.
 
 Severity: BLOCKER-class — the job is dead on arrival or silently wedged, with green gates.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PR #66: FINRA's CDN 403s on five
-probed holidays + a Sunday and on the declared 2009-08-03 floor (served window starts ~2018-Q3); the
+Added by: oss-reviewer self-mutation after a market-data vendor's CDN returned 403 for five probed
+holidays, a Sunday and the declared floor date (the served window started around 2018), while the
 code skipped only 404 and a test enshrined crash-on-403.
 
 ### 4.58 "UTC" claimed in deployed metadata for a local-clock stamp (HIGH)
@@ -1909,9 +1851,9 @@ Exclude: descriptions saying "local run date"; code on hosts pinned to UTC by do
 
 Severity: HIGH (deployed-contract-vs-implementation drift).
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PR #67 (`earnings_trends.py`
-`date.today()` vs "UTC date this row was ingested"), the same class the ops.cost_estimates review
-had just enforced correctly.
+Added by: oss-reviewer self-mutation after a job stamped the local date (not UTC) into a column its
+deployed description called the UTC ingestion date, the same class a cost-table review had just
+enforced.
 
 ### 4.59 Probe evidence gathered with a different HTTP client than production (HIGH; §4.55 sibling)
 
@@ -1933,9 +1875,9 @@ sources verified to ignore UA/headers.
 Severity: HIGH — and BLOCKER-class when combined with a skip-on-4xx path, because the blanket
 rejection then reads as "everything absent" instead of crashing.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after charmander PR #66's first live run:
-cdn.finra.org serves curl (all review probes) but 403s the default Python-urllib UA (the job), so
-floor discovery read the whole window as absent.
+Added by: oss-reviewer self-mutation after a job's first live run: the vendor's CDN served curl,
+which every review probe used, but returned 403 to Python's default urllib user agent, which the job
+used, so floor discovery read the whole window as absent.
 
 ### 4.60 Sizing rationale contradicted by the PR's own pinned sample (HIGH)
 
@@ -1968,26 +1910,24 @@ transfer, commit size) and the next tuner inherits fake numbers; escalate when t
 at the range edge plausibly breaks the runtime (driver/worker memory), since green unit tests never
 touch real payload sizes.
 
-Added by: oss-reviewer self-mutation on 2026-07-05 after observing charmander PR #81
-`gkg_org_hits.py:41-49` justifying BATCH_FILE_COUNT=500 with "~3MB (English) to ~7MB (translated)"
-GKG archives, "sub-MB" exports, and "comparable to the ~2-3GB gdelt.events targets": live probes
-read English GKG 5.4-13.4MB and translated 6.7-29.4MB (2018 backfill edge largest, so a 500-file
-batch is ~4-10GB, not ~2GB), events batches ~0.4-1.2GB (not 2-3GB), and the PR's own pinned sample
-(20231215120000.gkg.csv.zip, claimed ~2.7-3.2MB) is 6.05MB.
+Added by: oss-reviewer self-mutation after a job sized a 500-file batch from claimed archive sizes
+of about 3 to 7 MB and events batches of 2 to 3 GB; live probes read 5.4 to 13.4 MB and 6.7 to 29.4
+MB archives (a batch of about 4 to 10 GB), events batches of 0.4 to 1.2 GB, and the PR's own pinned
+sample, claimed at about 3 MB, was 6.05 MB.
 
 ### 4.61 LEFT-JOIN-fed column declared non-nullable against repo's own nullable convention (HIGH; §4.50 sibling)
 
 A model/schema file declares columns populated by a SQL `LEFT JOIN` from a secondary source as
-non-nullable (`"nullable": false` in an eevee/FDD-style table model, `NOT NULL` in a DDL, a
-Iceberg/Avro `required` field) while every structurally-equivalent sibling table in the same repo —
-one whose columns are populated the same way, via a `LEFT JOIN` onto a source that "usually" matches
-— marks the analogous columns nullable. The repo has already converged on a house convention (LEFT
-JOIN ⇒ nullable, with `IsComplete`/DQ-style checks doing the "should always be present" enforcement
-instead of a hard schema constraint) and this one table silently breaks it. The generalization of
-§4.50: instead of a Python coercer returning `None` into a non-nullable slot, the source of the
-potential null is a JOIN the code's own comments describe as deliberately defensive ("kept 1:1 even
-if the upstream guarantee ever changes") — meaning the author already knows a null is reachable, and
-the schema declaration contradicts that stated intent. If the PR's own test suite exercises the
+non-nullable (`"nullable": false` in a JSON table model, `NOT NULL` in a DDL, an Iceberg/Avro
+`required` field) while every structurally-equivalent sibling table in the same repo — one whose
+columns are populated the same way, via a `LEFT JOIN` onto a source that "usually" matches — marks
+the analogous columns nullable. The repo has already converged on a house convention (LEFT JOIN ⇒
+nullable, with `IsComplete`/DQ-style checks doing the "should always be present" enforcement instead
+of a hard schema constraint) and this one table silently breaks it. The generalization of §4.50:
+instead of a Python coercer returning `None` into a non-nullable slot, the source of the potential
+null is a JOIN the code's own comments describe as deliberately defensive ("kept 1:1 even if the
+upstream guarantee ever changes") — meaning the author already knows a null is reachable, and the
+schema declaration contradicts that stated intent. If the PR's own test suite exercises the
 join-miss path and asserts NULL values reach that exact column, the contradiction is self-proven,
 not speculative.
 
@@ -2019,15 +1959,10 @@ ever relaxed, and an internal inconsistency the PR should resolve one way or the
 nullable and rely on the DQ completeness check, or drop the LEFT JOIN and inner-join to match the
 non-nullable claim).
 
-Added by: oss-reviewer self-mutation on 2026-07-16 after observing
-`lib/databases/features_v2/price.json` (charmander PR #363) marking `open`, `high`, `low`, `close`,
-`adjusted_close`, `volume` — all populated via a `LEFT JOIN` onto `eodhd.historical_prices` — as
-`nullable: false`, while `price.sql`'s own comment says the LEFT JOIN "keeps this table 1:1 with the
-anchor even if that guarantee ever changes," and
-`test_price.py::test_an_anchor_row_without_a_bar_is_kept_with_null_values` asserts all six columns
-are NULL for an anchor row with no matching bar. Every structurally-equivalent LEFT-JOIN-fed table
-in the repo (`features/features_all.json`, `features/features_calendar.json`, etc.) marks the
-analogous columns nullable.
+Added by: oss-reviewer self-mutation after a feature table model marked six price columns
+non-nullable although a LEFT JOIN onto a prices table fills them, while its query's comment said the
+join keeps the table one-to-one with the anchor, its test asserted all six are NULL for an anchor
+row with no match, and every sibling LEFT-JOIN-fed table marked them nullable.
 
 ### 4.62 Fabricated specific-date citation in a "verified via archived snapshot" lag/schedule rationale (HIGH; §4.47 sibling)
 
@@ -2063,13 +1998,10 @@ the next such comment's fabricated example may be the one that sized the constan
 leak. Escalate to CRITICAL if the fabricated citation's implied lag exceeds the chosen constant (a
 leak this run).
 
-Added by: oss-reviewer self-mutation on 2026-07-16 after observing
-`src/charmander/queries/features_v2/macro.sql:61-62` (charmander PR #373) citing "Final Jan 2020 by
-Feb 2" as an archived sca.isr.umich.edu snapshot justifying UMCSENT's 31-day lag, alongside a
-correct sibling citation ("Final Mar 2023 on Mar 31"); independent sources (advisorperspectives.com,
-Nasdaq coverage) confirm the actual Jan 2020 Final reading released Jan 31, 2020 — within the same
-reference month as the comment's own stated rule — and the Feb 2 date does not correspond to any
-real event.
+Added by: oss-reviewer self-mutation after a feature query's comment cited "Final Jan 2020 by Feb 2"
+from an archived snapshot of the University of Michigan sentiment survey's schedule to justify a
+31-day lag, beside a correct second citation; independent sources put the January 2020 final reading
+on January 31, 2020, and no February 2 release happened.
 
 ### 4.63 Prose comparison claim on a metric the results table marks non-comparable (HIGH)
 
@@ -2094,32 +2026,28 @@ the same row. A hit is the finding.
 
 Exclude: prose comparisons phrased entirely in terms of the candidate's own absolute value with no
 explicit "vs incumbent" framing; tables where the n/a is later resolved by a companion scaled column
-that IS what the prose comparison actually uses (the correct pattern, e.g. a `long_short` column
-marked n/a while `ls/wk` carries the real comparison).
+that IS what the prose comparison actually uses (the correct pattern, e.g. a `raw_spread` column
+marked n/a while `scaled_spread` carries the real comparison).
 
 Severity: HIGH — the same document already demonstrates it knows how to fix this (a sibling metric
 got the horizon-normalization treatment) but skipped it for this metric, so the flagged comparison
 compares a longer-horizon number to a shorter-horizon baseline and calls it a "beat."
 
-Added by: oss-reviewer self-mutation on 2026-07-17 after observing `docs/model-experiments.md`
-(charmander PR #382) marking the weekly incumbent's decile-spread cell "n/a" in the features_v2 GRU
-comparison table — for the same horizon-mismatch reason the doc's own `ls/wk` column exists to fix
-for long-short — while the "Honest verdict" prose two paragraphs later asserts the GRU "beats it ...
-on hit and decile," implicitly comparing the GRU's 21-day-horizon decile spread (0.0041) against the
-incumbent's un-scaled 5-day-horizon decile spread (0.0012, from this same file's original bake-off
-table) with no like-for-like normalization.
+Added by: oss-reviewer self-mutation after a results doc marked the weekly incumbent's decile-spread
+cell "n/a" for a horizon mismatch its own weekly-scaled column exists to fix, while its verdict two
+paragraphs later said the candidate model beats it on decile, comparing a 21-day spread (0.0041) to
+an unscaled 5-day one (0.0012).
 
 ### 4.64 Column-level semantic edit not propagated to the file's own top-level description (HIGH)
 
 A PR changes a column's documented NULL/value semantics (adds a new state, e.g. "NULL when every
 source row's amount is unknown") in its per-column `description`, but the same model/schema file's
-own top-level `description` — which summarizes the same block and, for eevee/FDD-style table models,
-deploys verbatim as the live Glue table comment (or an equivalent catalog/OpenAPI/GraphQL summary) —
-is left as it was, still describing only the prior (simpler) semantics. Both fields sit in the
-touched file, so a file-scoped diff review sees the edit; the drift survives only because reviewers
-read the column docs and skip re-reading the table-level prose the diff didn't touch. §4.54's
-parent-scope drift moved one level down: same file, sibling description fields, no parent hop
-required.
+own top-level `description` — which summarizes the same block and, in a JSON table model, deploys
+verbatim as the live Glue table comment (or an equivalent catalog/OpenAPI/GraphQL summary) — is left
+as it was, still describing only the prior (simpler) semantics. Both fields sit in the touched file,
+so a file-scoped diff review sees the edit; the drift survives only because reviewers read the
+column docs and skip re-reading the table-level prose the diff didn't touch. §4.54's parent-scope
+drift moved one level down: same file, sibling description fields, no parent hop required.
 
 Detection: for any diff that edits a column's `description` field in a table/schema model
 (`lib/databases/**/*.json`, OpenAPI `properties.*.description`, GraphQL field docs, protobuf field
@@ -2132,17 +2060,12 @@ Exclude: top-level descriptions written categorically ("counts and amounts, see 
 own NULL/zero convention") that make no falsifiable claim about the changed column.
 
 Severity: HIGH when the top-level field deploys as live catalog/API metadata (per repo convention,
-e.g. `eevee-to-iceberg.ts`'s `comment: definition.description` on a Glue table); INFO when it's
-purely a repo-internal doc string with no deploy path.
+e.g. a model-to-Iceberg converter's `comment: definition.description` on a Glue table); INFO when
+it's purely a repo-internal doc string with no deploy path.
 
-Added by: oss-reviewer self-mutation on 2026-07-17 after observing charmander PR #394
-(`fix/384-government-null-amounts`): `lib/databases/features_v2/government.json`'s
-`gov_contract_amount` / `lobbying_amount` column descriptions were rewritten to state a new
-three-state NULL semantics (NULL when every award/filing amount on a day is unknown, distinct from
-the pre-existing floor-NULL and zero-fill states), while the file's own top-level table
-`description` — which `eevee-to-iceberg.ts:347` deploys as the Glue table's `comment` — still reads
-"award count and total obligated amount, which may be negative..." / "total reported spend and
-distinct registrants," with no mention of the new NULL case.
+Added by: oss-reviewer self-mutation after a PR rewrote two amount columns' descriptions to state a
+new three-state NULL meaning while the same model's table-level description, which deploys as the
+Glue table comment, still described only the earlier meaning.
 
 ### 4.65 Categorical grouping silently drops records whose reference fails a lookup the same module enforces loudly elsewhere (HIGH)
 
@@ -2159,7 +2082,7 @@ through one code path and silently dropped when it flows through another — the
 Detection: for each function that iterates a known category list and filters children into it
 (`[x for x in items if x[field] == category]` inside a `for category in known_categories` loop),
 find the sibling function(s) in the same module that resolve `field`'s value type into a category
-index (a `book_index`/`_resolve`-style raise-on-miss helper). If the grouping function does NOT call
+index (a `name_index`/`_resolve`-style raise-on-miss helper). If the grouping function does NOT call
 that helper (or something equivalent) before or during filtering, the finding is confirmed. Verify
 empirically: construct a record naming a nonexistent category and confirm the projection's output is
 silent (no exception, no diagnostic line) rather than raising or emitting an "N unassigned records"
@@ -2179,14 +2102,11 @@ document with no trace, so whoever audits the rendered output has no way to know
 silently excluded; escalate to CRITICAL if the same drop can also mask a security-relevant reference
 an authorization check groups by.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing `src/grimer/universe.py:754`
-(`grimer` PR #12): `_timeline_content` groups events into per-book sections via
-`event["chapter"]["book"] == book["name"]` with no fallback bucket, while the sibling
-`_latest_status`/`_entity_section` path resolves the identical `{book, chapter}` shape through
-`time_ref_key` -> `book_index`, which raises `GraphError` on an unknown book. An event whose
-`chapter.book` names a book absent from the registry silently disappears from `timeline.md` with no
-error, confirmed empirically (`_timeline_content` run on a graph with one such event renders zero
-lines about it).
+Added by: oss-reviewer self-mutation after a Python CLI's timeline renderer grouped events into
+per-book sections by comparing names with no fallback bucket, while a sibling path resolved the same
+reference through an index helper that raises on an unknown book; an event naming an unregistered
+book vanished from the rendered timeline with no error, confirmed by running the renderer on such a
+graph.
 
 ### 4.65 "Learned it the hard way" corrective paragraph contradicts its own lead-in (HIGH)
 
@@ -2221,16 +2141,11 @@ Severity: HIGH. The reader who stops after the first paragraph gets false inform
 where/how the mechanism lives, and it will mislead the next engineer editing sibling code under the
 wrong assumption about the host view, size, or a modifier they believe is present.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing `CLAUDE.md:1185-1214` (Seedling
-PR #329, `fix/326-consecutive-day-age-collapse`) opening with "a hidden 1×1-pt DEBUG button
-(`seed-river-button`) in `ContentView`'s bottom-trailing corner," then two paragraphs later under
-"Invisible-but-tappable button pattern (learned the hard way)" stating the actual button is a 44×44
-`Color.clear` view mounted via `.overlay(alignment: .bottom)` on `KidsListView` (the sidebar),
-explicitly NOT `ContentView` — three facts (host view, size, alignment) all contradicted. Confirmed
-against `Seedling/KidsListView.swift`'s actual `riverSeedButton` implementation, whose own
-doc-comment compounds the error by claiming it carries `.contentShape(Rectangle())` (mirroring the
-project's sibling 1×1pt debug buttons) when no such modifier is applied anywhere in the `Button`
-chain.
+Added by: oss-reviewer self-mutation after an iOS app's contributor doc opened by describing a
+hidden 1×1-pt debug button in the main view's corner, then two paragraphs later, under "learned the
+hard way", stated it is a 44×44 clear view overlaid on the sidebar, contradicting host view, size
+and alignment; the button's own doc comment also claimed a content-shape modifier the code never
+applies.
 
 ### 4.66 Cross-module import of underscore-prefixed "private" helpers (HIGH)
 
@@ -2262,12 +2177,10 @@ maintainer has no signal that "private" helpers are load-bearing for another mod
 rename, signature change, or deletion there breaks the importer silently until its own test suite
 (if any) catches it.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing `src/grimer/universe.py:18-22`
-(grimer PR #14) importing five leading-underscore functions (`_find_active_relationship`,
-`_validate_added_entities`, `_validate_events`, `_validate_relationships`, `_validate_updates`) from
-`graph.py` to reuse v1 delta-validation logic for the v2 schema — a deliberate, well-documented DRY
-trade-off, but one that leaves `graph.py`'s "private" helpers load-bearing for `universe.py` with no
-signal from Python's normal privacy convention.
+Added by: oss-reviewer self-mutation after a Python CLI module imported five underscore-prefixed
+validation functions from a sibling module to reuse version-1 logic for a version-2 schema, a
+documented trade-off that left the sibling's private helpers load-bearing with no signal from
+Python's privacy convention.
 
 ### 4.67 New marker/state written by one command, but sibling commands reading the same file are never taught to expect it (CRITICAL)
 
@@ -2306,25 +2219,19 @@ Severity: CRITICAL. The crash surfaces as a raw traceback on ordinary, previousl
 controlled error exit code, and the PR's own extensive new test suite gives zero signal that the gap
 exists — every new test only exercises the write/re-read pair the author was thinking about.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing grimer PR #16: `migrate` replaces
-a migrated book's `graph/graph.json` with `{"migrated_to": "<universe>"}`
-(`universe.mark_book_migrated`, `src/grimer/universe.py:706-718`) and `load_migratable_graph`
-correctly rejects a second `migrate` against that marker. But `check`, `render`, `apply`, and the
-standalone `query` path (`src/grimer/cli.py` `_run_command`/`_run_query`) all call the unchanged
-`graphlib.load_graph` on the same path and then destructure `graph["entities"]` directly, so running
-any of them against a just-migrated book raises an uncaught `KeyError: 'entities'` with a full
-Python traceback and exit code 1 — verified by manually migrating a book and then running all four
-commands against it. None of the 13 new migrate-focused tests in `test_cli.py`/`test_universe.py`
-exercise a sibling command against a migrated book, so 100% coverage and all-green CI shipped
-alongside the gap.
+Added by: oss-reviewer self-mutation after a Python CLI's migrate command replaced a migrated book's
+graph file with a marker that only the migrate path learned to read, while four sibling commands
+still loaded the file and indexed its entities, so each crashed with a missing-key traceback on a
+migrated book, verified by running all four; none of the 13 new tests ran a sibling command against
+a migrated book.
 
 ### 4.68 Positional argument grows a second dispatch meaning that the README never learns (HIGH)
 
-A CLI command's positional argument (a "book" name, a "target" name, an "id") is extended to also
+A CLI command's positional argument (a "project" name, a "target" name, an "id") is extended to also
 resolve to a second kind of resource via a runtime probe (a sibling registry file existing, a type
 tag, a different directory root) — `argparse` `help=` text for the argument is dutifully updated to
-describe both meanings ("Book directory name, or a universe name if one is registered under
-`--universes-root`"), and the new dispatch path gets full test coverage. But the README's own CLI
+describe both meanings ("Project directory name, or a workspace name if one is registered under
+`--workspaces-root`"), and the new dispatch path gets full test coverage. But the README's own CLI
 reference table, which already lists that command with its original one-line description, is never
 revisited — so a reader who only reads the README (the documented public entry point) has no way to
 discover the command now does something entirely different depending on what name they pass. This is
@@ -2335,10 +2242,10 @@ command table drifts further behind the argparse help text with every release.
 
 Detection rule: for each subcommand in the CLI's argument parser, extract its positional `help=`
 string. If the help string names two distinct resolution modes (look for `" or "`, `"otherwise"`,
-`"takes precedence"`, "in universe mode" phrasing) but the README's corresponding usage-block line
+`"takes precedence"`, "in workspace mode" phrasing) but the README's corresponding usage-block line
 for that same command is a single-purpose one-liner with no mention of the second mode, that's the
-finding. Cross-check by grepping the README for the second mode's keyword (e.g. `universe`) near the
-command's usage line.
+finding. Cross-check by grepping the README for the second mode's keyword (e.g. `workspace`) near
+the command's usage line.
 
 ```
 # argparse help text signals dual dispatch
@@ -2359,15 +2266,14 @@ discover the mode their actual use case needs.
 ### 4.69 Truncated placeholder identifier in a doc comment that resolves to nothing (INFO)
 
 A doc comment or docstring points the reader at a symbol using an ellipsis-truncated,
-tentative-looking name — `` `SubMonthAll...` tests``, ``see the `Foo...` helper below`` — that never
+tentative-looking name — `` `ShortRange...` tests``, ``see the `Foo...` helper below`` — that never
 actually exists anywhere in the file or repo under that prefix. The real, finished identifier ended
-up named something else entirely (e.g. the test method is actually
-`testYoungBabyAllViewUsesDaySuffixInsteadOfZeroMonth`), but a comment written earlier in the same
-editing session — before the name was finalized — was never swept back to match. Harmless
-functionally (nothing dereferences the name), but it sends the next reader searching the file for a
-symbol that isn't there, and it's a distinctive fingerprint of draft-then-rename authoring: a human
-polishing their own comment before committing rarely leaves a "..." stand-in for a name they were
-about to type anyway.
+up named something else entirely (e.g. the test method is actually `testLabelUsesShortSuffix`), but
+a comment written earlier in the same editing session — before the name was finalized — was never
+swept back to match. Harmless functionally (nothing dereferences the name), but it sends the next
+reader searching the file for a symbol that isn't there, and it's a distinctive fingerprint of
+draft-then-rename authoring: a human polishing their own comment before committing rarely leaves a
+"..." stand-in for a name they were about to type anyway.
 
 Detection: grep doc comments for a backtick-quoted CamelCase-ish token immediately followed by an
 ellipsis, then verify no declaration in the file (or repo) starts with that prefix.
@@ -2386,19 +2292,13 @@ specific symbol (e.g. "any test prefixed `Foo...` counts", stated as a rule rath
 Severity: INFO. Cosmetic doc drift, zero runtime impact — but real, and cheap to fix (rename the
 comment to match the actual symbol).
 
-Added by: oss-reviewer self-mutation on 2026-07-23 after observing Seedling PR #331:
-`ChartXAxisUnitLabelsUITests.swift`'s file-header comment reads "see the `SubMonthAll...` tests at
-the bottom of this file," but the only test added is
-`testYoungBabyAllViewUsesDaySuffixInsteadOfZeroMonth` — no symbol anywhere in the repo starts with
-`SubMonthAll`.
+Added by: oss-reviewer self-mutation after an iOS app's UI test file header pointed at tests under a
+truncated name prefix that no symbol in the repo carries; the one test added had a different name.
 
-Added by: oss-reviewer self-mutation on 2026-07-22 after observing grimer PR #17: `cli.py`'s
-`_BOOK_OR_UNIVERSE_HELP` string (`src/grimer/cli.py:27`) correctly documents that `apply`, `check`,
-`render`, and `query`'s `book` positional "doubles as a universe name" and that "a universe registry
-under `--universes-root` takes precedence" — but `README.md:33-45`'s CLI usage block lists
-`apply <book>`, `check <book>`, `render <book>` with no mention that a universe name works too, even
-though this PR is specifically the one that wires the universe dispatch path into
-`apply`/`check`/`render` (`query` already had it from PR #11, same gap, one PR earlier).
+Added by: oss-reviewer self-mutation after a Python CLI PR wired a second meaning into the book
+argument of three commands and documented it in the argparse help, while the README's usage block
+still listed those commands with the book meaning only; a fourth command had gained the same meaning
+one PR earlier with the same gap.
 
 ### 4.70 Public method orphaned by its own PR, docstring still names the removed caller (HIGH)
 
@@ -2433,16 +2333,10 @@ Severity: HIGH. The docstring actively misleads the next reader about who calls 
 method is now unreachable production surface — the two compound into a worse smell than either alone
 (see §4.11 rule 3, "docstring lies about what the file does").
 
-Added by: oss-reviewer self-mutation on 2026-07-24 after observing Seedling PR (per-kid chart
-settings, Slice 3, issue #348): `Seedling/SettingsView.swift` deletes the
-`.onChange(of: settings.currentGlobalChartSettings)` "Slice 2 write-through (issue #347)" mirror,
-but `SeedlingEngine/Sources/SeedlingSettings/SettingsManager.swift:378-390`'s
-`setChartSettings(_:forAllKids:)` keeps its docstring ("Applies `settings` to every id in `childIDs`
-in a SINGLE persisted write (issue #347 write-through)... Mirrors the batch shape of
-`migratePerKidChartSettings`") verbatim. `migratePerKidChartSettings` inlines its own loop rather
-than calling `forAllKids`, and a tree-wide grep confirms the only remaining caller is the
-pre-existing `SettingsManagerPerKidChartSettingsTests.swift` unit test — the method is dead
-production API with a docstring describing a caller this exact PR removed.
+Added by: oss-reviewer self-mutation after an iOS app PR deleted the only production caller of a
+settings manager method that applies one setter to every profile, leaving the method's docstring
+describing that write-through caller and a sibling migration it claims to mirror; its only remaining
+caller was a unit test.
 
 ### 4.71 Uniqueness validation checked before generation, blind to what generation will produce (CRITICAL)
 
@@ -2477,19 +2371,11 @@ Severity: CRITICAL. The whole point of the feature being added is the uniqueness
 batch/merge that silently violates it, undetected by the PR's own validator AND by the project's
 continuity/consistency checker, ships corrupted data under a green build.
 
-Added by: oss-reviewer self-mutation on 2026-07-24 after observing grimer PR #28
-(`src/grimer/graph.py:577-614,672-692`): `validate_events`'s `batch_ids` only accumulates EXPLICIT
-event ids seen so far, never predicting what `generate_event_id` will assign to an earlier id-less
-entry in the same delta —
-`apply_delta({"add_events": [{"chapter": 2, "summary": "Ada meets Bram in the market."}, {"id": "ch2_ada_meets_bram_in", "chapter": 2, "summary": "..."}]})`
-reproducibly writes two events sharing id `ch2_ada_meets_bram_in`, and `check_graph` reports zero
-violations on the corrupted graph. The sibling shape fired in the same PR: `migrate_book`
-(`src/grimer/universe.py:695-731`) explicitly checks entity-id collisions across the book being
-merged and the target universe
-(`collisions = sorted(set(qualified["entities"]) & set(universe["graph"]["entities"]))`, raising on
-any hit) but performs no equivalent check for event ids — `ch{chapter}_{summary-head-words}` carries
-no book-qualifying namespace, so two books each with a chapter-1 "arrives" event merge into a
-universe with duplicate event ids, again invisible to `check_universe`.
+Added by: oss-reviewer self-mutation after a Python CLI's event validator tracked only explicit ids,
+never the id its generator would assign to an earlier id-less entry, so one delta wrote two events
+with the same generated id and the consistency checker reported nothing; in the same PR the merge of
+a book into a shared registry checked entity-id collisions but not event-id collisions, and
+generated event ids carry no book namespace.
 
 ### 4.72 Create-path invariant not re-enforced on the sibling update/mutate path (CRITICAL)
 
@@ -2532,16 +2418,9 @@ corrupted-but-unflagged state the create validator exists to prevent, and it shi
 test suite because the new tests exercise the update verb's happy path, not its interaction with the
 older verb's guarantee.
 
-Added by: oss-reviewer self-mutation on 2026-07-24 after observing grimer PR #29
-(`src/grimer/graph.py:717-745`): `validate_events` rejects `add_events` entries with empty
-`participants` (`if not event["participants"]: errors.append(...)`), but the same PR's
-`validate_event_updates` only checks that each element of `set_participants` names a known entity —
-it never checks the list is non-empty.
-`apply_delta({"update_events": [{"id": "ev1", "chapter": 2, "set_participants": []}]})` on a graph
-with an existing event `ev1` applies cleanly and leaves `ev1` with zero participants, reproduced
-empirically. Every entity's dossier and `interaction_summary` index by scanning
-`event["participants"]` (`src/grimer/graph.py:1021`, `:1064`), so the event silently vanishes from
-every continuity view that keys off participants while still sitting in `graph["events"]`.
+Added by: oss-reviewer self-mutation after a Python CLI rejected new events with an empty
+participant list but its update path accepted setting the list to empty, reproduced on a sample
+graph; every participant-keyed view then silently dropped the event while it stayed in the graph.
 
 ### 4.73 Comment claims a lint/test gate enforces an invariant that the tool config doesn't actually contain (HIGH)
 
@@ -2574,11 +2453,9 @@ Severity: HIGH. A reviewer or contributor who trusts the comment believes a safe
 none does; the fix is either to add the missing rule/plugin or to correct the comment to describe
 the actual (weaker) guarantee.
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing `scripts/test.sh:10` in
-psyduck_backend claiming the unit/integration test split is "enforced by the flake8 ban on
-unittest.mock imports under that directory" — `.flake8` has no such rule (no `flake8-tidy-imports`,
-no per-file forbidden-import config), confirmed empirically by adding a used `unittest.mock.patch`
-import to a file under `integration_tests/` and running `flake8`: exit 0, zero violations.
+Added by: oss-reviewer self-mutation after a Django backend's test script claimed a flake8 ban on
+mock imports in its integration directory that the flake8 config does not contain; adding such an
+import and running flake8 exited 0 with no violations.
 
 ### 4.74 README claim falsified by the same commit's own diff and commit-message rationale (CRITICAL)
 
@@ -2612,14 +2489,10 @@ Severity: CRITICAL. This is exactly the "does the README lie" question a fresh c
 it's a false claim about a documented dependency ordering, not a cosmetic nit — a reader trying to
 understand why `reset_db.sh` creates the superuser before seeding will reach a wrong conclusion.
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing PR #17 in psyduck_backend (commit
-`7e87c85`, "Make local setup one non-interactive command that actually seeds"): the commit message
-states "The seed SQL attributed every reference row to user id 1, which made seeding depend on a
-superuser already existing... The audit columns are nullable... so they are now NULL. That removes
-the ordering dependency entirely" — and the diff confirms `database/allergens.sql` etc. changed
-`1, 1,` to `NULL, NULL,` — yet the same commit's rewritten `README.md:96` still reads "Requires the
-superuser to exist first, since the SQL attributes every row to user 1," which is now false on both
-counts (no dependency, and rows go to NULL not user 1).
+Added by: oss-reviewer self-mutation after a backend PR's commit message said seed rows no longer
+reference user 1, so seeding no longer needs a superuser, and the diff changed those values to NULL,
+while the README rewritten in the same commit still said the superuser must exist first because rows
+are attributed to user 1.
 
 ### 4.95 Approval citation baked into an inline source comment (HIGH)
 
@@ -2649,12 +2522,8 @@ Severity: HIGH when the comment sits on a security- or cost-relevant config choi
 otherwise. The underlying decision may be entirely sound — the finding is about where the provenance
 claim lives, not whether the decision was correct.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing `lib/psyduck-stack.ts:547` in
-psyduck_cdk (PR closing #32):
-`// WAF is only enabled in prod — dev traffic is low-risk and the WebACL has a fixed monthly cost regardless of traffic (owner-approved trim).`
-— the technical rationale (first sentence) is fine and belongs in source; the parenthetical citing
-the owner's approval is provenance that belongs in the PR description, not baked into a comment a
-future reader (or contributor with no access to that approval thread) will trust at face value.
+Added by: oss-reviewer self-mutation after a CDK stack's comment justified prod-only WAF with a
+technical reason and then a parenthetical citing the owner's approval of the trim.
 
 ### 4.75 ASCII repo-tree diagram left stale by a fix that corrected the matching prose in the same file (HIGH)
 
@@ -2694,21 +2563,15 @@ other, not just with the code — a reader has no way to tell which one is curre
 git themselves, and the fix was one grep-and-edit away in the same review pass that already touched
 the file.
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing PR #21 in psyduck_backend:
-`CLAUDE.md:97` still lists `└── create_docs.sh # Sphinx documentation` under `scripts/` even though
-this exact PR's diff deletes `scripts/create_docs.sh` (`deleted file mode 100644`) — the commit
-message explicitly says "scripts/create_docs.sh was described as deleted but was still present. It
-is deleted now," fixing the prose claim elsewhere but missing the tree's own listing. The same
-file's tree also draws `tests/` as the last child of `psyduck/`
-(`│   └── tests/ # Unit tests (mirrors source structure)`, indented under `migrations/`), while
-`git ls-tree` confirms `tests/` is a repo-root sibling of `psyduck/`, not nested inside it — and the
-PR's own "Testing" section a few dozen lines below in the identical file was correctly rewritten
-from `psyduck/tests/` to `tests/`, so the document contradicts itself internally.
+Added by: oss-reviewer self-mutation after a backend PR that deleted a docs script and fixed the
+prose claiming it was gone left the contributor doc's directory tree still listing it, and left the
+tree drawing the tests directory inside the package while the same file's testing section, rewritten
+in the same PR, placed it at the repo root.
 
 ### 4.76 Own-PR-number citation baked into a source docstring (HIGH)
 
-A module/function/test docstring embeds the enclosing PR's own tracker number ("fixed in PR #21",
-"see PR #17", "regression tests for the fix in PR #N") to explain why the code exists, instead of
+A module/function/test docstring embeds the enclosing PR's own tracker number ("fixed in PR #N",
+"see PR #M", "regression tests for the fix in PR #N") to explain why the code exists, instead of
 describing what the code currently does. It reads as tidy scoping in the moment — often replacing a
 longer self-contained narrative that a prior review flagged as too history-heavy — but the number is
 meaningless to any reader without GitHub open, and once merged the reference is permanent: nothing
@@ -2732,14 +2595,9 @@ own without the tracker open. Downgrade to INFO if the same docstring also carri
 self-contained description alongside the citation (the number is then decoration, not the only
 explanation).
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing
-`integration_tests/api/test_invitation_authorization_api.py:1` in psyduck_backend PR #21: a prior
-review cycle's fix condensed a self-contained module docstring ("Regression tests for two
-authorization holes in the invitation endpoints. Both were exploitable end to end against a running
-server...") down to
-`"""Regression tests for the two invitation authorization holes fixed in PR #21."""` — trading
-history-narration for a docstring that now requires opening GitHub to learn what the two holes
-actually were.
+Added by: oss-reviewer self-mutation after a review fix round condensed an integration test module's
+self-contained docstring about two authorization holes into a one-line docstring that only cites the
+PR that fixed them.
 
 ### 4.77 Linter newly enforces a convention that prose docs still only "recommend" (HIGH)
 
@@ -2780,16 +2638,10 @@ convention doc ("enforced by `eslint-plugin-playwright`'s `no-raw-locators`; a r
 string fails lint") and, if the rule carves out an exception, that exception belongs in the same
 doc, not only in the lint config's override comment.
 
-Added by: oss-reviewer self-mutation on 2026-07-26 after observing `psyduck_frontend` PR #53
-(`eslint.config.mjs`): adds `eslint-plugin-playwright` and sets `playwright/no-raw-locators` (plus 6
-siblings) to `error`, enforcing the selector convention `ui_test_flow.md` states in "prefer"
-language. Neither `ui_test_flow.md` nor `README.md`'s End-to-End Tests section was touched by the
-same 3-file diff (`eslint.config.mjs` + `package.json` + `package-lock.json`) — a contributor
-writing a new spec from `ui_test_flow.md` alone has no way to learn the convention is now
-lint-enforced until ESLint tells them, tersely, after the fact. The one deliberate exception
-(`e2e/auth.setup.ts`'s `#id_login`/`#id_password` allowlist) is well-explained, but only in
-`eslint.config.mjs`'s override comment — not in `ui_test_flow.md` (the convention's home doc) nor
-inline in `auth.setup.ts` itself next to the two raw `.locator()` calls it exempts.
+Added by: oss-reviewer self-mutation after a frontend PR turned on the Playwright lint plugin's
+raw-locator rule and six siblings as errors, enforcing a convention its e2e guide states as a
+preference, without touching the guide or the README's e2e section; the one allowlisted exception
+was explained only in the lint config's override comment.
 
 ### 4.78 "Not in the DOM" claim proven only by an accessibility-scoped locator (HIGH)
 
@@ -2829,19 +2681,10 @@ claim for a control the doc didn't specifically test (any testid-queried element
 role-queried one cited as proof), and the failure surfaces as a confusing off-by-one-locator-type
 bug rather than a doc review catch.
 
-Added by: oss-reviewer self-mutation on 2026-07-27 after observing `psyduck_frontend` PR #57,
-`ui_test_flow.md:159-166`: "while the card is collapsed **none of them exist in the DOM at all**
-(verified: a `getByRole('button', { name: 'Delete group' })` scoped to a collapsed card resolves to
-zero elements, not to a hidden one)." Live `page.evaluate` inspection of a freshly created,
-never-expanded group card showed the "Delete Group" `<button>` fully present in `card.outerHTML`,
-inside an `AccordionDetails` styled `visibility: hidden; height: 0px` (MUI `Collapse`'s default,
-`unmountOnExit` not set) — not absent, merely excluded from the accessibility tree, which is why the
-cited `getByRole` count is 0. A sibling control in the same collapsed panel,
-`group-invite-input-${groupId}`, queried via `getByTestId` (a non-role locator), returned count
-**1** on the identical collapsed card in the same script run — direct counter-evidence to "none of
-them exist in the DOM at all." The PR's own `e2e/support/groupActions.ts:7-8` states the accurate
-mechanism one file over ("MUI keeps a collapsed panel's children mounted but not visible"), so the
-wrong claim and the right one shipped side by side in the same PR.
+Added by: oss-reviewer self-mutation after a frontend PR's e2e guide said a collapsed card's buttons
+do not exist in the DOM, citing a role query that returns zero, while live inspection found the
+button mounted inside a hidden accordion panel and a test-id query on a sibling control returned
+one; a support file in the same PR stated the correct mechanism.
 
 ### 4.79 Revision-history narrated inline in a living behavior-contract document (MEDIUM)
 
@@ -2871,13 +2714,9 @@ the current, single-page truth, and it compounds: each future correction adds an
 from an earlier version" clause, and the doc gets harder to read for the same reason a
 heavily-tracked-changes Word doc does.
 
-Added by: oss-reviewer self-mutation on 2026-07-27 after observing `psyduck_frontend` PR #57 adds
-two instances to `ui_test_flow.md` (line 159-160: "corrected from an earlier version of this
-document, which mentioned expanding only in journey 8's step 1"; line 222: "corrected from an
-earlier version of this document, which described only the card disappearing"), extending a pattern
-already present on `main` at line 116 ("corrected from an earlier version of this document") from an
-earlier PR — three instances total, none touched by a stated project convention that would sanction
-the phrasing.
+Added by: oss-reviewer self-mutation after a frontend PR added two "corrected from an earlier
+version of this document" notes to its e2e guide, beside a third an earlier PR left on main, with no
+project convention sanctioning the phrasing.
 
 ### 4.80 Prose tech-stack doc left stale by a dependency version-bump PR that never touched it (HIGH)
 
@@ -2915,13 +2754,9 @@ disagree), it's the class of finding a reader/agent has no way to catch without 
 files themselves, and — per the rationale above — the blast radius includes future AI coding
 sessions that treat the doc as ground truth before writing code, not just human onboarding.
 
-Added by: oss-reviewer self-mutation on 2026-07-30 after observing `psyduck_frontend` branch
-`feature/62-ts6-eslint10` (commit 5d594b0, issue #62): three sequential commits bump
-`package.json`'s `typescript` from `^4.9.5` to `~6.0.3` and `eslint` from `^9.17.0` to `^10.8.0`
-(each with a multi-paragraph rationale), but `CLAUDE.md`'s "Tech Stack" section — last touched two
-PRs earlier at commit e48bf91 — still reads "React 18.2 with TypeScript 4.9 (strict mode)" (line 40)
-and "ESLint 9 flat config with `@typescript-eslint`" (line 49), neither of which the branch's diff
-includes.
+Added by: oss-reviewer self-mutation after a frontend branch bumped TypeScript from 4.9 to 6.0 and
+ESLint from 9 to 10 in three commits, each with a long rationale, while the contributor doc's
+tech-stack section still named TypeScript 4.9 and ESLint 9.
 
 ### 4.81 Test file's header comment names a disjunction of APIs one of which a sibling PR deleted (HIGH)
 
@@ -2955,14 +2790,9 @@ Severity: HIGH. A reader trusts a test's header comment to describe live behavio
 branch is reachable when the production file it tests has already deleted it — actively misleading
 about the app's actual mount/render surface.
 
-Added by: oss-reviewer self-mutation on 2026-07-31 after observing psyduck_cdk-adjacent frontend
-repo PR (commit 48e2174, "Remove dead react-snap hydrateRoot branch in index.tsx", closes #61):
-`src/index.tsx`'s diff cleanly deletes the `hydrateRoot` import, the `hasChildNodes()` branch, and
-its docstring sentence — the file itself reads coherent post-deletion. But
-`src/tests/Index.test.tsx:2`'s header comment ("Tests for index.tsx bootstrap. Ensures
-createRoot/hydrateRoot is called with #root.") still names `hydrateRoot`, which a tree-wide grep
-confirms no longer exists anywhere under `src/` — the deleting PR (and the earlier PR #60 that
-removed react-snap itself) never touched the test file, so the disjunction went stale silently.
+Added by: oss-reviewer self-mutation after a frontend PR removed a dead hydration branch from the
+app's entry file while the entry test's header comment still named the removed call; neither that PR
+nor the earlier one that removed the prerender tool touched the test.
 
 ### 4.82 Tech-stack doc's transform-mechanism claim falsified by the same PR that swaps the mechanism (HIGH; §4.80 sibling)
 
@@ -2999,15 +2829,11 @@ for the active transform"); mechanism claims about a dependency the PR doesn't t
 Severity: HIGH — same rationale as §4.80 (independently verifiable, cleanly falsified, and these
 docs are what a coding agent reads as ground truth before writing its next change).
 
-Added by: oss-reviewer self-mutation on 2026-07-31 after observing psyduck_frontend PR #67 (commit
-f4a3837, "React 18->19 + React Compiler", closes #64): `@vitejs/plugin-react` was bumped 5.x ->
-`^6.0.4` in the same diff, and the PR's own `vite.config.mts` comment plus commit message state
-plainly that v6 "dropped Babel for its own JSX transform (oxc now...) and moved React Compiler
-support behind a second plugin" — yet `CLAUDE.md:41-42` (untouched by this diff) still reads
-"`@vitejs/plugin-react` (the babel pipeline, not SWC — the React Compiler adoption ahead is a babel
-plugin)", which is now false on both counts: plugin-react no longer runs a babel pipeline, and the
-"adoption ahead" is this very PR. The same doc's version claim ("React 18.2 with TypeScript 6.0") is
-the already-cataloged §4.80 pattern recurring one day after it was first added to this file.
+Added by: oss-reviewer self-mutation after a frontend PR upgraded React and the Vite React plugin,
+whose own comment and commit message said the plugin dropped Babel and moved compiler support to a
+second plugin, while the contributor doc, untouched, still described the Babel pipeline and the
+compiler adoption as ahead; the same doc's version line repeated the stale-version pattern a day
+after it entered this file.
 
 ### 4.83 Discovery-loop guard test whose filter matches zero current instances (HIGH; CRITICAL if security-framed)
 
@@ -3048,14 +2874,9 @@ assert) to need its own entry. CRITICAL when the test's name/docstring markets i
 or data-exposure guard, since the false-green signal masks exactly the incident the test claims to
 prevent.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing
-`tests/models/test_psyduck_user.py::test_public_id_not_writable_through_any_serializer` in the
-psyduck-cdk PR (issue #33 branch, commit 1d251a4): the loop's `if model is not User: continue` skips
-all eight serializers under `psyduck/api/serializers/` (none has `Meta.model = PsyduckUser`,
-confirmed by grep), so
-`instance = serializer_class(); assert "public_id" not in instance.fields or ...` never executes;
-the test's own docstring says "No serializer in the package targets PsyduckUser as its Meta.model
-today" without flagging that this makes the assertion presently unreachable.
+Added by: oss-reviewer self-mutation after a backend test meant to prove a public id is not writable
+through any serializer skipped all eight serializers because none targets the user model, so its
+assertion never ran, while its docstring noted that no serializer targets the model.
 
 ### 4.84 Partial test-mocking-architecture migration leaves the conventions doc describing only the old approach (HIGH)
 
@@ -3107,14 +2928,10 @@ next-suite author following it reaches for the wrong (or now-secondary) pattern.
 CRITICAL if the doc's stale numeric test count is off by more than the diff's own claimed delta (a
 sign the doc was already stale before this PR, not just newly outdated by it).
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_frontend PR (head
-8bb04d3, "MSW for the six API-mocking page suites"): `CLAUDE.md:191` still reads "**52 test suites,
-275 tests** all passing" and `CLAUDE.md:205` still documents `vi.mock('../services/api', ...)` as a
-"Key testing pattern" with zero mention of MSW anywhere in the toolchain list (`CLAUDE.md:52`),
-while the diff converts six suites (App/Index/Dashboard/Group/Profile/PublicProfilePage) to MSW
-network-layer mocking, adds `msw` to `package.json`, and the tree's actual `it(`/`test(` count is
-277, not 275. Separately, `README.md:60` states "MSW adoption ... still ahead" — a claim this exact
-PR falsifies by landing the first tranche of it.
+Added by: oss-reviewer self-mutation after a frontend PR moved six page suites to MSW network
+mocking while the contributor doc still gave the old test count, documented module mocking as the
+key pattern and never named MSW, and the README still called MSW adoption ahead; the tree's test
+count was 277, not the documented 275.
 
 ### 4.85 New env var documented as prose, omitted from the repo's own "Environment Variables" table(s) (HIGH)
 
@@ -3158,24 +2975,20 @@ fragments the one place a user or contributor actually checks, and when two docs
 copy of the table (as is common in a `CLAUDE.md`/`README.md` pair), landing the addition in neither
 leaves both silently incomplete.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_frontend PR (head
-0ba2c77, "Add PW_VIDEO env knob for opt-in E2E video recording"): `playwright.config.ts:101`
-introduces `process.env['PW_VIDEO']`, and `CLAUDE.md:266-267` documents it in a prose sentence
-inside `### End-to-End (Playwright)`, but neither CLAUDE.md's own `## Environment Variables` table
-(`CLAUDE.md:279-283`, format `| Variable | Description | Example |`) nor README.md's parallel
-`## Environment Variables` table (`README.md:164-171`, format
-`| Variable | Description | Default |`) gained a row for it — despite README's table already listing
-the sibling E2E-family vars `E2E_EMAIL`, `E2E_INVITEE_EMAIL`, and `E2E_PASSWORD`.
+Added by: oss-reviewer self-mutation after a frontend PR added an opt-in E2E video variable and
+documented it in a prose sentence, while neither the contributor doc's nor the README's
+environment-variable table gained a row, though the README's table already listed three sibling E2E
+variables.
 
 ### 4.86 Cross-repo "no-op until #N lands" caveat left stale by the referenced issue actually landing (HIGH)
 
 A script or doc in repo A defers to unfinished work in a sibling repo B by name-and-number ("no-op
-until `psyduck_frontend#85` lands", "not yet supported — see backend#42"), phrased as a
-present-tense fact rather than a dated snapshot. The two repos are developed in the same polyrepo
-workflow, often by the same orchestrator dispatching parallel PRs, so the referenced issue can close
-_minutes_ after the caveat is written — sometimes before the caveat's own PR even merges. Nothing in
-repo A re-checks repo B's state afterward: there is no CI link, no issue-tracker webhook, no test
-that would fail once #N lands. The caveat is accurate at the moment of authorship and silently false
+until `frontend#N` lands", "not yet supported — see backend#M"), phrased as a present-tense fact
+rather than a dated snapshot. The two repos are developed in the same polyrepo workflow, often by
+the same orchestrator dispatching parallel PRs, so the referenced issue can close _minutes_ after
+the caveat is written — sometimes before the caveat's own PR even merges. Nothing in repo A
+re-checks repo B's state afterward: there is no CI link, no issue-tracker webhook, no test that
+would fail once #N lands. The caveat is accurate at the moment of authorship and silently false
 forever after, misdirecting exactly the debugging session it was written to help (a user sees no
 output and reads the comment's excuse instead of investigating the real cause, now that the
 dependency is actually satisfied).
@@ -3205,13 +3018,10 @@ Severity: HIGH. Not a functional blocker on its own — the feature usually stil
 once the dependency lands, and unlike most doc drift it is self-inflicted by design: the caveat's
 whole premise is an external, unmonitored state that the author had no way to keep in sync.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_cdk
-`scripts/dev-stack.sh:338-340,363` (head 9d1598c): the script's `copy_videos()` comment and its
-runtime log message both say video collection is "a no-op ... until `psyduck_frontend#85` wires
-PW_VIDEO through to Playwright's video option." `gh issue view 85 --repo ksco92/psyduck_frontend`
-showed the issue CLOSED via merged PR #86, and `playwright.config.ts:101` on that repo's default
-branch already reads `video: process.env['PW_VIDEO'] ? 'on' : 'off'` — the dependency landed about
-51 seconds after this script's commit, making the caveat stale before the review even ran.
+Added by: oss-reviewer self-mutation after a CDK repo's dev script and its log message called video
+collection a no-op until a frontend issue landed, while that issue was already closed by a merged PR
+and the frontend's config already read the variable; the dependency landed about 51 seconds after
+the script's commit.
 
 Also match any future-tense condition in a comment, checked against the tree and the tracker
 (case-insensitive):
@@ -3238,7 +3048,7 @@ person documenting a constraint.
 ```
 
 Exclude: files whose entire purpose is a decision log / ADR with dated entries; a regression-test
-comment tied to a specific issue/CVE number ("regression test for the bug fixed in v1.2, see #123")
+comment tied to a specific issue/CVE number ("regression test for the bug fixed in v1.2, see #N")
 where the reference is a stable external anchor, not a narrated debugging session.
 
 Severity: HIGH. Doesn't mislead about current behavior on its own (the constraint being documented —
@@ -3248,15 +3058,9 @@ comment discipline rules out ("don't reference the current task, fix... those be
 description and rot as the codebase evolves"): it will read as stale narration the moment a third
 iteration supersedes the "earlier version," since nothing updates it then.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_cdk
-`scripts/dev-stack.sh:192-202` (head 2fa246f): the `request_teardown` comment reads "An earlier
-version called do_teardown ... on the theory that a second signal arriving during the grace-period
-sleep would re-enter this handler... Empirically confirmed with an isolated harness (this script's
-skeleton against dummy TERM-ignoring "servers")... the same run confirmed empirically: total
-teardown dropped from the full double grace period to stopping as soon as the second signal landed."
-The underlying WHY (bash 3.2 trap dispatch semantics) is legitimate and worth keeping; the "earlier
-version / empirically confirmed" framing is the debugging session, not the invariant, and belongs in
-the commit message (which already has it, per this diff's own `9d1598c..2fa246f` history).
+Added by: oss-reviewer self-mutation after a CDK repo's dev script carried a signal-handler comment
+narrating an earlier version and an empirical confirmation with an isolated harness; the underlying
+bash trap semantics belong in the comment, and the narrative already sat in the commit message.
 
 Also match revert-and-rerun proofs (case-insensitive):
 
@@ -3288,12 +3092,9 @@ policy; hierarchy diagrams generated from source at build time.
 Severity: HIGH. The precedent for the correct doc shape is in the same file the PR's author had open
 — this isn't inventing a new convention, it's finishing applying an existing one.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing `CLAUDE.md:132-159` in psyduck
-(Component Hierarchy section): `<ProfilePage>` and `<GroupPage>` are both expanded two levels deep
-(down to `<AddAllergyForm>`, `<GroupHeader>`, etc.) while PR #91 extracted `HelpPage.tsx`'s monolith
-into `src/components/help/{GroupsSection,ProfileSection}.tsx` — the identical shape as the
-already-documented siblings — yet line 157 still reads
-`├── <AboutUs>, <HelpPage>, <WhatsNewPage> — Static content pages` with no subtree added.
+Added by: oss-reviewer self-mutation after a frontend contributor doc's component tree expanded two
+pages two levels deep while a PR split a help page into section components of the same shape,
+leaving the help page listed as a static page with no subtree.
 
 ### 4.89 First-of-its-kind test technique added with zero line in the conventions doc's own exhaustive pattern list (HIGH)
 
@@ -3323,13 +3124,10 @@ factory has a "when to add a new fixture vs reuse" judgment call) — that's exa
 knowledge a conventions doc exists to prevent. Downgrade to INFO if the workflow is self-documenting
 (no update step, no judgment call).
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck PR #91: CLAUDE.md's "Key
-testing patterns" section (lines 202-238) exhaustively documents MSW-vs-`vi.mock` conventions,
-`mockReset` behavior, and jsdom pinning, but the PR adds the repo's first-ever `toMatchSnapshot()`
-call (`src/tests/pages/HelpPage.test.tsx`) with no corresponding doc line — the only explanation of
-the convention and its update workflow (`vitest -u` per the test's own comment, though the repo's
-own documented entry point is `npm test`, not bare `vitest`) lives in a comment inside the one file
-that uses it.
+Added by: oss-reviewer self-mutation after a frontend PR added the repo's first snapshot test while
+the contributor doc's testing-patterns section, which documents its other conventions in detail,
+gained no line; the only explanation, with an update command that bypasses the documented entry
+point, sat in a comment in the one test file.
 
 ### 4.90 Single-call-site exception generalized into a system-wide doc rule (HIGH)
 
@@ -3360,16 +3158,9 @@ Severity: HIGH — a wrong invariant about error-handling behavior that the next
 trust when adding a new page/caller, reproducing the same silent-toast-plus-redirect bug instead of
 the (falsely) documented redirect-only behavior.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck PR (CLAUDE.md diff
-af2b15b..e7e972a) `CLAUDE.md:185-187`: the amended "Error Handling" bullet claims a session-expiry
-401 "clears auth and redirects home instead of toasting" as a blanket rule, but the
-toast-suppression is implemented only inside `ProfilePage.tsx`'s `fetchAllProfileData` catch block
-(an explicit early `return` before `showToast`). Every other page's own catch block (e.g.
-`GroupPage.tsx`'s `fetchAllData`, which unconditionally calls
-`showToast('Failed to load group data.', 'error')`) is unmodified, and `api.ts`'s response
-interceptor re-rejects after invoking the redirect handler (`return Promise.reject(error);`) rather
-than suppressing propagation — so those pages show the toast AND redirect together, contradicting
-the doc.
+Added by: oss-reviewer self-mutation after a frontend contributor doc claimed a session-expiry 401
+redirects home without a toast on every page, while only one page's catch block suppressed the toast
+and the API interceptor re-rejected after redirecting, so other pages showed both.
 
 ### 4.91 Component-hierarchy diagram in a wholly-untouched conventions doc names a component this PR renamed (HIGH)
 
@@ -3419,17 +3210,10 @@ Severity: HIGH. The doc is the first thing a future contributor or coding agent 
 touching this subtree, and it now names a file that does not exist — worse than silence, because it
 actively misdirects the next edit.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_frontend PR #98 ("[FE]
-Phase 7c: GroupPage architecture refactor"): the diff deletes
-`src/components/group/GroupDetails.tsx` and `src/tests/components/group/GroupDetails.test.tsx`,
-adding `src/components/group/GroupCard.tsx` (same import call sites in `OwnedGroupsList.tsx`/
-`JoinedGroupsList.tsx`, confirmed via `git diff` on both) plus two new children,
-`GroupPendingInvitations.tsx` and `InvitationsTableShell.tsx`. `CLAUDE.md` does not appear in
-`git diff origin/main...HEAD --name-only` at all, yet its Component Hierarchy tree
-(`CLAUDE.md:151-155`) still reads `└── <GroupDetails> — Accordion orchestrator` with the
-pre-refactor four children and no `<GroupPendingInvitations>` node; the Type System table
-(`CLAUDE.md:181`) separately describes `GroupInvitationSmall` as "Compact shape for GroupDetails,"
-the identical stale name in a second table in the same file.
+Added by: oss-reviewer self-mutation after a frontend refactor PR deleted a group-details component
+and its test and added a card component with two new children, while the contributor doc, absent
+from the diff, still showed the old component and its four children in the component tree and named
+it again in the type-system table.
 
 ### 4.92 New exported type lands in the barrel but not in the conventions doc's closed Type System table (HIGH)
 
@@ -3463,13 +3247,9 @@ trivial aliases of another listed type; docs with no established type-table conv
 Severity: HIGH. Same rationale as §4.85 — the knob works, the type is real and typed correctly, but
 the one place a contributor checks "what does this app model" silently under-counts.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_frontend PR #100 (head
-1e9c5be): `src/types/user.ts` adds `export interface WhoAmIResponse { ... }` and
-`src/types/index.ts` re-exports it
-(`export type { UserProfile, WhoAmIResponse, UserAllergyRow } from './user';`), consumed by
-`AuthContext.tsx`. The same commit edits `CLAUDE.md`'s Service Layer table and test-count line, so
-the file was demonstrably open — but its `## Type System` table (`CLAUDE.md:188-202`) gained no
-`WhoAmIResponse` row.
+Added by: oss-reviewer self-mutation after a frontend PR added and re-exported a response type and
+edited the contributor doc's service-layer table and test count in the same commit, while the doc's
+type-system table gained no row for the new type.
 
 ### 4.93 Intra-repo extraction backstory cites an exact pre-refactor call-site/copy count instead of documenting current behavior (INFO)
 
@@ -3500,23 +3280,20 @@ prohibits ("Don't reference the current task, fix, or callers... since those bel
 description and rot as the codebase evolves") — flag so the count can be dropped or moved to the PR
 description.
 
-Added by: oss-reviewer self-mutation on 2026-08-01 after observing psyduck_frontend PR #100 (head
-1e9c5be) `src/utils/withPendingId.ts:1-6`: "Shared shape behind every per-id double-submit guard in
-this app (allergy level-change, allergy delete, dietary-preference toggle, logout)... Extracted once
-these guards' 'add to Set / try / finally remove from Set' bodies were copy-pasted at four call
-sites." The enumerated four-caller list and exact count will silently drift the next time a fifth
-guard adopts the helper.
+Added by: oss-reviewer self-mutation after a frontend utility's doc comment enumerated the four
+double-submit guards that use it and their count, a list that drifts the next time a fifth guard
+adopts the helper.
 
 ### 4.94 README run-book command hardcodes an infra resource name the source since renamed (HIGH)
 
 A README (or other copy-pasteable run-book doc) embeds a literal AWS/infra CLI flag —
 `--environment-name`, `--bucket`, `--stack-name`, `--function-name`, a `Name=tag:...,Values=`
-filter, etc. — built from the same naming template the IaC source uses (e.g.
-`psyduck-eb-env-${STAGE}`), while the CDK/Terraform/source construct that actually creates that
-resource has since diverged (e.g. `psyduck-eb-env-${cfg.stage}-2`). A unit test asserting the same
-name is an easy, visible red — CI catches it. The README command has no such tripwire: it silently
-keeps returning "no such environment" / an empty result set / worse, quietly targets a different,
-wrong resource, and nobody notices until someone actually runs the run-book.
+filter, etc. — built from the same naming template the IaC source uses (e.g. `<app>-env-${STAGE}`),
+while the CDK/Terraform/source construct that actually creates that resource has since diverged
+(e.g. `<app>-env-${cfg.stage}-2`). A unit test asserting the same name is an easy, visible red — CI
+catches it. The README command has no such tripwire: it silently keeps returning "no such
+environment" / an empty result set / worse, quietly targets a different, wrong resource, and nobody
+notices until someone actually runs the run-book.
 
 Detection: for each hardcoded resource-name literal in README/runbook shell blocks, find the
 matching `environmentName:` / bucket-name / stack-name construction in `lib/**/*.ts` (or equivalent
@@ -3537,12 +3314,9 @@ Severity: HIGH; escalate to BLOCKER if the doc is the _only_ place this operatio
 written down (no script/Makefile wraps it), since it silently sends an operator at the wrong AWS
 resource with no test or CI to catch the drift.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing README.md:132,166 (psyduck-cdk,
-head 3132015) still reading `psyduck-eb-env-${STAGE}` / `psyduck-eb-env-dev` after
-`lib/psyduck-stack.ts` and `lib/pipeline-stack.ts` were updated across commits
-4f0e512/52d0dc3/2b1405c/4f7bdca to `psyduck-eb-env-${stage}-2`. The unit test assertion
-(`test/psyduck-stack.test.ts:373`) was caught by CI and fixed by commit 3132015 the same day; the
-two README run-book commands, which have no test coverage, were not.
+Added by: oss-reviewer self-mutation after a CDK repo's README run-book commands still used an
+environment name the stack had renamed across four commits; the unit test asserting the old name was
+caught by CI and fixed the same day, and the untested README commands were not.
 
 ### 4.96 PR's own "proof of completeness" grep excludes the file type the survivor lives in (HIGH)
 
@@ -3578,18 +3352,14 @@ Severity: HIGH. The PR closes the tracking issue on the strength of a verificati
 could not have found the counterexample; a fresh contributor hits the survivor and has no PR to
 explain it since the issue reads closed.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing psyduck_frontend PR #101 (head
-07fcc71, "Fix stale vite.config.ts docs refs and complete route table", closing #68): PR body pastes
-`grep -rn 'vite\.config\.ts[^x]' --include='*.md' --include='*.ts' . | grep -v node_modules | grep -v mts`
-and reports zero hits — true for that include list, but `tsconfig.json:41`'s comment
-("`vite.config.ts`'s `globals: true` provides") survives because `.json` was never in the filter; it
-predates this PR (from the original Vite migration, commit e48bf91) and is the sole remaining stale
-reference in the repo.
+Added by: oss-reviewer self-mutation after a frontend PR fixing stale config-file references pasted
+a grep whose include list skipped JSON and reported zero hits, while a stale reference in the
+tsconfig's comments survived from the original Vite migration.
 
 ### 4.97 Doc refresh adds a specific pointer to a companion doc file that was never committed (CRITICAL)
 
 A "fix doc drift" / "docs refresh" PR adds prose that cites a specific sibling document by path and
-section anchor for further detail ("see `docs/plans/<name>.md` §3", "full rationale in
+section anchor for further detail ("see `docs/<plan>.md` §3", "full rationale in
 `docs/adr/0007-...md`") as the authoritative source for a claim the PR itself is making. The cited
 file does not exist anywhere in the repo — not on the PR's head, not on any ancestor commit
 (`git log --all --full-history` for that path returns nothing) — so the pointer is either a
@@ -3631,16 +3401,10 @@ Severity: CRITICAL. A citation is supposed to be more trustworthy than an unsupp
 pointing at nothing is worse than no citation, because it advertises diligence that didn't happen
 and actively misdirects the next reader.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing psyduck_cdk PR (worktree
-`gates-pr41`, head 53ecffc, "Docs refresh: pipeline files, removed NLB, Python 3.13, DB access via
-SSM"): `CLAUDE.md:68-69` adds "commands in `docs/plans/2026-08-02-infra-cost-pipeline-plan.md` §3"
-as the pointer for RDS SSM port-forwarding commands. `git log --all --full-history -- 'docs/*'`
-returns nothing for this repo — no `docs/` directory has ever been committed. The actual SSM
-port-forwarding commands already live in this same repo at `README.md`'s "Connect to RDS via SSM
-Session Manager" section (README.md:166-199), pre-dating this PR. The commit message claims "every
-claim was verified against lib/, bin/, and cdk.json in this repo before being written" — true for
-the CDK-source claims, but the doc-file pointer itself was never checked against the repo's actual
-file tree.
+Added by: oss-reviewer self-mutation after a CDK repo docs-refresh PR pointed the contributor doc at
+a dated plan file for SSM port-forwarding commands, while no docs directory had ever been committed
+and the commands already lived in the README; the commit message claimed every claim was verified
+against the repo.
 
 ### 4.99 IAM-scope doc claim falsified by a co-located unscoped statement added to the same policy (HIGH)
 
@@ -3676,17 +3440,10 @@ Severity: HIGH. The security-relevant invariant a future reader trusts ("this po
 one ARN") is now false for the policy as a whole, and IAM scope claims are exactly the kind of thing
 nobody re-verifies against the live template — they're taken on faith from the comment.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing psyduck-cdk PR #50 (commit
-a76ec118): `lib/monitoring-stack.ts:102-105`'s pre-existing comment — "Resolve both dynamically at
-deploy time via DescribeEnvironmentResources, scoped to this stage's environment ARN only" — sits
-four statements above a new `PolicyStatement` granting `autoscaling:DescribeAutoScalingGroups`,
-`elasticloadbalancing:DescribeLoadBalancers`, `ec2:DescribeInstances`, and
-`cloudformation:DescribeStackResources` on `Resource: '*'` to the exact same
-`AwsCustomResourcePolicy.fromStatements([...])` the comment describes. The new statement's own local
-comment (added by the same PR) correctly explains why `Resource: '*'` is required for those four
-actions — the addition is technically sound — but the older "scoped ... only" claim four lines up
-was never touched, and `CLAUDE.md:85-87` describes the same construct project-wide with the
-identical now-incomplete "scoped to this stage's EB environment ARN" language.
+Added by: oss-reviewer self-mutation after a CDK monitoring stack's comment said a custom resource
+is scoped to one environment ARN, four statements above a new policy statement granting four
+describe actions on every resource to that same custom resource; the new statement's own comment
+correctly explained why, the older claim was untouched, and the contributor doc repeated it.
 
 ### 4.98 Unqualified cross-repo script/command reference in a multi-repo doc set (HIGH)
 
@@ -3720,17 +3477,10 @@ doesn't break the current repo's own quickstart — but it silently breaks the d
 that a cross-repo pointer says where to look, and a reader relying on grep/`find` inside just this
 repo hits a dead end.
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing psyduck-cdk-scoped PR (worktree
-`gates-pr111`, head e93c876, "Add E2E_BASE_URL deployed-target mode for the Playwright suite"):
-`README.md:59,125-126` and `CLAUDE.md:320` introduce `` `dev-stack.sh --e2e` `` as the canonical way
-to run local-mode E2E, with zero mention of which repository it lives in.
-`git ls-files | grep dev-stack` in the frontend repo returns nothing — the script is not tracked
-there, `scripts/` has no such file. It actually lives at `psyduck_cdk/scripts/dev-stack.sh`. The
-same PR's own `playwright.config.ts:119-120` (pre-existing comment, untouched by this diff) already
-says "the dev-stack script in psyduck_cdk" — proving the convention of naming the source repo was
-established and simply not followed in the two new doc mentions. Every other cross-repo reference
-this same PR adds (`psyduck_backend/psyduck/throttle_config.py`,
-`psyduck_backend/psyduck/utils/stage_guard.py`) is correctly repo-qualified.
+Added by: oss-reviewer self-mutation after a frontend PR's README and contributor doc introduced a
+dev script as the way to run local E2E without saying which repository holds it; the script lives in
+a sibling CDK repo, a pre-existing comment in the same repo already named that repo, and the PR's
+other cross-repo references were repo-qualified.
 
 ### 4.101 Commit-message rationale duplicated near-verbatim into the same diff's inline comment (INFO/HIGH)
 
@@ -3759,16 +3509,10 @@ the comment is a near-full restatement (>50% of comment sentences have a commit-
 WHY may be legitimate and worth keeping in the file (per the "hidden constraint" bar) — the finding
 is the duplication, not the comment's existence.
 
-Added by: oss-reviewer self-mutation on 2026-08-16 after observing psyduck_cdk `jest.config.js:3-11`
-(head 8980edb): the added comment restates, almost phrase-for-phrase, content already in the same
-commit's message body — "hashes only the uid, never the project" / `getCacheDirectory` (comment ≈
-commit paragraph 1), "shared blast radius" / "fully self-contained" (comment ≈ commit paragraph 3),
-and "(see #39)" mirroring the commit's own "Closes #39" — a substantial restatement of the
-commit-message narrative inside a 9-line comment justifying a 1-line config change. Distinct from
-the already-cataloged §4.87 ("empirically confirmed" / "an earlier version" phrasing, also first
-observed in this repo at `scripts/dev-stack.sh`) since this comment doesn't use debugging-session
-phrasing — it's a plain WHY-comment that happens to duplicate its own commit message almost
-verbatim, a different manifestation of the same reflex.
+Added by: oss-reviewer self-mutation after a CDK repo's 9-line comment justifying a 1-line
+test-config change restated its commit message almost phrase for phrase, down to the issue it
+closes; it carried no debugging-session phrasing, so it is a different manifestation of the reflex
+the empirically-confirmed pattern catches.
 
 ### 4.100 Numbered pipeline/workflow-stage doc enumeration omits a step the PR adds (HIGH)
 
@@ -3812,15 +3556,10 @@ shape of a live, deployed system. Escalate to CRITICAL if the repo's own CLAUDE.
 "read this before touching related code" instruction (as a read-before-write convention would
 compound the staleness into future incorrect work).
 
-Added by: oss-reviewer self-mutation on 2026-08-02 after observing psyduck-cdk PR (worktree
-`gates-pr51`, head 39166e9, "Add E2EGate-dev CodeBuild step"): `lib/pipeline-stack.ts:110-118` adds
-a third post-deploy step (`e2eGateDev`) to the dev stage's `post` array — a real gate that can now
-block the pipeline from ever reaching `PromoteToProd` — while `CLAUDE.md:114-117` ("Pipeline"
-section, written in PR #41) still describes the dev stage as exactly two post-deploy steps
-(`DeployBackend-dev` + `DeployFrontend-dev`) followed directly by `PromoteToProd`. The same PR also
-left `CLAUDE.md:71-75`'s enumeration of the `psyduck-e2e-dev` secret's consumers one entry short —
-it still lists only the EB postdeploy hook, not the new E2EGate-dev CodeBuild role that now also
-reads the secret's `email`/ `invitee_email`/`password` keys.
+Added by: oss-reviewer self-mutation after a CDK repo PR added a third post-deploy gate to the dev
+stage, able to block promotion to prod, while the contributor doc still described the dev stage as
+two deploy steps followed by promotion, and its list of an E2E secret's consumers omitted the new
+build role that reads it.
 
 ### 4.102 README quality-gate table drifts behind the local merge-gate script it documents, hiding an undocumented prerequisite tool (BLOCKER-class)
 
@@ -3868,21 +3607,15 @@ Setup/Prerequisites section (the documented quickstart's own verification comman
 machine); HIGH when every extra step's binary is otherwise covered (doc completeness gap only, no
 quickstart failure).
 
-Added by: oss-reviewer self-mutation on 2026-08-31 after observing the `onix` repo review:
-`README.md`'s "Quality gates" table (added in commit `b200eeed`) enumerates exactly four `make`
-targets (`fmt`, `clippy`, `test`, `coverage`), and the "Setup from scratch" section's prerequisite
-list covers only `curl`/`make`/`git` plus `cargo-llvm-cov` — but the very next commit (`cbaaec07`,
-"Gates: forbid unsafe, docs -D warnings, cargo-deny, cargo-machete") widens the Makefile's
-`check: fmt clippy test coverage docs deny machete` to six targets, wiring in `cargo deny check` and
-`cargo machete`, and never revisits the README. Both tools happened to already be installed on the
-review machine (from unrelated work), so `make check` passed clean — but a genuinely fresh clone
-following the README's own documented `cargo build && make check` verification step would hit
-`error: no such command: `deny`` on first run, for a tool the Setup section never mentions.
+Added by: oss-reviewer self-mutation after a Rust repo's README listed four make targets and a short
+prerequisite list, while the next commit widened the check target to six, adding two cargo tools the
+README never mentions; a fresh clone following the README's verification step would fail on the
+first missing tool.
 
 ### 4.103 Milestone checklist item left unchecked by the very commit that completes it (HIGH)
 
 A `TODO.md` / `ROADMAP.md` tracks milestone deliverables as `- [ ]` items under a dated/tagged
-section header (e.g. `## M3-pre — Recursion depth guard`). A commit whose message names that same
+section header (e.g. `## M3 — Recursion depth guard`). A commit whose message names that same
 milestone tag ships every sub-deliverable the item's own text enumerates — the named symbols,
 behaviors, and test classes all land in the diff — but the commit never touches the tracking doc, so
 the checkbox stays `- [ ]` even though the work it describes is now on `main`. The project's own
@@ -3901,7 +3634,7 @@ tracking doc is absent from the commit's changed-file list, that's the finding.
 
 ```
 # commit message
-^[A-Za-z0-9_-]+:\s  # e.g. "M3-pre: recursion depth guard closing stack-overflow DoS"
+^[A-Za-z0-9_-]+:\s  # e.g. "M3: recursion depth guard"
 # matching TODO.md header
 ^##\s+M[0-9]+(-pre)?\s+—
 # unchecked item under that header
@@ -3918,15 +3651,9 @@ Severity: HIGH. Nothing breaks, but the project's own status document — the th
 implementer or reviewer trusts to answer "is this done" — silently disagrees with `main`, and the
 gap is invisible to `make check`.
 
-Added by: oss-reviewer self-mutation on 2026-08-31 after observing `onix` commit `94b54cd` ("M3-pre:
-recursion depth guard closing stack-overflow DoS"): the diff fully implements `TODO.md`'s M3-pre
-item (`diff_at` depth tracking, configurable max via `DEFAULT_MAX_DEPTH`, `Error::MaxDepthExceeded`,
-a depth-5000-class non-crash test — actually shipped as depth-100_000 and
-depth-`DEFAULT_MAX_DEPTH + 1` tests, a superset of what was asked), all verified present and green
-under a fresh `make check`, yet `TODO.md:46`'s `- [ ] \`diff_at\` tracks depth;
-...` line is untouched by the commit and still reads unchecked, while the sibling M3-pre bullet (`deny.toml`
-escalation) and every M0/M1/M2 item in the same file were checked off in the commits that shipped
-them.
+Added by: oss-reviewer self-mutation after a Rust repo commit fully implemented a recursion depth
+guard from its TODO list, verified green, while the TODO item stayed unchecked and every sibling
+item had been checked off in the commit that shipped it.
 
 ### 4.104 Milestone-tagged doc comment revised while a nested/sibling doc comment stating the same superseded fact is left untouched (HIGH)
 
@@ -3958,14 +3685,9 @@ Severity: HIGH — the inner comment now asserts something false (or at best mis
 when/whether the field is populated, and a reader who trusts the field-level doc over the enclosing
 one draws the wrong conclusion.
 
-Added by: oss-reviewer self-mutation on 2026-08-31 after observing `onix`
-`crates/onix-core/src/error.rs:18-25` (commit 351484f, M3): the diff rewrites
-`UnsupportedContainerDiff`'s own doc comment to say the variant "is currently unreachable through
-the public API" (M2 and M3 are both fully implemented, both always recurse), but leaves the nested
-`container_type` field's doc comment reading "The Python type name of the container (as of M2,
-always `\"list\"`)" — unrevised since the M2-era text, and now doubly stale: it still assumes the
-variant fires routinely for lists, contradicting the enclosing comment edited two lines above in the
-same commit.
+Added by: oss-reviewer self-mutation after a Rust commit rewrote an error variant's doc comment to
+say it is unreachable through the public API while leaving its field's doc comment describing the
+variant as firing routinely for lists, two lines below.
 
 ### 5.21 Absolute repo-URL links in publishable package metadata point at a currently-private repository (INFO / HIGH once actually published)
 
@@ -3992,8 +3714,8 @@ never publish externally-readable docs.
 Severity: INFO when confirmed not-yet-published (sequencing reminder: repo public no later than
 first registry upload). HIGH when the package is live on the registry with the repo still private.
 
-Added by: oss-reviewer on 2026-09-01 (onix PR #2 round 2): 5 links correctly absolutized for the
-wheel long_description, but the repo was still private at review time.
+Added by: oss-reviewer after a Rust library PR's review: five links were made absolute for the
+wheel's long description while the repo was still private.
 
 ### 4.105 Mutation-testing "fully caught" claim contradicted by a deterministically-unviable mutant in the tool's own enumeration (CRITICAL)
 
@@ -4022,10 +3744,9 @@ without running the suite); HIGH if buried but the totals don't add up. Related 
 side: caught/missed/timeout splits are wall-clock-dependent, so a rewritten "representative run"
 that drops deterministic unviables while keeping headline claims is how this arises.
 
-Added by: oss-reviewer on 2026-09-01 (onix PR #2 round 3): "onix-cli is fully caught (18/18)" while
-the enumeration contained a `Default::default()` mutant for a struct deriving no Default, plus an
-`Ordering: Default` mutant — both previously counted as unviable and silently dropped by a reframing
-rewrite.
+Added by: oss-reviewer after a Rust library PR's review: its body called the CLI crate fully caught
+(18/18) while the enumeration held two mutants of types that derive no Default, earlier counted as
+unviable and dropped by a rewrite.
 
 ### 4.106 Mutation-report "verified caught" triage claim for a named survivor is directly falsifiable (CRITICAL)
 
@@ -4044,10 +3765,9 @@ Severity: CRITICAL — structurally §4.105's sibling, but triggered by the repo
 reproduce step rather than a static enumeration cross-check; the fastest catch is to do exactly what
 the report tells the reader to do.
 
-Added by: oss-reviewer on 2026-09-02 (onix PR #2 round 4): "applying that mutation and running
-`cargo test -p onix-core` directly makes the suite fail" for `diff/array.rs:82`'s `>`→`>=` mutant;
-running exactly that command gave 266/266 passing (survivor), confirmed by a scoped
-`cargo mutants -F` run.
+Added by: oss-reviewer after a Rust library PR's review: its body said applying a comparison mutant
+and running the core crate's tests makes the suite fail; running exactly that command gave 266/266
+passing, confirmed by a scoped mutation run.
 
 ### 4.107 De-jargoning PR silently bundles a fixture/data-generation code change that invalidates published benchmark numbers (CRITICAL)
 
@@ -4071,9 +3791,9 @@ repo's own reproduction instructions would produce different numbers. Fix: regen
 same PR as the generator change, or split the generator change into its own PR with regenerated
 results (or revert it and keep the numbers valid).
 
-Added by: oss-reviewer on 2026-09-02 (onix PR #4): fixture unwrapping changed api_payloads from
-51.63 MB (documented) to 46.62 MB (fresh run) — confirmed by running the generator, not by reading
-the diff.
+Added by: oss-reviewer after a Rust library PR's review: unwrapping fixtures changed one fixture set
+from a documented 51.63 MB to 46.62 MB on a fresh run, confirmed by running the generator, not by
+reading the diff.
 
 ### 4.108 Jargon-removal rewrite replaces an honest scope note with a fabricated technical justification (HIGH)
 
@@ -4092,10 +3812,9 @@ mechanisms the reviewer cannot independently verify.
 Severity: HIGH — a wrong "why" is worse than a vague "why": contributors generalize from it and
 avoid valid refactors or assume nonexistent constraints.
 
-Added by: oss-reviewer on 2026-09-02 (onix PR #4): "PEP-723 dependency isolation means they cannot
-import a sibling module" — contradicted two sentences earlier by three PEP-723 scripts doing exactly
-that; the real mechanism was directory placement (uv run prepends only the running script's dir to
-sys.path).
+Added by: oss-reviewer after a Rust library PR's review: a doc said script dependency isolation
+stops scripts importing a sibling module, two sentences after three such scripts did; the real
+mechanism was that the runner prepends only the script's directory to the import path.
 
 ### 4.109 Numbered internal roadmap slice/milestone tag leaked into application source comments (CRITICAL)
 
@@ -4116,8 +3835,8 @@ doc section.
 Severity: CRITICAL when the project's conventions explicitly ban referencing the untracked plan from
 tracked files; HIGH otherwise (unresolvable reference for a stranger).
 
-Added by: oss-reviewer on 2026-09-02 (onix PR #8): four new comments citing "slice-2"/"Slice 4" from
-the untracked plan, in run.rs, guard.rs ×2, and an example binary.
+Added by: oss-reviewer after a Rust library PR's review: four new comments cited slice numbers from
+an untracked plan, in source files and an example binary.
 
 Also match a short milestone tag in a comment or a cited filename; "interim" needs no digit
 (§4.142). Exclude also identifiers, hardware names and units.
@@ -4142,9 +3861,9 @@ one commit about what the system does is the finding.
 Severity: HIGH — the caveat's deletion is what converts stale-but-shielded prose into a false
 published claim.
 
-Added by: oss-reviewer on 2026-09-03 (onix PR #11): summarize_results.py's hardcoded GO-verdict
-paragraph still said "parsed into serde_json::Value" two slices after the engine migrated off it;
-regeneration deleted the pre-migration caveat and reprinted the stale claim.
+Added by: oss-reviewer after a Rust library PR's review: a results generator's hardcoded verdict
+paragraph still described a parsing step two slices after the engine dropped it; regenerating
+deleted the true caveat and reprinted the stale claim.
 
 In full-scope mode, diff a renderer's string literals against the document it generates, and open
 every pointer of this shape, intra-file included (case-insensitive):
@@ -4170,14 +3889,14 @@ than textual presence.
 
 Severity: HIGH — a later refactor can revert the whole feature to a no-op with the suite green.
 
-Added by: oss-reviewer on 2026-09-02 (seedling PR #384): all four "Runner wiring" markers survived
-replacing the sharded-dispatch `if` block with a bare unsharded call, because each matched text
-inside the dead function definition or a parsing block.
+Added by: oss-reviewer after an iOS app PR's review: four text-presence tests for a runner's wiring
+survived replacing the sharded dispatch with a bare call, because each matched text inside a dead
+function definition or a parsing block.
 
 ### 4.112 Review-pipeline vocabulary or citation shorthand shipped in a source comment (HIGH)
 
 A source/test comment cites the review process itself instead of the repo's tracker: gate/agent
-shorthand as a citation (`oss #384`), or phrasing lifted verbatim from a review brief
+shorthand as a citation (`oss #N`), or phrasing lifted verbatim from a review brief
 ("mutation-proven", "per the finding"). Tells: (1) the citation prefix matches no convention used
 elsewhere in the tree (grep for it); (2) the phrase is meaningless to a contributor who never saw
 the review tooling's prompts. Fix-cycle commits are the prime source — sweep the fix delta
@@ -4195,9 +3914,8 @@ Exclude: CHANGELOG/commit messages/PR bodies; citations that resolve under the r
 Severity: HIGH — ships an artifact of a private review pipeline into public source; unresolvable by
 any external reader.
 
-Added by: oss-reviewer on 2026-09-02 (seedling PR #384 round 2): a fix commit added
-`(mutation-proven, oss #384)` to a test comment; `grep -rn "oss #"` showed the format existed
-nowhere else.
+Added by: oss-reviewer after an iOS app PR's review: a fix commit added a gate-shorthand citation to
+a test comment, a format found nowhere else in the tree.
 
 Also match the §4.144 vocabulary.
 
@@ -4222,8 +3940,8 @@ engineering senses already idiomatic in the repo's own docs ("coverage gate", "g
 Severity: CRITICAL when the repo's own policy bans the vocabulary in PR bodies; otherwise §4.112's
 HIGH.
 
-Added by: oss-reviewer on 2026-09-04 (onix PR #45 round 4): the PR body's Notes opened a bullet with
-"Worker cost (finding on the unconditional spawn):" in a repo whose policy names PR bodies.
+Added by: oss-reviewer after a Rust library PR's review: the PR body's notes opened a bullet by
+naming it a finding, in a repo whose policy bans review vocabulary in PR bodies.
 
 ### 4.114 README delegates detail to a linked file that does not carry it (HIGH)
 
@@ -4239,8 +3957,8 @@ Exclude: links to a module or directory when the content is in a sibling file in
 Severity: HIGH when the delegated fact is behavior- or safety-relevant (an accepted false negative,
 a bound) and the same diff introduced the delegation.
 
-Added by: oss-reviewer on 2026-09-04 (onix PR #45 round 5): README linked lib.rs for the
-normalization rules and their one documented cost; both lived only in schema.rs private docs.
+Added by: oss-reviewer after a Rust library PR's review: the README linked a source file for
+normalization rules and their one documented cost, which lived only in another file's private docs.
 
 Applies to code as well: a "see X's doc for why" pointer between items is opened, and the target
 must carry the reason. A README pointer names a public item or a heading, never "the hashing
@@ -4266,9 +3984,9 @@ widenings whose diff also touches the doc comment.
 Severity: HIGH when a README or other doc delegates to this exact doc comment as the source of
 truth; INFO otherwise.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #45, f85dc9f): the map arm gained ListView and
-LargeListView; `normalized_type`'s and `map_entries`'s docs still named List/LargeList only, in the
-same commit that pointed the README at them.
+Added by: oss-reviewer after a Rust library PR's review: a match arm gained two list variants while
+two functions' docs still named only the older two, in the same commit that pointed the README at
+those docs.
 
 In full-scope mode, diff every closed type enumeration in a doc against the match arms it documents,
 and "both" or "the two" against the enum's variant count.
@@ -4282,8 +4000,8 @@ mechanism by path, and the path does not exist in any clone. Detect with
 
 Severity: CRITICAL when the repo's own policy bans process vocabulary in PR bodies; HIGH otherwise.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #54): the Notes section cited the untracked rule file
-that prescribed the bullet's form.
+Added by: oss-reviewer after a Rust library PR's review: the PR body's notes cited the untracked
+rule file that prescribed the bullet's form.
 
 ### 4.117 Known-limitations trigger shape narrower than the code's gate (HIGH)
 
@@ -4293,8 +4011,8 @@ nearest the description, and list every accepted arm against the doc's enumerati
 accepted arm is the finding (the doc undersells the risk surface a caller sizes a bound from).
 Exclude: a generic term defined precisely elsewhere in the same doc.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #54): "all JSON scalars" versus `all_basic_scalars`,
-which also accepts datetime and date values.
+Added by: oss-reviewer after a Rust library PR's review: a doc said "all JSON scalars" for a check
+that also accepts datetime and date values.
 
 ### 4.118 Pipeline synonym for "future PR" in public prose ("next slice", "this slice") (CRITICAL under a PR-body policy)
 
@@ -4310,8 +4028,8 @@ the ordinary phrasing ("a later version") elsewhere. Scope the check to prose, n
 Exclude: `std::slice`, `.as_slice()`, prose about an actual array slice; repos with no such policy
 (INFO at most).
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #55): "deferred to the next slice (#40); this slice
-returns the changed key set internally".
+Added by: oss-reviewer after a Rust library PR's review: a comment deferred work "to the next slice"
+with a tracker number while describing what the current slice returns.
 
 Also match the that/each/a determiners and the plural or possessive, outside code spans
 (case-insensitive):
@@ -4334,8 +4052,8 @@ decorative, and the path is absent from `git ls-files`.
 
 Exclude: `.gitignore` or CI entries naming the directory; repos that track the directory publicly.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #55 round 2): `is_hashable`'s doc ended with "(see
-`.claude/rules/arrow-nesting-depth.md`)".
+Added by: oss-reviewer after a Rust library PR's review: a function's doc ended by pointing at an
+untracked rule file.
 
 Also grep the bare basename of every untracked agent-rule file against the tracked tree (§4.143).
 
@@ -4353,8 +4071,8 @@ the pre-PR passage to confirm it was independent prose.
 
 Exclude: text meant to continue the last item's own point.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #57): perf/MUTANTS.md's "not reproducible run to run"
-caveat became part of the third mutant bullet.
+Added by: oss-reviewer after a Rust library PR's review: a results doc's "not reproducible run to
+run" caveat was folded into the third mutant bullet.
 
 ### 4.121 Versioned-data crate's cross-language parity claim has no runtime assertion (HIGH)
 
@@ -4365,8 +4083,8 @@ compared against the reference's reported version) and for an interpreter pin in
 finding. Exclude data generated from the reference at build time, or an exhaustive differential test
 over the whole domain.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #67): `unicode-general-category` 16.0.0 "matching
-CPython 3.14 on this machine", no assertion, no Python pin in CI.
+Added by: oss-reviewer after a Rust library PR's review: a dependency version was described as
+matching the Python version on the author's machine, with no assertion and no Python pin in CI.
 
 ### 4.122 Stale numeral in "the N items above" after the list shrank (HIGH in a source-of-truth doc)
 
@@ -4375,8 +4093,8 @@ CPython 3.14 on this machine", no assertion, no Python pin in CI.
 ```
 
 When a diff removes an item from an enumerated set, recount and compare with the summary sentence's
-numeral. Added by: oss-reviewer on 2026-09-05 (onix PR #67): "The two path-rendering exceptions
-above" after one was deleted.
+numeral. Added by: oss-reviewer after a Rust library PR's review: a summary still said "the two
+path-rendering exceptions above" after one was deleted.
 
 Also match a bare numeral before quirks, exceptions, divergences, differences or consequences, a
 numeral summarising another file's list, and "Step N" or "section N" pointers; recount each in its
@@ -4396,9 +4114,9 @@ that exact pattern — especially confined to newly-added text. Exclude: reintro
 author with explicit rationale (editorial reversal). Severity HIGH: the repo's own history already
 declared this signal an AI tell in this exact file.
 
-Added by: oss-reviewer on 2026-09-05 (seedling PR #388): commit 7df1228 "removed every em dash (the
-most-common AI tell)" drove the count to 0 across three release cycles; the PR's new Compare Kids
-copy reintroduced 3, all in its own added sentences.
+Added by: oss-reviewer after an iOS app PR's review: an earlier commit removed every em dash,
+calling it the most common AI tell, and the count stayed at 0 across three release cycles; the PR's
+new copy reintroduced 3, all in its own added sentences.
 
 ### 4.124 Verbatim clause duplicated across sibling copy fields meant to read independently (HIGH)
 
@@ -4408,9 +4126,9 @@ callout — the fingerprint of one generated sentence pasted into two fields. De
 n-gram overlap (8-grams) between the two files; a plain diff won't surface it. Exclude: literal
 product/feature names, legal boilerplate, taglines under ~5 words. Severity HIGH.
 
-Added by: oss-reviewer on 2026-09-05 (seedling PR #388): "actual weight or height side by side, or
-their percentile bands" appeared verbatim, identically dash-wrapped, in both release_notes.txt and
-description.txt.
+Added by: oss-reviewer after an iOS app PR's review: an eleven-word clause about a new comparison
+feature appeared verbatim, identically dash-wrapped, in both the release notes and the store
+description.
 
 ### 4.125 Cache or memo key type widened without restating its per-lookup cost (HIGH)
 
@@ -4421,8 +4139,9 @@ each hunk that changes a `BTreeMap<K, _>`/`HashMap<K, _>` key from flat to recur
 module and its posture doc for a same-diff update; absence is the finding. Exclude internal caches
 with no stated cost claim.
 
-Added by: oss-reviewer on 2026-09-05 (onix PR #69): `MemberContent::UnhashableDict`'s key went
-`String` → `ItemKey` on a default-path BTreeMap while memo.rs and fxhash.rs stayed unchanged.
+Added by: oss-reviewer after a Rust library PR's review: a memo map's key type was widened from a
+string to a recursive key type on a default path while the docs of the memo and hash modules stayed
+unchanged.
 
 ### 4.126 Closing "only documented exceptions" sentence omits an item added earlier in the same section (HIGH)
 
@@ -4432,8 +4151,8 @@ Added by: oss-reviewer on 2026-09-05 (onix PR #69): `MemberContent::UnhashableDi
 
 When a diff adds a named divergence or quirk to a section that closes with such a sentence, grep the
 sentence for the new item's keyword; absence is the finding. The inverse of 4.122 (a count going
-stale after a list shrinks). Added by: oss-reviewer on 2026-09-05 (onix PR #71): the time
-seconds-of-day hashing quirk joined the section but not its closing enumeration.
+stale after a list shrinks). Added by: oss-reviewer after a Rust library PR's review: a time-hashing
+quirk joined a section of quirks but not the section's closing enumeration.
 
 Also match:
 
@@ -4630,8 +4349,8 @@ the new numbers. Check `git log -p` on that cell before flagging.
 
 ### 4.140 Sub-item ordinal cited against a real issue whose body has no such numbering (HIGH)
 
-A source or test comment cites a real issue by number plus a sub-item ordinal ("issue #66 item 19",
-"issues #66 items 4, 9"). The outer reference resolves, so a shallow existence check passes, but the
+A source or test comment cites a real issue by number plus a sub-item ordinal ("issue #N item M",
+"issues #N items M, K"). The outer reference resolves, so a shallow existence check passes, but the
 issue body's checklist is unordered or shorter than the ordinal, so the citation is unresolvable for
 a contributor who follows it. The numbering leaked from a review round's or a brief's own item list,
 not from the tracker. Distinct from 4.109, where the whole plan is untracked.
@@ -4686,8 +4405,8 @@ territory); "interim" as a finance or standards term. Case-insensitive.
 Severity: HIGH; CRITICAL when the repo bans references to its untracked plan from tracked files. The
 text goes false silently and the plan it points at never ships with a clone.
 
-Added by: oss-reviewer self-mutation on 2026-10-07 after observing convert.rs:6 and
-ignore_order/mod.rs:45.
+Added by: oss-reviewer self-mutation after a Rust library's source comments described behaviour by
+roadmap-phase vocabulary in two modules.
 
 ### 4.143 Untracked-plan or private-rule authority cited in tracked prose (CRITICAL)
 
@@ -4708,8 +4427,8 @@ a tracked rule file.
 
 Severity: CRITICAL where the repo bans untracked-file references; HIGH otherwise.
 
-Added by: oss-reviewer self-mutation on 2026-10-07 after observing summarize_results.py:526 and
-gen_goldens.py:712.
+Added by: oss-reviewer self-mutation after a Rust library's results generator and golden-file
+generator cited an untracked plan in tracked prose.
 
 ### 4.144 Agent-harness and review vocabulary in tracked prose (CRITICAL)
 
@@ -4727,8 +4446,8 @@ in research prose; "round-trip". Fix: state the behaviour or the invariant in pl
 
 Severity: CRITICAL under a binding no-pipeline-terminology policy; HIGH otherwise.
 
-Added by: oss-reviewer self-mutation on 2026-10-07 after observing bench_tables.py:11-12 and
-diff/tests.rs:872.
+Added by: oss-reviewer self-mutation after a Rust library's benchmark script and test module carried
+agent-harness and review vocabulary.
 
 ### 4.145 Results document grades the change against its own target (HIGH)
 
@@ -4746,8 +4465,8 @@ exists.
 
 Severity: HIGH; CRITICAL where the ticket is untracked.
 
-Added by: oss-reviewer self-mutation on 2026-10-07 after observing perf/arrow/RESULTS.md:630-632,
-where the change is graded against the ticket's goal.
+Added by: oss-reviewer self-mutation after a Rust library's results document graded the change
+against the ticket's goal.
 
 ### 4.146 Config file that is mostly the tool's template comments (HIGH)
 
@@ -4764,7 +4483,8 @@ Exclude: a config whose comments are repo-specific rationale; generated lockfile
 
 Severity: HIGH. Scaffold left untrimmed; the settings that matter are buried.
 
-Added by: oss-reviewer self-mutation on 2026-10-07 after observing deny.toml:198 of 248 lines.
+Added by: oss-reviewer self-mutation after a Rust library's dependency-policy config whose comment
+lines were 198 of its 248 lines, mostly the tool's template.
 
 ### 4.147 Section rewrite leaves an orphaned remainder of the old section (HIGH)
 

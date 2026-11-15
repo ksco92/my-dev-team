@@ -45,3 +45,7 @@ message lacks the verdict block and asks it to resend once. The block is the one
 agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. The hook needs
 `jq` and does nothing without it; the exact patterns are in
 [`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
+
+## License
+
+Apache License 2.0; see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).

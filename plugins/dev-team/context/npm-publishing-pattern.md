@@ -1,25 +1,16 @@
 # npm Publishing Pattern (CI/CD)
 
-The shared CI/CD setup for the maintainer's TypeScript/npm projects. Replicate it on any new npm
-package. This document is self-contained, but the two reference repos below are the canonical,
-current source — read their actual files when replicating.
+A CI/CD setup for TypeScript packages published to npm through trusted publishing, binding for any
+repo that publishes an npm package unless the repo's own CLAUDE.md overrides. This document is
+self-contained: replicate it on any new npm package.
 
-## Reference repos
+## Repo layouts
 
-- **arceus** — single package at the repo root. npm package `cdk-glue-iceberg-table`.
-  <https://github.com/ksco92/arceus>
-  - Badges + layout: `README.md`
-  - CI: `.github/workflows/ci.yml`
-  - Publish: `.github/workflows/publish.yml`
-- **eevee** — monorepo; the npm package lives in `packages/core`. npm package `flexdataset`.
-  <https://github.com/ksco92/eevee>
-  - Badges + layout: `README.md`
-  - CI: `.github/workflows/ci.yml`
-  - Publish: `.github/workflows/publish.yml`
-  - Tagged full releases (binaries + PyPI): `.github/workflows/release.yml`
-
-Use **arceus** as the template for a single-package repo and **eevee** as the template for a
-monorepo (package in a subdirectory).
+- **Single package** at the repo root: badges in `README.md`, CI in `.github/workflows/ci.yml`,
+  publish in `.github/workflows/publish.yml`.
+- **Monorepo** with the npm package in a subdirectory (e.g. `packages/core`): the same three files,
+  with each workflow run in the package directory, plus `.github/workflows/release.yml` when the
+  repo also ships tagged full releases (section 6).
 
 ## 1. README badges
 
@@ -48,8 +39,9 @@ Triggers on push and pull_request to `main`. One job: checkout, `setup-node@v4` 
 tokenless upload is disabled there).
 
 For a monorepo, set `defaults.run.working-directory` to the package directory and
-`cache-dependency-path` to that package's `package-lock.json`. eevee's CI also has a `self-validate`
-job and a separate `python` job; those are project-specific additions on top of this base.
+`cache-dependency-path` to that package's `package-lock.json`. Extra jobs (a self-validation job, a
+separate `python` job for a sibling PyPI package) are project-specific additions on top of this
+base.
 
 ## 3. Publish workflow (`publish.yml`) — the core pattern
 
@@ -119,7 +111,7 @@ configured, the publish step fails without harm; CI and the version check still 
   in lockstep and bump them together. Regenerate the lockfile (`npm install --package-lock-only`) so
   `package-lock.json` name/version match `package.json` — a stale lockfile is a common miss.
 
-## 6. Optional: tagged full releases (eevee's `release.yml`)
+## 6. Optional: tagged full releases (`release.yml`)
 
 When a repo also ships standalone binaries and/or PyPI wheels, keep npm continuous (`publish.yml` on
 `main`) and put the heavier artifacts on a `v*` tag in `release.yml`: cross-compile per-platform
@@ -130,10 +122,10 @@ the version that `publish.yml` already shipped from `main`.
 ## 7. Replicate on a new repo
 
 1. Add the badge block to `README.md` (substitute owner / repo / package).
-2. Copy `.github/workflows/ci.yml` from arceus (single package) or eevee (monorepo; set the package
+2. Add `.github/workflows/ci.yml` as section 2 describes (for a monorepo, set the package
    `working-directory`).
-3. Copy `.github/workflows/publish.yml`; substitute the package name in the version check and, for a
-   monorepo, set the package `working-directory`.
+3. Add `.github/workflows/publish.yml` as section 3 describes; substitute the package name in the
+   version check and, for a monorepo, set the package `working-directory`.
 4. Configure npm trusted publishing for the package (section 4).
 5. Adopt the version-bump-per-PR rule (section 5).
 6. Set the `CODECOV_TOKEN` repo secret if `main` is protected.

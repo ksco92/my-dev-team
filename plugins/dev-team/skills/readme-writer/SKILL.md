@@ -11,8 +11,7 @@ the repo, every finding blocks per the owner's nits-block policy.
 
 Everything here is grounded in adversarially-verified research (GitHub official docs, the Standard
 README spec, GitHub's Open Source Survey, CSCW/EMSE empirical studies, LLM-docs preprints) plus the
-owner's house style (arceus, eevee). Where evidence is weak, this file says so instead of
-pretending.
+owner's house style (§8). Where evidence is weak, this file says so instead of pretending.
 
 ## 1. Content baseline (what a README must answer)
 
@@ -78,11 +77,11 @@ carry at most one caveat clause between them; a README whose second sentence is 
 the order backwards. A limitation bullet states the boundary and its trigger, never how often it
 occurs ("rare in practice").
 
-**Length budget.** Target ≤250 lines. Exempt from the budget: user-facing API reference (the arceus
-pattern: every export documented with an example) and any table that shows the project's
-competitiveness — benchmarks, comparisons against alternatives, feature matrices, measured data.
-Those tables stay in the README in full; only their _methodology_ moves to the linked report.
-Everything else over budget links out rather than expanding.
+**Length budget.** Target ≤250 lines. Exempt from the budget: user-facing API reference (every
+export documented with an example) and any table that shows the project's competitiveness —
+benchmarks, comparisons against alternatives, feature matrices, measured data. Those tables stay in
+the README in full; only their _methodology_ moves to the linked report. Everything else over budget
+links out rather than expanding.
 
 **Multi-surface projects** (a library plus a CLI plus bindings): Install lists each surface as its
 own one-liner, largest audience first; an unpublished channel gets one line ("not yet published;
@@ -147,11 +146,11 @@ badges are noise; **more than ~5 badges correlates with FEWER downloads** for po
 
 **Classic (verified, do all of it):** H1 exactly = the name a user installs (when the repo or engine
 name differs from the package name, the package name is the H1 and the repo/engine name goes in the
-first sentence — arceus is the precedent: repo `arceus`, H1 `cdk-glue-iceberg-table`); the value
-proposition contains the terms a searcher would use (what-it-is + ecosystem, e.g. "Rust",
-"DeepDiff-compatible", "JSON diff"); repo description filled (Repo description operation;
-triple-match §3); GitHub host: repo topics set (do it via gh api, it's free); social-preview image
-optional but cheap.
+first sentence: a construct library whose repo carries a short project name has its npm package name
+as the H1); the value proposition contains the terms a searcher would use (what-it-is + ecosystem,
+e.g. "Rust", "DeepDiff-compatible", "JSON diff"); repo description filled (Repo description
+operation; triple-match §3); GitHub host: repo topics set (do it via gh api, it's free);
+social-preview image optional but cheap.
 
 **AI/LLM consumption (real concern, honest evidence):** verified: LLMs systematically fail on
 under-documented libraries (~30% success on niche libs across 5+ models) and a human-oriented README
@@ -176,11 +175,10 @@ support is absent. Therefore:
    you didn't verify.
 2. Sort every candidate paragraph by audience (§2 audience rule) BEFORE drafting: user-facing stays,
    contributor-facing goes to `CONTRIBUTING.md` (create it in the same change if it does not exist).
-   Then draft in the §2 order, house voice: bold value-prop opening (see the owner's arceus/eevee
-   READMEs — declarative, specific, no marketing fluff, inviting: lead with what the reader can do,
-   not with what the tool cannot), dated status, install-every-channel, smallest-complete
-   quickstart, limitations after Usage. Check the length budget last and link out, never compress
-   prose into denser prose.
+   Then draft in the §2 order, house voice: bold value-prop opening (§8 — declarative, specific, no
+   marketing fluff, inviting: lead with what the reader can do, not with what the tool cannot),
+   dated status, install-every-channel, smallest-complete quickstart, limitations after Usage. Check
+   the length budget last and link out, never compress prose into denser prose.
 3. Wire executable examples (§3) where the ecosystem supports it.
 4. Set/verify repo description + topics + package description (triple-match).
 5. Self-review with the §7 checklist before handing off.
@@ -218,7 +216,7 @@ Checklist (each item is a concrete check):
       API-reference or competitiveness-table exemption — MEDIUM; on a multi-surface project, the
       first screen unusable for the registry that renders this README — HIGH
 
-## 8. House style (owner's fingerprint — from arceus/eevee)
+## 8. House style (owner's fingerprint)
 
 - Opening: **bold, specific, one-to-three-sentence value proposition** naming the exact artifact and
   its differentiator ("X is the Y that Z — no A, no B").
@@ -226,10 +224,10 @@ Checklist (each item is a concrete check):
 - Install lists every real channel with its one-liner.
 - Links point INTO the repo (spec/, packages/, docs/) — the README is a hub, not a silo.
 - Honest limitations: a one-line pointer inline where a user would hit one, the full list in a
-  "Known limitations" section after Usage (arceus), never in the opening paragraph and never ahead
-  of the quickstart.
-- Length comes from user-facing reference (arceus: 649 lines, almost all API and FAQ), never from
-  contributor internals; eevee says everything a user needs in 99 lines and links the rest.
+  "Known limitations" section after Usage, never in the opening paragraph and never ahead of the
+  quickstart.
+- Length comes from user-facing reference, never from contributor internals; a README says what a
+  user needs and links the rest.
 
 ## Self-mutation rule
 
