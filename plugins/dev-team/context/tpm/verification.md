@@ -2,10 +2,11 @@
 
 Evidence rules for slices whose deliverable is a live claim: deploys and data loads, post-publish
 installs, interruption handling, CI floors and legs, broad UI-suite failures, tool flags a skill
-relies on, live runs and their recorded inputs, live-proof claims after a policy change,
-response-schema tests, test counts and mutations, equivalence proofs for a dependency swap, and the
-diagnosis of a vague authorization denial. Read before writing the issue for such a slice and again
-before its gates.
+relies on, a value claimed to leave a tool's or a job's behaviour unchanged, a shipped skill's dry
+run, live runs and their recorded inputs, live evidence carried in a PR body or a walk-through,
+live-proof claims after a policy change, response-schema tests, test counts and mutations,
+equivalence proofs for a dependency swap, and the diagnosis of a vague authorization denial. Read
+before writing the issue for such a slice and again before its gates.
 
 - A tool's preview/verify/dry-run flag is not assumed to produce the real run's side effects; verify
   against the tool's code path, and give a skill's central promised artifact a deterministic check
@@ -64,3 +65,37 @@ before its gates.
   and compare its request parameters and caller context with a call that succeeded; and when
   changing the grant leaves the request and the denial identical, stop varying grants, the denial is
   not from the grant.
+- Write a ticket's live scenario (what triggers what, which resources a deploy holds) from the
+  consumer app's deployed configuration read at dispatch, never from memory of it; a scenario the
+  deployed configuration contradicts surfaces only when the live run does nothing.
+- When a slice ships a skill or doc that prescribes code for others to write, its dry run executes
+  every operation the file offers, not only the one the acceptance criteria name; the operation the
+  criteria skip is where a wrong rule survives.
+- An acceptance criterion that depends on a live failure fixture ("show the skip line for the
+  unreadable X") names the API call that fails on X, checked before dispatch; a path that never
+  makes that call never trips the fixture.
+- A ticket that asks for live evidence in the PR body names the commands whose output the body
+  carries as a closed list, and every command a plural item covers is counted from the run's saved
+  logs before the body is posted; "every command and its output" is a universal each read extends.
+- Build a PR body that carries command output by script from the saved outputs, each command line
+  taken from the command that ran, never from a label the log echoed, and apply it from a file, so a
+  fix round closes on a diff of the host's copy against that file. A helper script whose output the
+  body cites prints each command it runs and is frozen before its first saved output.
+- Expected values in a live-proof ticket (the order of a run's log lines, a row count after a step
+  that may repeat) are copied from the code path at the head, and a "repeat when" step states the
+  values for both outcomes.
+- GitHub host: a PR body holds 65,536 characters, so before a live proof whose outputs go in the
+  body, run the largest block's command first, add the block sizes up against the cap, and have the
+  ticket name the author comment that carries what does not fit.
+- A walk-through's expected output quotes only text the command prints, character for character,
+  compared with the raw output of a run; a structured logger wraps and escapes the message, and an
+  assumed-role caller identity prints in its `sts` form.
+- An observation whose before and after values are equal cannot support a claim that a step does not
+  restore or change that value; state the observation with its before value, or cite a source that
+  settles it.
+- A mutant's count of failed tests is taken only from a run that ends with no collection or fixture
+  error and no deselected test; a `-k` filter that skips the slow tests reports fewer failures than
+  the full suite a reviewer runs.
+- Before calling a launcher argument's value neutral, check every process that receives it (the
+  workers' or executors' launch arguments as well as the driver's); a driver can accept a value that
+  a worker's bootstrap rejects.

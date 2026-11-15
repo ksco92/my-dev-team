@@ -12,7 +12,7 @@ authoritative project conventions:
 | Django / Django REST Framework | `django-coding-guide.md`, with the Python guide |
 | A native extension's Python face (maturin / PyO3) | `python-bindings-coding-guide.md`, with the Python guide |
 | Rust | `rust-coding-guide.md` |
-| AWS CDK / infrastructure-as-code | `cdk-coding-guide.md` |
+| AWS CDK / infrastructure-as-code | `cdk-coding-guide.md`, with `cdk-services-coding-guide.md` for Glue, Lake Formation, CloudTrail, CloudFront, Step Functions or EventBridge |
 | React / frontend TypeScript | `react-coding-guide.md` |
 | npm publishing / CI-CD / version bumps / badges | `npm-publishing-pattern.md` |
 | Spawning or acting as an implementer-type subagent | `agent-baseline.md` |

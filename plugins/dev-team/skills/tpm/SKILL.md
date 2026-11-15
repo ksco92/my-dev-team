@@ -57,7 +57,10 @@ wrong; put the model to the owner before briefing the workaround.
 When a criterion is a universal negative ("must never leak", "never loses a row"), write the
 acceptance at intake as a closed list of the inputs it covers and have the slice record the
 remainder in the repo's `CLAUDE.md` as accepted risk with a revisit trigger; gates judge the slice
-against that list, and without it every review round finds a neighbouring input.
+against that list, and without it every review round finds a neighbouring input. When the criterion
+is that a pattern rejects every value off its form, the list is generated (every value one edit from
+each valid sample, sent through each input the pattern guards) and one accepted risk covers every
+value outside the list.
 
 When the request is framed as an experiment or exploration ("for starters", "we'll take it from
 there", "see if this works") and the resolved process file's Experiment section allows the mode,
@@ -124,23 +127,27 @@ consumer's tests for every count or per-resource loop the new version changes.
 A recipe's test list covers each operand of a compound guard on its own and varies every
 pass-through parameter at least once at every call that forwards it, a nested factory included, so a
 literal in place of the parameter fails a test; a thrown message it prescribes names the remedy as
-well as the condition; and it prescribes no assertion the type system already guarantees. Check
-every exact-string assertion a recipe prescribes against the existing fixture before dispatch; a
-fixture row that already carries the new marker makes the assertion unsatisfiable and the
-implementer rewrites the fixture to fit.
+well as the condition, a remedy that holds for each kind of object the message can name; and it
+prescribes no assertion the type system already guarantees. Check every exact-string assertion a
+recipe prescribes against the existing fixture before dispatch; a fixture row that already carries
+the new marker makes the assertion unsatisfiable and the implementer rewrites the fixture to fit.
 
 ## Phase 4 — Delegation
 
 Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice
 involves a deploy or data load, a post-publish install, interruption handling, a CI floor or new CI
-leg, a broadly failing UI suite, a tool flag a skill relies on, a live run or its recorded input, a
-live-proof claim after a policy change, a response-schema test, or a test count or mutation, also
-read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`; when it involves a benchmark or published
-number, a performance or complexity fix, a profile, a port or parity target, a new binding or FFI
-layer, or an output-comparison harness, also read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each before writing its issue and its briefs.
-For an experiment run, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
+leg, a broadly failing UI suite, a tool flag a skill relies on, a value claimed to leave a tool's or
+a job's behaviour unchanged, a shipped skill's dry run, a live run or its recorded input, live
+evidence in a PR body or a walk-through, a live-proof claim after a policy change, a response-schema
+test, or a test count or mutation, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`;
+when it involves a benchmark or published number, a performance or complexity fix, a timeout or
+capacity sizing, a profile, a port or parity target, a new binding or FFI layer, or an
+output-comparison harness, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/measurements.md`; each
+before writing its issue and its briefs. When a brief prescribes, trims or moves README, rules-file,
+policy-file, skill-file or doc-comment text, also read
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md`. For an experiment run, also read
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`.
 
 | Difficulty | Implementer             | Mechanism                                                                                                                             |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -161,9 +168,13 @@ Brief a subagent like a smart colleague who just walked in: the ticket text or I
 (the process file's Branch name operation), repo path, workspace instructions, the PR body template,
 what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace (Create
 workspace operation), and the process file's Primary checkout rule applies; a cross-repo brief opens
-with that command run explicitly in the target repo. Run independent slices in parallel as far as
-the Parallelism operation allows, multiple Agent calls in one message. After each merge, remove the
-workspace and kill any process still running from it (Remove workspace operation).
+with that command run explicitly in the target repo. Before dispatching a slice another slice
+blocked, re-read its ticket against what the blocker merged (the version, the names, the rule it
+exercises) and amend it first; before any dispatch, read the brief against the ticket's requirements
+line by line, since a brief instruction that contradicts the ticket costs a gate round. Run
+independent slices in parallel as far as the Parallelism operation allows, multiple Agent calls in
+one message. After each merge, remove the workspace and kill any process still running from it
+(Remove workspace operation).
 
 **Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer, and
 orchestrator in one process. Run the phases sequentially: implement one slice in its workspace and
@@ -180,9 +191,12 @@ of the baseline explicitly; a `low` slice is where an over-build is cheapest to 
 
 ## Phase 5 — Gates, fix loop, merge
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md` and
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run; re-read
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` before each fix brief.
+Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md`, `${CLAUDE_PLUGIN_ROOT}/context/tpm/findings.md`
+and `${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run, also
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/server-probes.md` when a PR starts a server, a child process or a
+JVM, and `${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md` when a PR changes a README, a rules or
+policy file, a skill file or doc comments; re-read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md`
+and `findings.md` before each fix brief.
 
 You drive this for every PR, including a local branch→main merge in a repo with no remote — that
 merge _is_ the PR for gate purposes, and the hook guards `git merge` on main the same way.
@@ -304,10 +318,11 @@ At the end of a run, triage every `Proposed learned pattern:` a subagent returne
 learned yourself. One test decides the home: _would this be true in a different repo?_
 
 - Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `gates`, `review-probes`, `verification`, `measurements`, `operations`, `experiment`) or the
-  relevant agent file, as a rule (imperative, one sentence, two at most; no date, repo, or PR name,
-  no incident narrative — the git log keeps the archaeology). A change to the procedure itself goes
-  into the phase text of this file, and a rule already stated there is never repeated as a bullet.
+  `doc-edits`, `gates`, `findings`, `review-probes`, `server-probes`, `verification`,
+  `measurements`, `operations`, `experiment`) or the relevant agent file, as a rule (imperative, one
+  sentence, two at most; no date, repo, or PR name, no incident narrative — the git log keeps the
+  archaeology). A change to the procedure itself goes into the phase text of this file, and a rule
+  already stated there is never repeated as a bullet.
 - Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
 - No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or the
   agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the normal PR

@@ -1251,3 +1251,25 @@ section above and leaves this list.
   position (the first string statement of a module, class or function), less their `:param:`,
   `:return:` and `:raises:` lines; a scan for `#` lines or triple quotes counts an embedded script
   or fixture string as prose.
+- Check that a parsed JSON value is a `dict` before testing a key with `in`
+  (`"K" in json.loads(x)`): on a number or `None` it raises `TypeError`, and on a list or a string
+  it tests element or substring membership.
+- A PySpark field stays non-nullable through `F.lit` of a non-None value, `F.localtimestamp()` and
+  arithmetic over non-nullable columns, and turns nullable through `F.to_date(F.lit(text))`, an
+  aggregate, a cast of a nullable input or the optional side of an outer join; `where(isNotNull())`
+  leaves the schema nullable and `DataFrame.to(schema)` rejects the change, so make a field
+  non-nullable with `F.coalesce(expr, F.lit(fallback))` or `spark.createDataFrame(df.rdd, schema)`.
+- A mutation run that rewrites a module repeatedly sets `PYTHONDONTWRITEBYTECODE=1` and clears
+  `__pycache__` first; bytecode staleness is checked by whole-second mtime and size, so a
+  same-length mutant written within the second of the last one runs the previous mutant's `.pyc`.
+- When code catches a framework's converted exception type around calls into a foreign runtime
+  (PySpark's `CapturedException`, a gRPC status wrapper), trigger one real refusal and check its
+  Python class before trusting the handler or its tests; a converter passes an exception it does not
+  recognise through raw, and a test fake that subclasses the caught type cannot show that.
+- `patch("<module>.time.sleep")` sets `sleep` on the one shared `time` module, so another thread
+  that sleeps during the test consumes the mock's side effects; patch the module's own name
+  (`patch("<module>.time")`) and set `sleep` on that mock.
+- Before recommending a pip option as a security control, test it against every form a caller can
+  supply (wheel, source distribution, requirements file, direct path or URL), each with the other
+  conditions removed; `--dry-run` still runs a source distribution's build backend, and
+  `--only-binary` does not apply to a requirement given as a path.

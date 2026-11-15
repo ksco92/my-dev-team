@@ -53,3 +53,6 @@ bullet when you have one.
 - The Host matches an allow-listed entry exactly, and each entry is the URL parser's canonical
   output, so `127.1`, `0x7f000001`, `LOCALHOST`, trailing-dot and `*.localhost` spellings never
   match while the canonical `127.0.0.1`, `[::1]` and `localhost` entries stay valid.
+- When a slice validates a caller-supplied string, check that the copy it validates (trimmed or
+  otherwise normalised) is the copy it emits to the template, the wire or the store; a check on one
+  form and an emit of another passes the check and fails downstream.
