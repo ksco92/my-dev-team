@@ -164,7 +164,7 @@ Steps:
    reasonable values; if the README says `pip install foo`, run `pip install foo` literally. If it
    doesn't work, that's the finding.
 6. After the quickstart, run whatever the README claims as the "verify it worked" step (e.g.
-   `make test`, `pag status`, `pytest`).
+   `make test`, `<tool> status`, `pytest`).
 7. Record the exit code and the last 30 lines of stdout/stderr from each command.
 
 Flag as **BLOCKER** if any quickstart step:
@@ -198,8 +198,9 @@ Checks:
    etc.). A `LICENSE` file containing only "© <author> 2026" is **not** detectable.
 3. The license declared in `pyproject.toml` / `package.json` / `Cargo.toml` matches the file. A
    `pyproject.toml` claiming `license = {text = "MIT"}` with an Apache-2.0 file is a BLOCKER.
-4. The file contains a **plausible copyright line** (`Copyright (c) YYYY <name>`). A LICENSE file
-   with `<COPYRIGHT HOLDER>` placeholder text is a BLOCKER.
+4. The file contains a **plausible copyright line** (`Copyright (c) YYYY <name>`), or, for Apache
+   2.0, `NOTICE` does. A LICENSE file with `<COPYRIGHT HOLDER>` placeholder text is a BLOCKER; the
+   bracketed appendix of the unmodified Apache 2.0 text is not placeholder text.
 
 Severity:
 
@@ -262,7 +263,7 @@ on `--scope=diff` re-review cycles unless the diff touches manifests, CI workflo
 
 ## Phase 6 — Out-of-the-box test summary
 
-Re-state the Phase 1 findings as a single answer: **Did `pag init` / `make setup` / equivalent
+Re-state the Phase 1 findings as a single answer: **Did `<tool> init` / `make setup` / equivalent
 actually work without intervention?** This is the headline. Everything else is detail.
 
 ## Composite AI-likelihood score

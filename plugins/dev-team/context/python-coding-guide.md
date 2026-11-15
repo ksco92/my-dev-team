@@ -1,7 +1,8 @@
 # Python Coding Standards Guide\
 
-This document defines the Python coding standards for Rodrigo's projects. These standards are
-enforced through automated linters and formatters configured in the codebase.
+Standards and rules for Python projects, binding for any repo where Python is written unless the
+repo's own CLAUDE.md overrides. These standards are enforced through automated linters and
+formatters configured in the codebase.
 
 ---
 
@@ -370,21 +371,21 @@ above — don't force blank lines between consecutive guard clauses. This is dis
 that gates a larger body (that still follows rule 2 normally); the exemption is specifically for a
 run of short, single-purpose early returns.
 
-**Example** (drawn from `build_earnings_rows` and `get_data_frame`):
+**Example**:
 
 ```python
 rows: list[tuple] = []
 
 for record in records:
-    report_date = as_optional_date(record.get("report_date"))
+    order_date = as_optional_date(record.get("order_date"))
 
-    if report_date is None:
+    if order_date is None:
         continue
 
     rows.append(
         (
-            symbol,
-            report_date,
+            customer_id,
+            order_date,
             ...
         ),
     )
@@ -393,18 +394,18 @@ return rows
 ```
 
 ```python
-universe_size = symbols.count()
+customer_count = customers.count()
 
-rows = symbols.rdd.mapPartitions(
-    lambda partition: fetch_earnings_for_partition(partition, api_token, to_date),
+rows = customers.rdd.mapPartitions(
+    lambda partition: fetch_orders_for_partition(partition, api_token, to_date),
 )
 
-df = drop_duplicates(spark.createDataFrame(rows, schema=earnings_schema), pk_columns).persist()
+df = drop_duplicates(spark.createDataFrame(rows, schema=orders_schema), pk_columns).persist()
 
-if universe_size and is_df_empty(df):
-    raise EODHDError(
-        "eodhd.earnings_calendar fetched zero rows for a non-empty symbol universe; "
-        "the calendar/earnings response shape may have changed.",
+if customer_count and is_df_empty(df):
+    raise OrdersAPIError(
+        "shop.orders fetched zero rows for a non-empty customer list; "
+        "the orders response shape may have changed.",
     )
 
 return df
@@ -436,7 +437,7 @@ def get_data_frame(spark: SparkSession) -> DataFrame:
     """
     df = drop_duplicates(...).persist()
     # Cache precedes the guard so the emptiness probe does not re-run the fan-out.
-    if universe_size and is_df_empty(df):
+    if customer_count and is_df_empty(df):
         ...
 ```
 
@@ -454,7 +455,7 @@ reader carries forward:
     # get_data_frame(spark) receives no PK, and one extra GetTable per run is
     # cheaper than widening the module contract.
     glue_client = GlueClient()
-    pk_columns = glue_client.get_table_pk("eodhd", "earnings_calendar")
+    pk_columns = glue_client.get_table_pk("shop", "orders")
 ```
 
 **Do**: drop the comment — the two-line call is self-explanatory, and the trade-off lives in the PR
@@ -479,11 +480,11 @@ explanation.
 #### Section Separators
 
 Multiline comment separators are used for readability and **must not be removed**. Apply them
-uniformly to every **job module** under `src/charmander/databases/` — one labeled banner before its
-constants block (if any) and one before each top-level function or logical method group, regardless
-of the file's size. A short, 3-function job module gets the same treatment as a large one; don't
-size-gate this on line count or perceived necessity within that population — consistency across
-every job module is the point:
+uniformly to every **job module** of an ETL project that keeps one module per job (e.g. under
+`src/<package>/databases/`) — one labeled banner before its constants block (if any) and one before
+each top-level function or logical method group, regardless of the file's size. A short, 3-function
+job module gets the same treatment as a large one; don't size-gate this on line count or perceived
+necessity within that population — consistency across every job module is the point:
 
 ```python
 ##############################################

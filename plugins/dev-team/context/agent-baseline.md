@@ -124,6 +124,10 @@ in one of them.
 - Cross-reference one hop, by name, only when the reader must go there. "See X's doc, which explains
   Y" chained across three items is three homes for one fact, and a file points at a design page
   once, from its module doc, never declaring itself the single home.
+- When a same-file function doc already states a fact at its point of use, point there rather than
+  adding the fact to a design page. A pointer of the form "<file>'s '<Section>' section, its
+  '<point>' point" names the heading that encloses the point (check the line falls inside that
+  heading's span), and calls a bold lead-in a point, never a section.
 - No adverbs of persuasion ("deliberately", "critically", "surprisingly", "faithful", "exactly
   like"), no bold for emphasis, and no defenses ("not a gap", "faithfully reproduced", "rare in
   practice"). They address a reviewer, not a maintainer: state a limit once and point at the
@@ -286,28 +290,22 @@ instead.
   started.
 - When relocating or trimming a doc essay, re-derive every factual claim (submodule counts,
   type-eligibility lists, dispatch conditions, cost bounds) from the current source rather than
-  condensing the old prose, and sweep for references whose target file still exists but no longer
-  carries the content; a grep for removed headings finds broken pointers only, so the sweep runs
-  whitespace-collapsed across line breaks over every tracked file, including a generator script that
-  embeds the same prose it writes, and including the gutted file's own self-references ("this
-  module's doc", "the module docs'", a `(self)` link to a named section) and crate-qualified
-  citations from sibling crates (`[onix_core::datetime]`'s module doc), which resolve as links while
-  pointing at a heading that is gone; a bold-lead sentence another file quotes, or an informal "the
-  X section" mention of a paragraph that was never a heading, is an anchor too, so grep the tracked
-  tree for each quoted phrase before shortening it. When a same-file function doc already states the
-  fact at its point of use, point there rather than adding it to a design page. Grep the surviving
-  doc for bare "see below"/"see above" pointers separately, since they name no heading and survive a
-  heading grep while going stale; and a pointer of the form "<file>'s '<Section>' section, its
-  '<point>' point" names the heading that actually encloses the point (check the line falls inside
-  that heading's span), and calls a bold lead-in a point, never a section. When a summary sentence
-  is replaced by "every X: <pointer>", grep the pointer's target for each item the deleted prose
-  named (the rarest, a resource-limit error, is the one the target usually lacks). A
-  security-posture doc trimmed to "the statement plus the enumeration" keeps both the severity half
-  (the concrete cost of the accepted risk) and the mitigation half (why ordinary input does not
-  already trip it); only the narrative between them is cut. A "why we split this" comment that cites
-  a build-mode mechanism (debug frame sizing) keeps the mechanism: if a reader of the trimmed text
-  could conclude that inlining the pieces back together is fine, the mechanism was dropped, not
-  condensed.
+  condensing the old prose, and grep every tracked file, whitespace-collapsed across line breaks,
+  for each anchor that pointed at the cut content: a heading, a bold-lead sentence or other phrase
+  another file quotes, an informal "the X section" mention of a paragraph that was never a heading,
+  a bare "see below"/"see above" (it names no heading), a crate-qualified citation from a sibling
+  crate (`[core_crate::datetime]`'s module doc, which resolves as a link while its heading is gone),
+  and the gutted file's own self-references ("this module's doc", "the module docs'", a `(self)`
+  link to a named section), in a generator script that embeds the same prose too. A heading grep
+  alone finds only broken links, never a pointer whose target file survives without the content.
+- A trimmed passage keeps what its replacement does not carry: grep the target of an "every X:
+  <pointer>" for each item the deleted prose named (the rarest, a resource-limit error, is the one
+  the target usually lacks), and keep the mechanism a "why we split this" comment cites (debug frame
+  sizing): if a reader of the trimmed text could conclude that inlining the pieces back together is
+  fine, the mechanism was dropped, not condensed. A security-posture doc trimmed to "the statement
+  plus the enumeration" keeps both the severity half (the concrete cost of the accepted risk) and
+  the mitigation half (why ordinary input does not already trip it); only the narrative between them
+  is cut.
 - When you add a function that supersedes what an existing function's doc claims ("the name X would
   report"), reword the old doc in the same change; it becomes false without either function being
   edited, and no compiler or test notices.
