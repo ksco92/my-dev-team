@@ -1,6 +1,6 @@
 # CDK Coding Guide
 
-Standards and rules for the Psyduck CDK infrastructure project.
+Standards and rules for AWS CDK infrastructure projects written in TypeScript.
 
 ---
 
@@ -65,6 +65,9 @@ Standards and rules for the Psyduck CDK infrastructure project.
 
 - **IAM roles:** Only attach the minimum managed policies needed. EB EC2 role gets
   `AWSElasticBeanstalkWebTier` + `AWSElasticBeanstalkWorkerTier` only.
+- **Policy claims:** Check a claim that every statement of a kind carries a condition against the
+  statements of a fully synthesized template, root and nested stacks, not a grep of the source; an
+  L2 construct adds statements the source never writes.
 - **Secret access:** Only the EB role and the rotation Lambda can read the RDS secret.
 - **S3 access:** Block all public access (`BlockPublicAccess.BLOCK_ALL`). CloudFront uses Origin
   Access Control (OAC), not public bucket policies.
@@ -336,7 +339,9 @@ one instructed to read this file; a subagent that notices something worth adding
 of this stack; repo-specific facts go to that repo's `.claude/rules/`. Append an imperative bullet
 under `## Learned patterns` (one sentence, two at most; no date, no repo name, no "added after"
 tail), refine near-duplicates in place, keep the section under ~25 entries, and open a PR against
-the plugin repository (`ksco92/my-dev-team`).
+the plugin repository (`ksco92/my-dev-team`). A lesson on how an AWS service behaves behind its
+construct (Glue, Lake Formation, CloudTrail, CloudFront, Step Functions, EventBridge) goes to
+`cdk-services-coding-guide.md`.
 
 ## Learned patterns
 
@@ -353,49 +358,10 @@ the plugin repository (`ksco92/my-dev-team`).
   the typings by synthesizing both against the base; a stable promotion can flip a default (a
   removal policy gaining RETAIN) on a fixed-name resource that destroy-then-redeploy then trips
   over.
-- `cdk-glue-iceberg-table` ≥ 0.5.0 requires explicit top-level `IcebergColumn.id` and allocates
-  nested ids by counter; pin only top-level ids and verify nested ones by synth. ≥ 0.6.0 also
-  requires `IcebergPartitionField.fieldId` (≥ 1000), unique across the table's whole spec history:
-  an untouched field keeps its id, any change makes a new field with a never-used id.
-- `cdk-glue-iceberg-table` ≥ 0.11.0: Glue `UpdateTable` reuses a history schema whose fields match
-  and keeps its identifier-field-ids, so an identifier-only change is dropped and the construct's
-  `(PK) ` doc marker is what carries the ids. A `fieldId`-only partition change is a no-op (a new
-  transform is applied), and a V2 to V3 `formatVersion` change updates the `format-version` property
-  while the metadata stays 2.
-- A construct that promises files stay under one location rejects the Iceberg properties that
-  relocate data or metadata (`write.*.path`, `write.location-provider.impl`).
 - A CloudWatch `Dashboard` body is an `Fn::Join` with region tokens and L2 dimensions render as
   `Ref`s; in template tests join the parts with a placeholder for intrinsics, parse, and assert
   dimension keys, not values. Glue catalog objects and LakeFormation permissions are not taggable;
   `Tags.of()` skips them silently.
-- The `aws-cloudtrail` L2 `Trail` with a customer-managed key does not grant the CloudTrail service
-  principal on the key, and the two statements it adds to a passed-in bucket carry no
-  `aws:SourceArn`; add the KMS grant yourself with a `formatArn`-built trail ARN (not
-  `trail.trailArn`, which cycles) plus a bucket Deny for that principal when `aws:SourceArn` is not
-  that ARN, and assert both in template tests.
-- A `Trail` with `managementEvents: ALL` plus `logAllS3DataEvents()` and `logAllLambdaDataEvents()`
-  deploys as three selectors; pin the synthesized selectors with `Match.exact`, since the data
-  selectors leave `IncludeManagementEvents` unset while the live API reports it `true`.
-- Register Lake Formation locations with a user-defined role trusting `lakeformation.amazonaws.com`
-  for `sts:AssumeRole` and `sts:SetContext`, never the service-linked role: Lake Formation vends
-  external engines (Glue Data Quality, EMR) no credentials from a service-linked registration, so
-  their `GetDataAccess` answers `Access is not allowed.` whatever the grants or data-lake settings
-  while Athena still passes. Write the role's own policy explicitly (object get, put and delete,
-  `s3:ListBucket`, `kms:Decrypt` and `kms:GenerateDataKey*` on the bucket key), never
-  `grantReadWrite`, which adds `DeleteObjectVersion` and retention actions, and check the
-  registration role before turning on a data-lake setting to cure a denial.
-- Lake Formation-only access needs `hybridAccessEnabled: false` on the registration and no
-  `IAM_ALLOWED_PRINCIPALS` grant on the construct's databases and tables: an empty
-  `CreateTableDefaultPermissions` on each database, asserted in a template test, and an empty
-  `CreateDatabaseDefaultPermissions` in the account's `DataLakeSettings`, which is a deployment
-  precondition proved by a read-only `list-permissions` on the database, not by a template test.
-- Lake Formation gives the principal that creates a table (the CloudFormation execution role) its
-  own permissions on it, so a "no grant to the execution role" criterion is judged on the templates,
-  never on `list-permissions`.
-- Lake Formation admin status grants no `CREATE_TABLE` on a database, so an engine's `CREATE TABLE`
-  through the Glue catalog fails with `Required Create Table on <database>` even for an admin
-  principal; create integration tables through the construct's own stack and grant the test
-  principal on them.
 - An L1 property left unset still takes the service default on the live resource (an Athena
   workgroup without `enforceWorkGroupConfiguration` enforces); docs say the property is unset, never
   what the service then does.
@@ -426,28 +392,15 @@ the plugin repository (`ksco92/my-dev-team`).
 - A `cdk diff` line "may cause replacement" on an account-settings singleton (Lake Formation
   `DataLakeSettings`) is checked against the property's documented update behaviour before
   deploying, and the stack events are read for the same physical id and no delete afterwards.
-- CloudFront `ResponseHeadersPolicy` keeps one value per header name; merge a new directive into an
-  existing custom header's value, grep the stack for an existing policy before creating one, and
-  emit `X-XSS-Protection: 0` (`protection: false`), never `1; mode=block`.
 - From TypeScript 6.0, `types` defaults to an empty list instead of every `@types/*` package; list
   `node` and `jest` explicitly in every tsconfig that compiles tests or reads ambient globals,
   including the `tsconfig.dev.json` a jsii package keeps for ts-jest, or the tests fail with TS2593
   (`Cannot find name 'describe'`) and scripts with TS2591 (`Cannot find name 'process'`).
-- Lake Formation caps LF-tag keys and values at 50 characters and compares both ignoring case,
-  whatever the API reference's limits say; validate keys and values at 50 and reject values that
-  differ only in case.
 - Before declaring a non-jsii runtime dependency in a jsii library, install the built package into a
   scratch consumer first: `dependencies` and `peerDependencies` fail the jsii build without
   `bundledDependencies`, a bundled dependency of a `file:` package installs nothing under
   `install-links=true`, and `optionalDependencies`, declared again by the consumer, both builds and
   installs.
-- A Data Catalog `ReferentialIntegrity` rule counts a NULL local value as missing and accepts no
-  `where` clause; an optional column needs a `CustomSql` anti-join instead.
-- A Data Catalog `ReferentialIntegrity` rule written `"<db>.<table>.<col>"` needs no
-  `AdditionalDataSources`; an `AdditionalDataSources` key may not contain `.` or `-`, and
-  `CustomSql` reads a reference table only through such a key. Every identifier interpolated into
-  DQDL or `CustomSql` text passes an allow-list at synth (`^[a-z0-9_]+$` for Glue database and table
-  names, `^[A-Za-z0-9_]+$` for columns); never quote-escape.
 - A jsii build rejects a struct whose members mirror a PascalCase AWS request shape (JSII8002);
   return nested `{ [key: string]: ... }` string maps instead.
 - A reference between declared resources (a dependency, a foreign key) puts its target upstream:
@@ -457,12 +410,20 @@ the plugin repository (`ksco92/my-dev-team`).
   one reference declared as a getter; a reference to another file's const is a plain value.
 - `eslint-plugin-import-x` `no-cycle` reports nothing on `.ts` files unless
   `settings['import-x/extensions']` lists `.ts` and the resolver's `extensions` list it too.
-- A Glue job's `Code.fromAsset` takes one file; ship a folder as an `Asset` with a `.py`-only
-  exclude list and `Code.fromBucket`, with an `__init__.py` in every package folder, because the CDK
-  CLI zips files only and `zipimport` before Python 3.14 finds no namespace package without
-  directory entries. Validate such a folder at synth with `readdirSync` exact-name regular-file
-  matches and `lstatSync` symlink rejection: `existsSync` passes a case variant and a directory on
-  macOS, and a name-based exclude is escaped by glob characters in a link name.
-- A Data Quality evaluation run started from a job needs `glue:GetPartitions` on the target table,
-  `glue:PublishDataQuality` and `kms:Decrypt` on the catalog key besides the ruleset actions; write
-  the job role's policy explicitly, since `AWSGlueServiceRole` grants `glue:*` on every resource.
+- A file a construct generates at synth for an asset is written under the cloud assembly's outdir
+  (`Stage.of(scope).outdir`), never the OS temp dir, into a folder emptied before the write rather
+  than deleted after; a folder deleted after construction leaves the asset manifest pointing at
+  nothing under `aws:cdk:disable-asset-staging`, and a throw between the write and the delete leaves
+  it behind.
+- Dropping a restated default from a construct still changes the template: check each removed
+  property's documented update behaviour before calling the change deploy-free, since one that
+  requires replacement fails the deploy of a custom-named resource, and replace its value assertion
+  with an absence assertion (`Match.absent()`) rather than deleting it.
+- A doc or skill that tells a reader to remove a resource from the stack and deploy, which deletes
+  it, holds only under `RemovalPolicy.DESTROY`; under `RETAIN` the resource stays and the deploy
+  that recreates it fails on the existing name, so check the instruction against every removal
+  policy a consumer can pick.
+- Measure in a synthesized template any policy statement that lists one ARN per resource: CDK moves
+  whole statements into overflow managed policies and never splits one, so a statement past the
+  6,144 characters a managed policy holds fails the deploy; document the resource count that reaches
+  it.

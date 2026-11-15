@@ -101,11 +101,12 @@ Before reviewing, read:
 5. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md` for each stack the diff touches**
    (Python → `python-coding-guide.md`, plus `django-coding-guide.md` for Django/DRF and
    `python-bindings-coding-guide.md` for a native extension's Python face, CDK/infra →
-   `cdk-coding-guide.md`, React/frontend → `react-coding-guide.md`) — read its numbered sections and
-   `## Learned patterns` and treat every rule as a binding review criterion, exactly like a project
-   convention: a violation in reviewed code is a finding (severity per the pattern's own stakes,
-   default HIGH for correctness-adjacent rules, INFO for style), even when the review brief doesn't
-   mention the rule. These guides are the owner's cross-project law; the briefs may lag them.
+   `cdk-coding-guide.md` plus `cdk-services-coding-guide.md` for the AWS services it lists,
+   React/frontend → `react-coding-guide.md`) — read its numbered sections and `## Learned patterns`
+   and treat every rule as a binding review criterion, exactly like a project convention: a
+   violation in reviewed code is a finding (severity per the pattern's own stakes, default HIGH for
+   correctness-adjacent rules, INFO for style), even when the review brief doesn't mention the rule.
+   These guides are the owner's cross-project law; the briefs may lag them.
 
 ### Project-specific exemptions
 

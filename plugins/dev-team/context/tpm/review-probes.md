@@ -7,9 +7,6 @@ run.
 - A PR body that calls a state unreachable ("nothing soft-deletes X today") is checked against the
   admin surface as well as the application paths: a `ModelAdmin` that overrides add but not delete
   permission still reaches the state, and the gate reproduces it before accepting the claim.
-- Reviewing a rules or policy file that describes code, compare every mechanism word ("literal table
-  name", "aborts", "placeholder") against the line it describes at the head; text drafted from an
-  earlier proposal keeps the wording of an implementation a later PR replaced.
 - Reviewing a redactor or parser fix, re-run every earlier regression input with the parser's
   delimiters placed inside the secret and with the payload at every position the parser splits (a
   later field, a value, the query string); after a normalising step is added in front of a check
@@ -44,8 +41,9 @@ run.
   at a time and require a test to fail for each; a fixture with one sample of every allowed
   character usually leaves out a class.
 - Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
-  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group); a mutant caught
-  because the message changed failed on text, not behaviour.
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group, each position of a
+  counted class alone, each literal as a class of itself and a neighbouring class, each flag); a
+  mutant caught because the message changed failed on text, not behaviour.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
 - When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial
@@ -60,9 +58,6 @@ run.
 - A numeric claim about a library's limit (a size cap, a split threshold) is checked by grepping the
   constant's name across the library's installed source, never against a recalled vendor number: the
   value may sit in a sibling file and differ from the documented limit.
-- A README or doc bullet that restates an upstream dependency's guarantee is checked against the
-  upstream's precondition and known-limitations sections; the downstream copy tends to drop the
-  precondition.
 - A claim that a change now always reaches a deployed resource is checked against the resource's
   pre-fix history; an old state identical to a new one collides.
 - A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
@@ -71,23 +66,29 @@ run.
 - When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules,
   not only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote
   (DQDL `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
-- When a PR adds properties to a resource whose builder's doc comment lists the resulting state,
-  compare that list with the property block at the head; README edits land, the API doc beside the
-  code drifts.
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
-- A gate that may start a server holding cloud credentials launches it from a scrubbed environment:
-  every credential-chain variable unset (static keys and session token, profile, web identity,
-  container credentials), instance metadata disabled, placeholder static keys, the config and
-  credentials file variables pointed at scratch files, and a dead SDK endpoint. Every client the run
-  builds must be refused by that endpoint; one refused first call proves one client.
 - Mutate a widened range matcher to its single canonical member; fixtures use the canonical member,
   so the widened range survives unnoticed.
 - Mutate a result cache behind a worker pool into a cold concurrent request; sequential fixtures
   never see one call per worker.
-- A guard added to one middleware is proven on the real server with the raw bad request sent through
-  the whole chain; a sibling registered earlier can parse the same input unguarded.
-- A startup check moved into a function a dev server re-runs on an in-process restart is proven by
-  changing a scratch copy of its backing file, never the owner's own, and restarting in the same
-  process; a module-level cache in the dependency keeps the check stale.
+- When a fix builds a hostname from a region or a similar id, compare the id pattern with the
+  partitions it admits (a `cn-*` region's hosts end in `.com.cn`) and check whether a sibling URL in
+  the same flow already hardcodes the suffix, which decides whether the gap is new or an existing
+  limit.
+- A stub for a function whose return value the code under test must consume returns a value that
+  cannot be the real one; a stub equal to the real value lets a hard-coded copy of it pass the
+  suite.
+- When code filters one period with `==` and then keeps the latest run by a maximum timestamp,
+  mutate `==` to `>=` as well as `<=`; only a fixture with a later period that holds a later-created
+  run, on each side of a join, fails the `>=` mutant.
+- When a PR fixes one switch of a family of related ones (metrics flags, logging options), list the
+  synthesized defaults and check every feature the title and the upgrade note name against each
+  sibling a caller can still change.
+- Probe a parse-based validator through the real entry point with only the downstream class patched,
+  never through a copy of its expression; that proves the order of the checks and that a rejected
+  value never reaches the downstream.
+- A test that sends generated neighbours of a valid value is checked two ways: no generated value
+  matches the pattern under test, and every candidate the generator leaves out does; an exclusion
+  applied at every position hides a widening where the excluded character is not valid.

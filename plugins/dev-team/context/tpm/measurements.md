@@ -1,9 +1,9 @@
 # tpm measurement rules
 
 Evidence rules for slices whose deliverable is a number or a parity claim: benchmarks and published
-numbers, performance or complexity fixes, profiles, ports and parity targets, new bindings or FFI
-layers, and output-comparison harnesses. Read before writing the issue for such a slice and again
-before its gates.
+numbers, performance or complexity fixes, timeout or capacity sizing, profiles, ports and parity
+targets, new bindings or FFI layers, and output-comparison harnesses. Read before writing the issue
+for such a slice and again before its gates.
 
 - When a benchmark or results deliverable is gated, check its headline metric against the spec's own
   stats rules (medians, N runs, same inputs) and that numbers trace to committed raw data.
@@ -55,3 +55,15 @@ before its gates.
   regression.
 - A byte-identity or output-comparison harness asserts that every output it hashes exists before
   comparing; two missing outputs hash equal and report a match.
+- A benchmark run id hashes every option that changes what the run measures, server lifecycle
+  options such as a restart per run included; an option left out of the hash reports its variant as
+  already done.
+- When a server keeps state that learns from traffic (a prompt cache, a speculative drafter),
+  measure on a fresh server per repeat and report the first repeat as the shared-server number;
+  trust a reset endpoint between runs only after prefix A, prefix B, reset, then A again reads no
+  cached tokens.
+- Warm-up covers every server slot (at least as many warm-up requests as slots); a cold slot pays a
+  full prefix prefill on its first timed request.
+- A timeout or capacity claim for a larger fan-out is sized from the deployed function's own report
+  records (a Lambda's `platform.report` durations, cold and warm), never from a call-count estimate;
+  the gate pulls the same log window and recomputes the extremes and every figure derived from them.

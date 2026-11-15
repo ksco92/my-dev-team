@@ -1,7 +1,7 @@
 # Rust Coding Guide
 
-Standards and rules for Rust projects. Established on the `onix` project (Rust rewrite of Python
-DeepDiff); binding for any repo where Rust is written unless the repo's own CLAUDE.md overrides.
+Standards and rules for Rust projects, binding for any repo where Rust is written unless the repo's
+own CLAUDE.md overrides.
 
 ---
 

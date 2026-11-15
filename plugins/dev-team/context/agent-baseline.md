@@ -49,8 +49,8 @@ decisions outside your task.
    acceptance criteria are your contract.
 5. Load the stack guide for every layer the task touches —
    `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md` (python, django, python-bindings, cdk,
-   react, rust; `npm-publishing-pattern.md` for publishing/CI). Their numbered sections and
-   `## Learned patterns` are binding review criteria.
+   cdk-services, react, rust; `npm-publishing-pattern.md` for publishing/CI). Their numbered
+   sections, where a guide has them, and `## Learned patterns` are binding review criteria.
 6. Skim the codebase for the closest existing pattern at each layer and match it. Copy a sibling
    test file only after auditing its private helpers against the suite's shared helper module — the
    template may predate the shared helper.
@@ -251,14 +251,15 @@ instead.
   auto-merge with no conflict marker, so the PR silently ships no bump. Claim the next free version.
 - When removing or guarding an env variable, grep the whole repo including `.github/workflows/` — CI
   step env blocks are where the old value hides.
-- Compute every ratio or multiple stated in prose (results docs, PR bodies) from the actual numbers
-  before writing it; understating a caveat in the section meant to guard against overstatement is a
-  Major finding.
+- Compute every ratio or multiple stated in prose (results docs, PR bodies), and every interval,
+  range or count between a PR body's evidence blocks, from the actual numbers before writing it;
+  understating a caveat in the section meant to guard against overstatement is a Major finding.
 - A test that pins an ordered constant asserts literal expected values, never `CONSTANT[0]` —
   asserting against the constant under test recomputes the expectation on reorder.
 - To wait on one long check, start one background waiter whose exit is the answer (the CI status
-  operation's wait, or a `pgrep` loop) and idle until it completes; stacked polls waste turns and
-  fire as noise later.
+  operation's wait, or a `pgrep` loop matched on the interpreter invocation, since a pattern in the
+  waiter's own command line matches the waiter) and idle until it completes; stacked polls waste
+  turns and fire as noise later.
 - Never delete an implementer-visible file or dir outside the repo under work; a review gate's log
   may be open there.
 - A PR body is public content: describe shortcuts in plain prose and never name the marker
