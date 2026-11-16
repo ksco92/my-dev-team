@@ -104,3 +104,5 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
 - A fact a gate brief states about the PR body or the head (a block that is present, a command that
   is shown) is printed from the host's copy before the brief goes out; gates build on a brief's
   context, and a false statement there comes back as a finding against the brief.
+- Brief a live proof to name its evidence logs in the PR body by a directory name relative to the
+  author's workspace, never an absolute local path.

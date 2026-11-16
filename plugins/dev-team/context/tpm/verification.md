@@ -99,3 +99,6 @@ before writing the issue for such a slice and again before its gates.
 - Before calling a launcher argument's value neutral, check every process that receives it (the
   workers' or executors' launch arguments as well as the driver's); a driver can accept a value that
   a worker's bootstrap rejects.
+- A before-and-after proof that reads a versioned, write-once artifact (a numbered metadata file, an
+  object version) resolves the pointer again for the after read and sets the artifact's write times
+  against the event's start and end.

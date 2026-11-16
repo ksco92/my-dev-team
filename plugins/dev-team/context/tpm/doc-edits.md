@@ -57,3 +57,8 @@ that changes it.
   own mapping table.
 - A doc line that restates a rule's closed list of covered cases uses the rule's cases word for
   word, never a wider phrase, and points at the rule's accepted risks on the same line.
+- When a feature turns a quantity that was one per run into many per run, the ticket has the
+  implementer grep every doc for the sentences that state what a run reads, writes or fails on, and
+  reword each in the first head.
+- When a fix round restates an accepted risk, grep every file for the risk's subject, not only the
+  lines the finding named; the doc page a security file links to otherwise keeps a partial copy.
