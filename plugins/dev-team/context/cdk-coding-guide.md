@@ -421,3 +421,8 @@ construct (Glue, Lake Formation, CloudTrail, CloudFront, Step Functions, EventBr
   whole statements into overflow managed policies and never splits one, so a statement past the
   6,144 characters a managed policy holds fails the deploy; document the resource count that reaches
   it.
+- A directory packaged as one asset changes its hash when any file it packages changes, a docstring
+  included; re-run the synth or the diff after such a round.
+- When a directory is staged into a deployed artifact by a directory walk, a file the walk includes
+  that is added under it changes every staged-file list a test pins; run the CDK suite as well as
+  the directory's own suite.

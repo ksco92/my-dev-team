@@ -57,3 +57,5 @@ fix brief.
   validates at one layer.
 - A full-repository gate run on a repo whose lint or build config was copied from a sibling checks
   the sibling for the same defect in the same round and files its follow-up at once.
+- A PR body's claim that a log was taken before or after an event is checked against the log file's
+  last-write time and the event's recorded time whenever the log carries no timestamp of its own.

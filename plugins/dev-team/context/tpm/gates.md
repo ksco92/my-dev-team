@@ -66,3 +66,8 @@ Read before the first gate of a run.
 - A gate result that lacks the verdict block is void until the gate resends it; the `SubagentStop`
   hook asks the gate once. Stop a gate whose transcript has not advanced for twenty minutes on its
   final cleanup command, remove its probe yourself, and relaunch it at the same head.
+- Brief the economy gate to apply its whole checklist once and report everything in that round, and
+  in a later round to raise nothing on lines it read and passed unless it quotes the rule text and
+  the line.
+- A verdict block whose `FINDINGS` count is not matched by listed findings is void; message the gate
+  for them, since the hook checks only the block's lines.

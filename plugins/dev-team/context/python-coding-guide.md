@@ -1274,3 +1274,6 @@ section above and leaves this list.
   supply (wheel, source distribution, requirements file, direct path or URL), each with the other
   conditions removed; `--dry-run` still runs a source distribution's build backend, and
   `--only-binary` does not apply to a requirement given as a path.
+- A guard that reads `sys.modules` to reject a name already imported runs once before a loop that
+  imports the module, never inside it; the first pass imports the module and the guard fails on the
+  second.

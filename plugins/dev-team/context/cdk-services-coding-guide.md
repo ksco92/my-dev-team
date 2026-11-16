@@ -81,3 +81,5 @@ template-test lessons; its self-mutation rule governs this file, with the same ~
 - Read the object key of an EventBridge S3 `Object Created` event as it arrives, without URL
   decoding: EventBridge delivers the key raw, with a `:` as a `:`, where an S3 bucket notification
   URL-encodes it.
+- Glue `GetJobRun` returns in `Arguments` only what the caller of the run set; read a job default
+  from `GetJob` `DefaultArguments` or from the driver's launch line, never from the run record.

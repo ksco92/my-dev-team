@@ -128,9 +128,10 @@ A recipe's test list covers each operand of a compound guard on its own and vari
 pass-through parameter at least once at every call that forwards it, a nested factory included, so a
 literal in place of the parameter fails a test; a thrown message it prescribes names the remedy as
 well as the condition, a remedy that holds for each kind of object the message can name; and it
-prescribes no assertion the type system already guarantees. Check every exact-string assertion a
-recipe prescribes against the existing fixture before dispatch; a fixture row that already carries
-the new marker makes the assertion unsatisfiable and the implementer rewrites the fixture to fit.
+prescribes no assertion the type system already guarantees. Grep the test file for a generator or
+helper before a recipe prescribes a new one. Check every exact-string assertion a recipe prescribes
+against the existing fixture before dispatch; a fixture row that already carries the new marker
+makes the assertion unsatisfiable and the implementer rewrites the fixture to fit.
 
 ## Phase 4 — Delegation
 
