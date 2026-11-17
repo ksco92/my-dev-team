@@ -29,3 +29,13 @@ before the first gate on such a PR.
   another runtime (a `spark-submit` driver, a supervisor, a launcher that merges pipes), run the
   real binary with stdout and stderr in separate files before accepting what an in-process capture
   shows.
+- Pinning a child tool's own config file does not pin the config of a library its plugins embed: in
+  a scratch copy of the head, never the PR branch or the owner's checkout, plant that library's
+  config file in the child's working directory (`docutils.conf` under a flake8 docstring plugin)
+  with a setting that writes to a sentinel file holding known content in the gate's scratch
+  directory, run the PR's command on a file the plugin parses with the PR's change removed from that
+  copy and confirm the sentinel changed, restore the sentinel's content and the PR's change, and run
+  the same command on that same file and require the sentinel unchanged.
+- When a guard rejects configuration keys of a tool the PR runs, read the tool's config parser for
+  inverse and alias spellings of each key and for its other channels (per-module sections, inline
+  file comments, other config files); mypy accepts `allow_untyped_defs` for `disallow_untyped_defs`.

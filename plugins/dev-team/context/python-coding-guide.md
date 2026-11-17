@@ -1277,3 +1277,23 @@ section above and leaves this list.
 - A guard that reads `sys.modules` to reject a name already imported runs once before a loop that
   imports the module, never inside it; the first pass imports the module and the guard fails on the
   second.
+- A tool run as `python -m <tool>` imports same-named modules from its working directory first; set
+  `PYTHONSAFEPATH=1` (Python 3.11+) in its environment rather than `-P`, which a worker the tool
+  starts as a fresh `sys.executable` command does not receive.
+- Spell every path handed to a tool's command line so it cannot begin with `-` or `@` (prefix `./`);
+  `--` stops neither pytest's `-p` scan nor mypy's `@file` expansion.
+- Publish a new name's first PyPI release before announcing it, since a pending trusted publisher
+  does not reserve the name, and check its provenance names the repository and workflow. Name in the
+  publisher a GitHub environment that admits only the ref the publish workflow runs on, a ref only a
+  reviewed merge or a holder of bypass permission can move (the trunk under a rule requiring a
+  reviewed pull request, or `v*` tags under a ruleset restricting their creation, updates and
+  deletion, created only on trunk commits), since PyPI otherwise accepts the workflow from any ref.
+- Set coverage `precision = 2` beside a whole-number floor, which is compared at the report
+  precision (whole percent by default), so 94.7% passes 95. A scope of statement-less files reports
+  100%, so also require a non-zero `num_statements` in the JSON report.
+- When a third-party parameter is an invariant container of a wider element type
+  (`dict[str, A | B]`), pass a copy built at the call site (`{**x}` or `dict(x)`) instead of
+  widening a shared function's return type or restating the library's alias.
+- When a fix runs `os.stat`, `Path.resolve` or a reader over paths from a directory walk, drive a
+  dangling symlink, a symlink loop, a FIFO and a symlink to `/dev/zero` through it under a hard
+  timeout.
