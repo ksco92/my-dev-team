@@ -59,3 +59,8 @@ fix brief.
   the sibling for the same defect in the same round and files its follow-up at once.
 - A PR body's claim that a log was taken before or after an event is checked against the log file's
   last-write time and the event's recorded time whenever the log carries no timestamp of its own.
+- Before briefing an input validator for values a generated file cannot hold, run the writer's
+  escaping over the whole character range and parse each result back; where only a few characters
+  fail, the fix is the writer's escaping. A round-trip test of a generated config reads the file
+  through its consumer, which may interpret values (coverage expands `$NAME`), not through a generic
+  parser alone.

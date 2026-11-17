@@ -104,7 +104,9 @@ incomplete/outdated docs; 60% of contributors never fix docs). Rules, all review
   `#[doc = include_str!("../README.md")]` on a `#[cfg(doctest)]` item (official rustdoc pattern) so
   `cargo test` runs the README. Python: pytest-codeblocks runs python/sh blocks in CI. When the
   ecosystem supports it and the example is stable, WIRE IT; when not wired, the review must manually
-  run the quickstart.
+  run the quickstart. Shown output is the run's text, except machine-specific parts and versions of
+  dependencies the project does not pin, each a named placeholder explained once; every file an
+  example reads is shown or created by a shown command.
 - **Numbers only from generated artifacts.** Perf/coverage/count claims cite the committed generated
   report and match it exactly; a number that matches nothing in the repo record is a HIGH finding. A
   results document (RESULTS, MUTANTS) holds one current table per measured shape plus a method
@@ -222,7 +224,9 @@ Checklist (each item is a concrete check):
   its differentiator ("X is the Y that Z — no A, no B").
 - "Status (Month YYYY):" paragraph with real channels and real caveats.
 - Install lists every real channel with its one-liner.
-- Links point INTO the repo (spec/, packages/, docs/) — the README is a hub, not a silo.
+- Links point INTO the repo (spec/, packages/, docs/) — the README is a hub, not a silo. A README
+  that is a PyPI long description links repository files by absolute URL, since PyPI keeps a
+  relative link as written; in-page anchors stay relative.
 - Honest limitations: a one-line pointer inline where a user would hit one, the full list in a
   "Known limitations" section after Usage, never in the opening paragraph and never ahead of the
   quickstart.

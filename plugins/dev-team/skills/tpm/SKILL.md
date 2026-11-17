@@ -121,8 +121,9 @@ ticket, plus the runtime floor stated once with its source.
 
 A ticket that names a library helper and also lists the output it must produce derives that list
 from the helper's source, a ticket that says a consumer needs no change for a removed or retyped
-field greps the consumer for the field first, and a ticket for a dependency bump greps the
-consumer's tests for every count or per-resource loop the new version changes.
+field greps the consumer for the field first, a ticket for a dependency bump greps the consumer's
+tests for every count or per-resource loop the new version changes, and a ticket adopting a tool
+carries per-category counts from a trial run on a scratch copy, each classified from its output.
 
 A recipe's test list covers each operand of a compound guard on its own and varies every
 pass-through parameter at least once at every call that forwards it, a nested factory included, so a
