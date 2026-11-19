@@ -52,6 +52,9 @@ review scope, walk the ladder and flag code that stopped at too low a rung. Ask,
    "future-proofing" nobody scheduled.)
 2. **Reuse** — does it already exist in this codebase? (Near-duplicates of an existing util, the
    seven-spellings-of-one-constant class.)
+   - **Dependency direction.** When a primitive already exists in a dependent crate, check the
+     dependency direction before prescribing reuse: the fix is to push the primitive down into the
+     shared lower crate, never a reference across crates in the wrong direction.
 3. **Stdlib** — does the standard library already do this?
 4. **Platform** — does the runtime/engine already do this? (e.g. an engine-native maintenance
    operation vs hand-rolled orchestration; a DataFrame method vs a manual loop.)
@@ -153,6 +156,23 @@ Implementers apply this ladder at write time (the code-economy section of
     above" go stale on reorder; name the sibling or drop the reference.
 18. **No rustdoc link syntax outside rustdoc.** Markdown, Python and shipped `__doc__` text never
     carry intra-doc link syntax (``[`crate::X`]``); write the plain name.
+19. **Tense after a stripped literal.** When an edit strips a literal from a sizing-rationale
+    comment, re-check tense so the comment no longer asserts an invariant the code stopped
+    maintaining.
+20. **Rationale in one home.** When a PR touches both a symbol's doc comment and a CLAUDE.md hunk
+    about it, diff the rationale clauses, not just the facts; the "why" belongs in one home. Expect
+    this on every slice of a feature sequence.
+21. **Moved README detail.** Moving detail from a README into a module doc can land it twice in the
+    same file: before accepting the move, grep the target function's own doc comment for the
+    sentence being added.
+22. **Docstring pointer target.** When a script's docstring is extended for a new feature, verify
+    the content landed inside the `"""` block that every "see the module docstring" pointer names,
+    not in an adjacent `#` banner; a false pointer propagates by copy into every README and PR
+    sentence that repeats it.
+23. **Sibling-variant enumerations.** When a PR documents "which of N sibling variants get a new
+    capability" in more than one place, grep-diff every enumeration against the actual match arms or
+    casts once: a miscount that drops the same members propagates by copy into every doc site that
+    restates the list instead of pointing at one canonical enumeration.
 
 ## Part C — Defensive-Code Provenance (the incident bar)
 
@@ -310,8 +330,6 @@ The reviewed repo is read-only.
   mocked derivation test and delete the live recomputation.
 - A test that only asserts a dependency's output transform through a no-logic wrapper duplicates the
   dependency's own tests; keep at most one pass-through assertion in the existing test.
-- When an edit strips a literal from a sizing-rationale comment, re-check tense so the comment no
-  longer asserts an invariant the code stopped maintaining.
 - On a toolchain swap, a component rename, a heading rename, a file-to-directory module split, a fix
   round that removes a word, or a package that starts accepting a value class it refused, grep the
   whole tree for the old word (for the last, "unlike <package>"); stale prose hides in comments,
@@ -322,19 +340,10 @@ The reviewed repo is read-only.
 - When a PR changes a documented default, grep CLAUDE.md and README for the old value.
 - An "ERESOLVE fix via overrides" that regenerates the lockfile is tested first against the original
   lockfile with only the override added; a zero-line lockfile diff means the regen was churn.
-- When a PR touches both a symbol's doc comment and a CLAUDE.md hunk about it, diff the rationale
-  clauses, not just the facts; the "why" belongs in one home. Expect this on every slice of a
-  feature sequence.
 - A seeded fuzz generator that reuses one `random.Random` stream across a loop can draw the same
   trivial input twice (two empty-list cases among "15 seeded"). Hash every new golden case's inputs
   against its siblings before trusting a case count, and read the generator's size draw for a zero
   lower bound.
-- Moving detail from a README into a module doc can land it twice in the same file: before accepting
-  the move, grep the target function's own doc comment for the sentence being added.
-- When a PR documents "which of N sibling variants get a new capability" in more than one place,
-  grep-diff every enumeration against the actual match arms or casts once: a miscount that drops the
-  same members propagates by copy into every doc site that restates the list instead of pointing at
-  one canonical enumeration.
 - When a fuzz or property suite already has one shared batch runner, check a new batch against it
   first: the generator is usually new logic, but the loop-seeds-collect-mismatches scaffolding
   around it is what a fix round copies instead of passing a callable to the existing runner. A fix
@@ -347,9 +356,6 @@ The reviewed repo is read-only.
   blank-line break: consecutive `///` blocks merge silently in Rust, so a paragraph left behind by a
   moved or renamed function reattaches to whatever item follows, duplicating the function's real doc
   and leaving the function itself undocumented.
-- When a script's docstring is extended for a new feature, verify the content landed inside the
-  `"""` block that every "see the module docstring" pointer names, not in an adjacent `#` banner; a
-  false pointer propagates by copy into every README and PR sentence that repeats it.
 - When a PR adds a table to one doc and a pointer to it from another, grep the pointing file for the
   referenced heading and require the pointer to name the file: a same-document word ("below",
   "above") is false the moment the table lands in a different file than the sentence naming it. A
@@ -361,9 +367,6 @@ The reviewed repo is read-only.
 - A new mode added to a script or example that already dispatches its modes extends the existing
   function with a parameter rather than adding a sibling function and an argument branch, and a new
   function whose return value every caller discards returns nothing.
-- When a primitive already exists in a dependent crate, check the dependency direction before
-  prescribing reuse: the fix is to push the primitive down into the shared lower crate, never a
-  reference across crates in the wrong direction.
 - A crate under a package's `[dependencies]` is already linkable from that package's own
   `tests/*.rs`; a matching `[dev-dependencies]` entry is duplication that `cargo machete` cannot
   catch because the crate is used, only declared twice.

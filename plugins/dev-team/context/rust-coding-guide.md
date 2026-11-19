@@ -61,6 +61,21 @@ verbatim when the repo goes remote. All parts blocking:
 - **Verify a new gate can actually fail before trusting it green** — e.g. add an untested function
   and watch `--fail-under-lines` exit non-zero, then revert. A gate that has never been red proves
   nothing.
+- **CI `target/` cache key.** Never cache `target/` in CI keyed only on `Cargo.lock`; use
+  `Swatinem/rust-cache` or exclude the workspace crates and fingerprint sources.
+- **`too_many_lines` and gated lines.** Clippy's `too_many_lines` counts physical lines including
+  `#[cfg]`-gated ones, so feature-gated instrumentation added to a near-limit function trips it in
+  the un-instrumented build; make the gating macro expand to the bare body when the feature is off,
+  and see the code-health skill's Part D rule 2.
+- **Per-line coverage claims.** Re-run `cargo llvm-cov --show-missing-lines` yourself on any
+  per-line coverage claim in a PR body: inserting a match arm shifts line numbers, so the "new arm"
+  cited as the sole gap is often an adjacent pre-existing arm.
+- **Intra-doc link forms.** When trimming a doc comment with intra-doc links, reuse the exact link
+  forms that compiled; `-D warnings` turns a broken link into a gate failure.
+- **Private intra-doc links.** `cargo doc --no-deps` skips intra-doc links on private items; the
+  gate also runs `RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items -p <crate>`, under
+  which a public item's doc naming a private item in bracketed link syntax fails as
+  `private_intra_doc_links`; name private items from public docs in plain backticks.
 
 ## 3. Code Conventions
 
@@ -84,6 +99,17 @@ verbatim when the repo goes remote. All parts blocking:
   convention over Python habit — no separate unit-test tree.
 - Idioms clippy will catch but write right the first time: `write!` into a `String` over `format!` +
   `push_str`; iterators over index loops; `#[must_use]` on pure fns.
+- **Inline rustdoc constraint.** A `pub` item's rustdoc states its one constraint inline (the DoS
+  bound an error exists for, the complexity a flag opts into); a repo-relative path to a design page
+  renders as plain text in `cargo doc` and on docs.rs, so it supplements the sentence and never
+  replaces it. `pub(crate)` items may point alone.
+- **`#[pyclass]` doc comments.** A doc comment on a `#[pyclass]` or `#[pymethods]` item ships
+  verbatim as the Python `__doc__`, so it is written for a `pip install`ed reader with no checkout:
+  complete sentences, no `crate::` paths, no rustdoc `[`...`]` link syntax, and a file pointer names
+  the repository it lives in; verify on the built wheel with `help()`, not in `cargo doc`.
+- **Silenced unused parameters.** `let _ = (a, b);` silencing unused params hides a placeholder
+  signature and a hidden doctest line `# let _ = X;` hides an unused import; remove the params or
+  underscore each with the milestone that re-adds it, and delete the doctest line with the import.
 
 ## 4. Testing Conventions
 
@@ -111,6 +137,22 @@ verbatim when the repo goes remote. All parts blocking:
   assert (exit code, stdio).
 - **Examples share code through one module.** Two examples anywhere in the workspace that share more
   than 20 identical lines move them into one `#[path]`-included module.
+- **Rebuilt native extension.** Verify a rebuilt native extension by behavior, never by mtime;
+  `uv cache clean` before trusting a reinstall at an unchanged version.
+- **`cargo-mutants` TIMEOUT.** Reproduce a lone `cargo-mutants` TIMEOUT standalone before reading it
+  as a hang; a perf fix that swaps an iterative primitive for a recursive comparator re-runs the
+  stack probe with inputs that cannot short-circuit.
+- **Strengthened property tests.** Accept a strengthened property test only after running it at 20
+  to 100 times the committed case count across several seeds and measuring the flake rate; guard a
+  perturbation that feeds canonicalization order by depth rather than `prop_assume!`. A case-count
+  claim names the form the test runs under, since the `proptest!` macro applies `PROPTEST_CASES`
+  over its config while a direct `TestRunner::new` with an explicitly set `cases` ignores it, and
+  its proof is the observed run count or runtime, not the config value.
+- **Unicode data parity.** A Unicode data crate used for CPython parity asserts `UNICODE_VERSION`
+  equals `unicodedata.unidata_version` on the test interpreter.
+- **Multi-term formula tests.** A test for a formula combining three or more terms holds every term
+  non-zero and mutually distinct and asserts the exact computed constant; a fixture with any term at
+  zero cannot catch a sign or operator flip on that term.
 
 ## 5. Publish-Time Gates (parked until a crate ships)
 
@@ -167,6 +209,24 @@ Rust mechanism, plus the Rust-only rules.
   since the two contradict inside a private module.
 - **`#[allow]` reasons.** A reason states why the code is right, and one reason serves two adjacent
   items; the baseline's comment budget covers the rest.
+
+## 8. Performance and Measurement
+
+- `serde_json::Value`'s `Map` allocates a fixed 11-slot leaf (~640 B) for any small map; measure map
+  memory by node count and prefer an exactly-sized sorted `Box<[(K, V)]>` when small maps dominate.
+- Under `unsafe_code = "forbid"`, use a dev-dependency allocator (`stats_alloc`) instead of a
+  `#[global_allocator]`; measure net retained bytes over a region sized to tens of MB.
+- A hand-written incremental decoder that replaces `str::chars()` must never call `str::from_utf8`
+  on the whole remaining slice per element: that is O(n²) even when the rare branch is never taken.
+  Decode from a byte cursor using the lead byte's width, and measure any such replacement against
+  the original at three sizes before trusting the diff.
+- When adding a rarely used variant to an enum that serves as a hot hash-table key or scalar value,
+  box the payload if it is larger than the existing arms: an unboxed large arm widens every entry
+  and shows up as a measurable regression on the hot path, not only as memory.
+- A per-pass profiler states which run each reported row comes from and computes closure (passes
+  against total) on the instrumented run itself, after a discarded warm-up; a warm run's passes
+  against a cold run's total misstate the residual, and per-row medians across processes need not
+  add up, which the method sentence says.
 
 ## Self-mutation rule
 
@@ -257,69 +317,3 @@ entries, and open a PR against the plugin repository (`ksco92/my-dev-team`).
   i32 offsets cap one array at about 2 GiB and arrow panics past it, so a compaction on a default
   path targets the Large variant, and the probe is a few values of hundreds of MiB in one batch
   under an alarm and an RSS cap.
-
-### Docs and rustdoc
-
-- When trimming a doc comment with intra-doc links, reuse the exact link forms that compiled;
-  `-D warnings` turns a broken link into a gate failure.
-- `cargo doc --no-deps` skips intra-doc links on private items; the gate also runs
-  `RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items -p <crate>`, under which a public
-  item's doc naming a private item in bracketed link syntax fails as `private_intra_doc_links`; name
-  private items from public docs in plain backticks.
-- A `pub` item's rustdoc states its one constraint inline (the DoS bound an error exists for, the
-  complexity a flag opts into); a repo-relative path to a design page renders as plain text in
-  `cargo doc` and on docs.rs, so it supplements the sentence and never replaces it. `pub(crate)`
-  items may point alone.
-- A doc comment on a `#[pyclass]` or `#[pymethods]` item ships verbatim as the Python `__doc__`, so
-  it is written for a `pip install`ed reader with no checkout: complete sentences, no `crate::`
-  paths, no rustdoc `[`...`]` link syntax, and a file pointer names the repository it lives in;
-  verify on the built wheel with `help()`, not in `cargo doc`.
-
-### Tests, lints, CI and mutation
-
-- `let _ = (a, b);` silencing unused params hides a placeholder signature and a hidden doctest line
-  `# let _ = X;` hides an unused import; remove the params or underscore each with the milestone
-  that re-adds it, and delete the doctest line with the import.
-- Verify a rebuilt native extension by behavior, never by mtime; `uv cache clean` before trusting a
-  reinstall at an unchanged version.
-- Reproduce a lone `cargo-mutants` TIMEOUT standalone before reading it as a hang; a perf fix that
-  swaps an iterative primitive for a recursive comparator re-runs the stack probe with inputs that
-  cannot short-circuit.
-- Accept a strengthened property test only after running it at 20 to 100 times the committed case
-  count across several seeds and measuring the flake rate; guard a perturbation that feeds
-  canonicalization order by depth rather than `prop_assume!`. A case-count claim names the form the
-  test runs under, since the `proptest!` macro applies `PROPTEST_CASES` over its config while a
-  direct `TestRunner::new` with an explicitly set `cases` ignores it, and its proof is the observed
-  run count or runtime, not the config value.
-- Never cache `target/` in CI keyed only on `Cargo.lock`; use `Swatinem/rust-cache` or exclude the
-  workspace crates and fingerprint sources.
-- A Unicode data crate used for CPython parity asserts `UNICODE_VERSION` equals
-  `unicodedata.unidata_version` on the test interpreter.
-- A test for a formula combining three or more terms holds every term non-zero and mutually distinct
-  and asserts the exact computed constant; a fixture with any term at zero cannot catch a sign or
-  operator flip on that term.
-- Clippy's `too_many_lines` counts physical lines including `#[cfg]`-gated ones, so feature-gated
-  instrumentation added to a near-limit function trips it in the un-instrumented build; make the
-  gating macro expand to the bare body when the feature is off, and see the code-health skill's Part
-  D rule 2.
-- Re-run `cargo llvm-cov --show-missing-lines` yourself on any per-line coverage claim in a PR body:
-  inserting a match arm shifts line numbers, so the "new arm" cited as the sole gap is often an
-  adjacent pre-existing arm.
-
-### Performance and measurement
-
-- `serde_json::Value`'s `Map` allocates a fixed 11-slot leaf (~640 B) for any small map; measure map
-  memory by node count and prefer an exactly-sized sorted `Box<[(K, V)]>` when small maps dominate.
-- Under `unsafe_code = "forbid"`, use a dev-dependency allocator (`stats_alloc`) instead of a
-  `#[global_allocator]`; measure net retained bytes over a region sized to tens of MB.
-- A hand-written incremental decoder that replaces `str::chars()` must never call `str::from_utf8`
-  on the whole remaining slice per element: that is O(n²) even when the rare branch is never taken.
-  Decode from a byte cursor using the lead byte's width, and measure any such replacement against
-  the original at three sizes before trusting the diff.
-- When adding a rarely used variant to an enum that serves as a hot hash-table key or scalar value,
-  box the payload if it is larger than the existing arms: an unboxed large arm widens every entry
-  and shows up as a measurable regression on the hot path, not only as memory.
-- A per-pass profiler states which run each reported row comes from and computes closure (passes
-  against total) on the instrumented run itself, after a discarded warm-up; a warm run's passes
-  against a cold run's total misstate the residual, and per-row medians across processes need not
-  add up, which the method sentence says.
