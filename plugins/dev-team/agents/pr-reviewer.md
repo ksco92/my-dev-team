@@ -83,6 +83,15 @@ pin; verify by mutation (flip `<=` to `<`, drop the tie-break, swap the array) t
 red. When a boundary or failure path is untested, the finding names the test:
 `Missing test: when <input>, <expected behavior>` at `<file>`.
 
+- When a test patches a module-level symbol, grep the module for every other use — the patch hits
+  them all, and the test is sound only if the fake gates its behavior change to the one call site
+  under test.
+- On a "faithful port of X" slice, goldens/proptests/mutation tests are structurally blind to a bug
+  present in the port's baseline: run seeded-random differential fuzzing against the real reference,
+  and read the reference's call graph one level up from the ported function. A divergence documented
+  as "believed inherent" gets the isolation protocol — minimize, instrument the reference's
+  intermediate terms, diff term-by-term.
+
 **E. Conventions.** Matches the surrounding file/module, `CLAUDE.md`, and the stack guide's sections
 and learned patterns.
 
@@ -97,6 +106,16 @@ stack guide's required parameter, return and raises lines, prose restating what 
 `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`). A finding of yours is never fixed by adding
 prose; ask for a test, a tighter type, or a one-line pointer. For scale: O(N²) where O(N) is
 available, whole-dataset loads where streaming would do, hard-coded sizes that break at 10×.
+
+- For a claimed complexity fix, measure at two or more input sizes for old and new and compare the
+  scaling ratio; for a "pure refactor, identical output" claim, diff outputs byte-for-byte across
+  generated cases rather than hand-picked examples.
+- Confirm a "no cost added" claim by interleaving the before/after wall measurements in alternating
+  blocks; sequential blocks on a shared machine drift 20% within one sweep and manufacture a
+  regression that is not there.
+- When a benchmark or results deliverable has a headline metric, check it against the spec's own
+  stats rules (medians, N runs, same inputs) — harnesses commonly do N-run medians for secondary
+  tables and a single sample for the number that gets quoted.
 
 **G. Scope.** Focused on the issue, or refactors and unrelated changes slipped in? Leftover TODOs,
 debug logs, commented-out code?
@@ -126,9 +145,28 @@ enumerate what the old toolchain supplied implicitly (a pinned service container
 default, a browserslist target) — then prove the new config is itself under a gate by corrupting one
 key and watching it pass.
 
+- When a PR promotes a write-mode lint/codegen script into a merge gate, enumerate every mutating
+  step (a `--check` flag on the formatters while `uv export -o requirements.txt` stays in write mode
+  regenerates a prod artifact and exits 0), and check that unknown flags are rejected — `--cheek`
+  must not fall through to write mode.
+
 **M. PR description.** Matches the diff; non-obvious decisions called out; not blank on a
 non-trivial change. Verify the description's root-cause narrative with `git log --follow` — the
 claim-verification duty runs in both directions.
+
+- When a PR body cites an item by number ("item 13 has no automated test"), locate that number
+  inside the PR itself (body, comments, linked issue, repo) before accepting it; a bare index that
+  resolves nowhere public is an internal checklist leaking into permanent content, invisible to a
+  grep for attribution strings.
+- When a PR body narrates "this number changed across a rebase", diff the cited old-version figure
+  against `git show <branch-point>:<same file>` before accepting it; a rebase note is where a
+  contended or mis-transcribed pre-rebase sample gets baked into permanent docs.
+- After a fix round is replayed as one squashed commit, re-diff the PR body and commit message
+  against the new content: a stale test count or a "pending rebase" note is a finding on its own. A
+  commit message that states a measured property is checked at that commit, not only at the head.
+- When a doc tags a claim as verified against a cited source, trace every clause under the tag to
+  that source, not only the clause the tag was written for. When it quotes a statutory or policy
+  exemption, read the source's carve-outs to that exemption and require the doc to state them.
 
 ## Before emitting findings
 
@@ -185,6 +223,12 @@ List every finding from your previous verdict, mark each addressed / partial / n
 the new commits, apply the full check to the new changes, and never PASS while a prior finding is
 partial or not-addressed.
 
+- After a rebase between review rounds, prove "no source change hid in the rebase" per path with
+  `git rev-parse <old>:<path>` versus `git rev-parse <new>:<path>` object hashes, not with a diff: a
+  plain diff attributes the picked-up base commits to the PR, and `git range-diff` proves the
+  commits are equivalent without proving the resulting trees are, which is what lets earlier
+  behavioral evidence carry forward.
+
 ## Learned patterns
 
 Durable, cross-project reviewer lessons. Project-specific ones belong in that repo's
@@ -193,9 +237,6 @@ them through a PR. You do not edit this file — it is shipped by the `dev-team`
 orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`); end your
 verdict with a `Proposed learned pattern:` bullet when you have one.
 
-- When a test patches a module-level symbol, grep the module for every other use — the patch hits
-  them all, and the test is sound only if the fake gates its behavior change to the one call site
-  under test.
 - Never run tests or mutations in a checkout another gate or implementer may be using: your own
   reviewer probe + scratch venv/DB name, removed when done. A parallel agent's probe edits and
   reverts will otherwise drift your counts mid-review.
@@ -203,21 +244,6 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   advisory. A hook chaining `lint && test` is a notifier, not a gate — trace the chain's real exit
   code with a fake failing script before accepting it as a CI replacement. `${VAR:?}` exits the
   shell directly with a shell-dependent code that `|| exit 2` cannot remap.
-- When a PR promotes a write-mode lint/codegen script into a merge gate, enumerate every mutating
-  step (a `--check` flag on the formatters while `uv export -o requirements.txt` stays in write mode
-  regenerates a prod artifact and exits 0), and check that unknown flags are rejected — `--cheek`
-  must not fall through to write mode.
-- For a claimed complexity fix, measure at two or more input sizes for old and new and compare the
-  scaling ratio; for a "pure refactor, identical output" claim, diff outputs byte-for-byte across
-  generated cases rather than hand-picked examples.
-- On a "faithful port of X" slice, goldens/proptests/mutation tests are structurally blind to a bug
-  present in the port's baseline: run seeded-random differential fuzzing against the real reference,
-  and read the reference's call graph one level up from the ported function. A divergence documented
-  as "believed inherent" gets the isolation protocol — minimize, instrument the reference's
-  intermediate terms, diff term-by-term.
-- When a benchmark or results deliverable has a headline metric, check it against the spec's own
-  stats rules (medians, N runs, same inputs) — harnesses commonly do N-run medians for secondary
-  tables and a single sample for the number that gets quoted.
 - When re-verifying a "fixed" crash/stack-overflow finding, re-run your own original repro's exact
   parameters against a verified-fresh build BEFORE trusting the shipped regression test: a fix can
   correctly patch the named function while the crash persists one call-frame deeper in an untouched
@@ -242,11 +268,6 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   rewrite can correctly fix the unreliable half of a claim (run-to-run classification noise) while
   getting the reliable half (the one specific spot-check it presents as proof) wrong; the confident,
   falsifiable phrasing is exactly what makes it worth five minutes to check rather than read past.
-- After a rebase between review rounds, prove "no source change hid in the rebase" per path with
-  `git rev-parse <old>:<path>` versus `git rev-parse <new>:<path>` object hashes, not with a diff: a
-  plain diff attributes the picked-up base commits to the PR, and `git range-diff` proves the
-  commits are equivalent without proving the resulting trees are, which is what lets earlier
-  behavioral evidence carry forward.
 - A test added "specifically for" a fix is verified by reverting the fix and running that test file
   alone, not the aggregate suite. Inputs built through the host language's own collection
   constructor (`set(...)`, `dict(...)`) are normalized before they cross an FFI boundary, so a
@@ -270,9 +291,6 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   erases (float width, zone awareness, unit discriminant, NaN payload) and drive one end-to-end case
   per facet: each yields a record whose old and new render identically, and no test that uses one
   column type per side can produce one.
-- After a fix round is replayed as one squashed commit, re-diff the PR body and commit message
-  against the new content: a stale test count or a "pending rebase" note is a finding on its own. A
-  commit message that states a measured property is checked at that commit, not only at the head.
 - Hostile values for a resource knob (threads, partitions, buffer or batch sizes, depth) start at
   two to four times the machine's real limit, never `2**31`: an unbounded knob is proven by the
   first absurd-but-survivable value, and a giant one takes the machine down with the finding (546 GB
@@ -293,10 +311,6 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   dispatch is ground truth. When a step of a function that mirrors a dispatcher becomes fallible,
   find the guard (a class or type check) the real dispatcher passes before that step and require
   generated inputs on both sides of it, subclasses included.
-- When a PR body cites an item by number ("item 13 has no automated test"), locate that number
-  inside the PR itself (body, comments, linked issue, repo) before accepting it; a bare index that
-  resolves nowhere public is an internal checklist leaking into permanent content, invisible to a
-  grep for attribution strings.
 - When a design spills to temp files to bound memory, the resident-set metric may still count the
   spilled pages (buffer cache, `ru_maxrss`) and the harness's held inputs: measure the diff's own
   peak with a harness that retains nothing, and sweep the partition or chunk count, which trades
@@ -306,18 +320,9 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   ordered dispatcher, the type's own equality, hashing) before trusting the fix is complete; the
   paths share one root function and the patch usually lands at one call site. Probe with two values
   of different kinds carrying the same name.
-- Confirm a "no cost added" claim by interleaving the before/after wall measurements in alternating
-  blocks; sequential blocks on a shared machine drift 20% within one sweep and manufacture a
-  regression that is not there.
 - When a PR replaces a typed refusal with a structural fallback, enumerate the fallback's degenerate
   outputs (an empty extraction, a self-similar one) and drive one end-to-end case each; a generator
   drawing only from the type set the feature was written for reaches neither.
-- When a PR body narrates "this number changed across a rebase", diff the cited old-version figure
-  against `git show <branch-point>:<same file>` before accepting it; a rebase note is where a
-  contended or mis-transcribed pre-rebase sample gets baked into permanent docs.
-- When a doc tags a claim as verified against a cited source, trace every clause under the tag to
-  that source, not only the clause the tag was written for. When it quotes a statutory or policy
-  exemption, read the source's carve-outs to that exemption and require the doc to state them.
 - When a fix swaps a helper that tolerated an absent optional member (`bucket.grantReadWrite`) for a
   direct call on that member (`bucket.encryptionKey!.grant`), drive the absent case; and when a
   guard's message names what the member stands for, list every option that leaves it unset (an
