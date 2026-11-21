@@ -101,13 +101,14 @@ run.
 - When a PR deletes tests, the correctness gate runs targeted mutants on the code those tests
   exercised (each render branch, each validate call) and does not rely on a sweep that disables
   `throw` sites; a sweep cannot see a non-throwing path that lost its only test.
-- A mutant that no longer compiles proves nothing either way; rerun it with the test runner's type
-  diagnostics off before counting the site covered or dead.
 - When a PR removes validation or copying code, settle "nothing changed for valid input" by running
   both commits over an input matrix and comparing whole rendered outputs, and add the dimension that
   forces each alternate code path (for grants, a cross-account grantee that moves statements onto
   the resource policy).
 - For a dependency pin, compare the manifest inside the downloaded tarball with the registry
-  metadata and with the source manifest, hash the tarball against the lockfile's integrity, and read
-  the provenance attestation's commit; registry metadata alone can omit an install script the
-  tarball carries.
+  metadata and with the source manifest at the attested commit, look for a `binding.gyp` in the
+  tarball's root (npm runs `node-gyp rebuild` for one when the manifest has no `install` or
+  `preinstall` script) and read the lockfile's `hasInstallScript`, hash the tarball against the
+  lockfile's integrity, and read the provenance attestation's commit and check that its subject
+  digest equals the tarball's hash; registry metadata alone can omit an install script the tarball
+  carries.

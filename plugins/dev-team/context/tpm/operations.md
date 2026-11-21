@@ -81,7 +81,9 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
   up as an untracked file.
 - After triggering a run the harness does not track (a CI workflow started by a comment or a label),
   arm a background waiter for it in the same turn and re-arm it each time its timeout expires;
-  subagent hand-backs do not wake the session for an external run.
+  subagent hand-backs may not wake the session for an external run.
 - A subagent resumed after it has handed back once may be unable to hand back again; brief every
-  resumed agent to write its report or verdict to a named scratchpad file as its last step and to
-  start no background work after it.
+  resumed agent to write its report or verdict to a scratchpad file named for its gate, change and
+  round as its last step and to start no background work after it; the orchestrator records a
+  verdict from that file only when its block is complete and its head line equals the head being
+  recorded.

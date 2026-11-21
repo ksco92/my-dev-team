@@ -1298,5 +1298,6 @@ section above and leaves this list.
   dangling symlink, a symlink loop, a FIFO and a symlink to `/dev/zero` through it under a hard
   timeout.
 - `str.isdecimal()` and `isdigit()` accept non-ASCII digits and `int()` raises its own ValueError
-  past 4300 digits, so neither validates caller-controlled text; check with a regex compiled with
-  `re.ASCII` and a bounded length.
+  past 4300 digits, so neither validates caller-controlled text; check with `re.fullmatch` on a
+  regex compiled with `re.ASCII` and a bounded length, since a pattern ending in `$` matches before
+  a trailing newline and `search` matches inside other text.

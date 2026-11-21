@@ -9,8 +9,7 @@ status: done
 Eighteen lesson candidates wait in the maintainer's lesson outbox: seven held back from earlier
 changes because their target file was at its bullet budget, and eleven from a run that removed code
 from a published library and restructured its README. The owner decided this batch lands whole, and
-that a file may go over its budget here: a separate skill, `lessons`, redistributes the lists
-afterwards.
+that a file may go over its budget here: a later change redistributes the lists.
 
 ## Requirements
 
@@ -18,10 +17,12 @@ afterwards.
       paragraph, in the file the candidate names: the matching `context/tpm/<topic>.md`, the
       security-reviewer agent file, the `code-health` skill, or the Python guide. A candidate that
       names two possible homes lands in the one whose readers apply it, established from the text
-      that loads each file.
+      that loads each file, and a candidate that holds only in this repository lands in its own
+      `.claude/rules/`.
 - [x] The candidate about re-measuring a number, a grep result or a "prints nothing" claim quoted in
       a change body folds into the existing `context/tpm/gates.md` bullet on re-running grep-shaped
-      acceptance criteria at each fix head, which shares its trigger.
+      acceptance criteria at each fix head, as a clause that names who re-measures where and leaves
+      the rebase case to the rebase-brief bullet that already states it.
 - [x] Each lesson states the rule, not the incident: one sentence, two at most, with no date and no
       repository, project, package, pull request or person name.
 - [x] Every factual claim about a tool that a lesson makes is checked by a one-line reproduction or
@@ -92,6 +93,8 @@ Per candidate, in outbox order.
    correctness gate ruled the Python guide the wrong home for it.
 2. Four gates failed a lesson-move change for bullets moved into files no reviewer loads, and a
    bullet with a `sentences` fault left the fault list after moving out of `## Learned patterns`.
+   The rule holds only in a repository that ships lesson files and a linter for them, so it lands in
+   that repository's own rules.
 3. Removing `runDate === period` from a per-period match failed none of 170 tests until a two-period
    fixture existed.
 4. A security gate showed `'٣'.isdecimal()` true and `int('1'*4301)` raising the limit error ahead
@@ -126,19 +129,38 @@ Per candidate, in outbox order.
 18. An exported helper and an `@internal public` method each kept one caller after their second
     consumer was deleted, and both were found a round later.
 
-Landing: candidates 1, 3, 11, 12, 15 and 17 are bullets of the probe file, 7 a bullet of the
-briefing file, 8 and 10 bullets of the operations file, 5, 9 and 14 bullets of the gates file, 4 a
-bullet of the Python guide, 18 a bullet of the code-health skill, 2 a bullet of the correctness
-gate's learned patterns; 6 joins the recurring-chore bullet of the briefing file, 13 joins the
-grep-shaped acceptance criteria bullet of the gates file, and 16 joins step 2 of the security gate's
-agent file. Bullet counts after the change: probe file 36, briefing file 31, code-health skill 21,
-correctness gate 21; each is over its budget of 30, 30, 20 and 20.
+Reproductions for the digit-check and dependency-pin rules.
+
+- Digit check: `re.match(r'\d{1,9}$', '123\n', re.ASCII)` prints a match (`match='123'`) while
+  `re.fullmatch(r'\d{1,9}', '123\n', re.ASCII)` prints `None`;
+  `re.search(r'\d{1,9}', 'ab123cd', re.ASCII)` matches inside other text and `re.fullmatch` on the
+  same text prints `None`.
+- Install script without a manifest entry: the npm scripts documentation says "If there is a
+  `binding.gyp` file in the root of your package and you haven't defined your own `install` or
+  `preinstall` scripts, npm will default the `install` command to compile using node-gyp via
+  `node-gyp rebuild`". npm 11.20.0's `@npmcli/node-gyp` implements it as a `stat` of
+  `<path>/binding.gyp` and `defaultGypInstallScript` is `'node-gyp rebuild'`; the arborist's
+  install-scripts and rebuild steps call it. The test is for `binding.gyp` by name, not any `*.gyp`
+  file, so the bullet names `binding.gyp`. The arborist's shrinkwrap code lists `hasInstallScript`
+  among the fields it writes to a lockfile entry.
+- Attestation about this tarball: for a published package version, `openssl dgst -sha512 <tarball>`
+  printed the same hex digest as the provenance statement's `subject[0].digest.sha512`, and
+  `tar -tzf <tarball> | grep -c 'gyp$'` printed `0` for that tarball.
+
+Landing: candidates 1, 3, 11, 15 and 17 are bullets of the probe file, 7 a bullet of the briefing
+file, 8 and 10 bullets of the operations file, 5, 9 and 14 bullets of the gates file, 4 a bullet of
+the Python guide, 18 a bullet of the code-health skill, and 2 a rule of the repository's own
+`.claude/rules/skills.md`; 6 and 12 join the recurring-chore and mutant-compile bullets of the
+briefing file, 13 joins the grep-shaped acceptance criteria bullet of the gates file, and 16 joins
+step 2 of the security gate's agent file. That is 14 landed, 4 folded, 0 dropped. Bullet counts
+after the change: probe file 35, briefing file 31, code-health skill 21; each is over its budget of
+30, 30 and 20.
 
 ## Dependencies
 
-- Blocked by: none · Blocks: lesson-distribution-skill's first run
+- Blocked by: none · Blocks: none
 
 ## Out of Scope
 
-Splitting, trimming or moving any existing bullet; the `lessons` skill; emptying the outbox, which
-the maintainer does after the merge.
+Splitting, trimming or moving any existing bullet; redistributing the lists; emptying the outbox,
+which the maintainer does after the merge.
