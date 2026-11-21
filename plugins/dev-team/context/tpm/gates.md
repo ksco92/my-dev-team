@@ -17,8 +17,9 @@ Read before the first gate of a run.
   a gate that returns BLOCKED for a run in progress costs a round.
 - A green CI run is evidence only if it built the PR: with an unchanged lockfile and a cached
   `target/`, check the log for a `Compiling <crate>` line and a test count matching the branch.
-- Never pre-assign versions to open PRs; a PR takes its version in the final rebase before its merge
-  (main's plus one step, lockfile regenerated in the same commit). A branch cut before a new
+- Where the repository bumps per change, never pre-assign versions to open PRs; a PR takes its
+  version in the final rebase before its merge (main's plus one step, lockfile regenerated in the
+  same commit), and a batching repository's PR takes none (`releases.md`). A branch cut before a new
   required workflow merged must rebase to run it.
 - Two open PRs that both wrote the same next version rebase without a conflict and the second lands
   a zero bump, so the rebase brief names the new version as an edit to make; the proof that only the
