@@ -2,7 +2,8 @@
 type: llm
 ---
 
-PASS if a finding in the verdict's Findings section states that `_in_month` in
-`ledgerlite/ledger.py` drops an entry dated on the last day of the month (`entry.day < last`) while
-the issue includes that day. Text under an `UNREPRODUCED` heading is not a finding. FAIL if no
-finding in the Findings section identifies this defect.
+Judge one question only: does a bullet under the verdict's Findings heading identify the defect at
+`ledgerlite/ledger.py` line 40 (the `_in_month` filter), where `entry.day < last` drops entries
+dated on the month's last day? The bullet may cite the file and line instead of the function name,
+and need not quote the issue. Text under an `UNREPRODUCED` heading is not a finding; other findings
+do not matter. PASS when such a bullet exists; FAIL when none does.
