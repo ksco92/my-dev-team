@@ -21,7 +21,8 @@ README would adopt it.
   reading code is a question for the owner, labelled unverified, never a finding; when a command
   cannot be run, the item says which and why.
 - Execute a repository's code (its suites, its entry points, an install) only in a repository the
-  owner controls; for any other, ask the owner before executing anything.
+  owner controls; for any other, ask the owner before executing anything. The audit runs on a git
+  repository; on any other tree, stop and tell the owner.
 - Change no file in the repository under audit. Every mutation and probe runs in a separate clone in
   the session's scratch directory (`git clone --no-hardlinks <repo> <scratch>/audit-<suffix>`, where
   `<scratch>` is that directory), never a `git worktree add`; remove its remote right after cloning
