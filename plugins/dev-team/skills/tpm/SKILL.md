@@ -312,11 +312,11 @@ reversible option; when two approaches are equally good, present both.
 
 Branches follow the process file's Branch name operation; implementers open PRs with its Open change
 operation; the PR body template is the process file's Code host change body template; no attribution
-strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy, give every
-brief one rule — at every rebase onto main set the version to (main's current minor + 1).0 and
-regenerate the lockfile in the same commit — and merge serially; batching repositories take no
-version (`releases.md`). A branch cut before a new required workflow merged can never run that
-check; rebase it.
+strings anywhere (a hook rejects them). For parallel PRs where the repository bumps per change, give
+every brief one rule — at every rebase onto main set the version to (main's current minor + 1).0 and
+regenerate the lockfile in the same commit — and merge serially; a batching repository follows
+`releases.md`. A branch cut before a new required workflow merged can never run that check; rebase
+it.
 
 ## Learned patterns and where they go
 

@@ -139,7 +139,7 @@ No AI-attribution strings in commit messages or change bodies; a hook rejects th
 grouped commits on the branch; the merge keeps them under one merge commit. The version bump follows
 the semver policy in the harness (major zero: breaking or feature → minor, otherwise patch). This
 process bumps per change: the bump is made once, in the final rebase before the merge. A repository
-that batches releases states it in its own process file's Commits section and follows
+that batches releases says so in its process file's Version bump rule or its own rules and follows
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/releases.md`.
 
 ## Forbidden

@@ -19,8 +19,8 @@ Read before the first gate of a run.
   `target/`, check the log for a `Compiling <crate>` line and a test count matching the branch.
 - Where the repository bumps per change, never pre-assign versions to open PRs; a PR takes its
   version in the final rebase before its merge (main's plus one step, lockfile regenerated in the
-  same commit), and a batching repository's PR takes none (`releases.md`). A branch cut before a new
-  required workflow merged must rebase to run it.
+  same commit); a batching repository follows `releases.md`. A branch cut before a new required
+  workflow merged must rebase to run it.
 - Two open PRs that both wrote the same next version rebase without a conflict and the second lands
   a zero bump, so the rebase brief names the new version as an edit to make; the proof that only the
   version files moved is per-path object-hash equality for every other PR file plus a three-dot diff

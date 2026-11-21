@@ -85,7 +85,7 @@ Out of Scope
 | Diff | `gh pr diff <n>`, or three-dot `git diff origin/main...<sha>`; never a two-dot diff once the base has moved |
 | Merge state | `gh pr view <n> --json mergeStateStatus -q .mergeStateStatus`; `CONFLICTING` means rebase, not retrigger |
 | CI status | `gh pr checks <n>`; required checks are the repo's; pin them to the head with `gh api repos/<owner>/<repo>/commits/<sha>/check-suites`; wait with one `gh pr checks <n> --watch` waiter; a repo with no CI runs lint/tests/build locally and records the output in the PR body |
-| Rebase | Rebase onto `origin/main` before opening and before the final push; push with `--force-with-lease` after checking the remote tip is the last SHA pushed; a per-change version bump happens in the final rebase |
+| Rebase | Rebase onto `origin/main` before opening and before the final push; push with `--force-with-lease` after checking the remote tip is the last SHA pushed; the version bump follows Commits below |
 | Merge | Orchestrator only: `gh pr merge <n> --squash --delete-branch`, only after `gate-ledger check` passes and the CI status is terminal-green at the head; the hook also refuses it unless the ledger check passes and `gh pr checks` reports every check passed or skipped |
 | After merge | Complete the task (Tracker above); remove the workspace (below) |
 | Repo description | `gh repo view --json description -q .description`; set with `gh repo edit --description "<text>"` |
@@ -140,8 +140,8 @@ checked with `gate-ledger check <owner/repo> <pr> <head-sha>`, and listed with
 
 No AI-attribution strings in commit messages or change bodies; a hook rejects them. Small, logically
 grouped commits on the branch; the merge squashes them. The version bump follows the semver policy
-in the harness (major zero: breaking or feature → minor, otherwise patch) and, where the repository
-bumps per change, is made once, in the final rebase; a batching repository follows
+in the harness. This process bumps per change, once, in the final rebase; a repository that batches
+says so in its process file's Version bump rule or its own rules and follows the harness's
 `context/tpm/releases.md`.
 
 ## Forbidden
