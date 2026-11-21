@@ -47,7 +47,8 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   pre-push self-check list for implementers (owner decision).
 - When briefing a recurring mechanical chore (version bump, release prep, changelog roll), derive
   the file checklist from the previous instance's actual commit (`git show <sha> --stat`), never
-  from the documented convention alone; the precedent commit shows every real touch-point.
+  from the documented convention alone; the precedent commit shows every real touch-point. A brief
+  that names the files copies that `--stat` list verbatim.
 - When an implementer defers half a slice citing environment limits, check the claim against the
   machine and the repo's own history before accepting it (memory, disk, what earlier slices ran
   here); a wrong capacity claim is a stopping-short signal, and the answer is "proceed, here is the
@@ -85,8 +86,9 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   definition and to remove its use at each call site in turn; a test that fails on the broken
   definition proves one call site only.
 - Brief every mutation run to check the mutant for undefined names, and that it compiles under the
-  project's own settings, before trusting a failure; a mutant that swaps in an unimported symbol or
-  fails the compile fails every test and reads as killed.
+  project's own settings, before trusting a failure, and to rerun a mutant that no longer compiles
+  with the test runner's type diagnostics off before counting the site covered or dead; a mutant
+  that swaps in an unimported symbol or fails the compile fails every test and reads as killed.
 - Send a change you already know you will ask for (an implementer's open question, a stale test
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
@@ -106,3 +108,5 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   context, and a false statement there comes back as a finding against the brief.
 - Brief a live proof to name its evidence logs in the PR body by a directory name relative to the
   author's workspace, never an absolute local path.
+- When a fix brief prescribes a test's shape, check the block for a helper that already builds that
+  shape first; a prescribed hand-built row is the next round's reuse finding.
