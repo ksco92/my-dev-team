@@ -84,6 +84,5 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
   subagent hand-backs may not wake the session for an external run.
 - A subagent resumed after it has handed back once may be unable to hand back again; brief every
   resumed agent to write its report or verdict to a scratchpad file named for its gate, change and
-  round as its last step and to start no background work after it; the orchestrator records a
-  verdict from that file only when its block is complete and its head line equals the head being
-  recorded.
+  round as its last step and to start no background work after it, and judge a verdict read from
+  that file by the block and head rules of `gates.md`.

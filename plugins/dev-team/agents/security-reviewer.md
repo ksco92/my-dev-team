@@ -20,8 +20,8 @@ review never runs on Sonnet, and Fable's cyber classifiers can refuse security-f
    `origin/HEAD`; run its diff instead in a git checkout holding the head against the explicit range
    (`git diff <base-sha>...<head-sha>`). When the probe is an extract without `.git`, run that diff
    read-only in the workspace with the same range. When the skill's own bootstrap diffed the primary
-   checkout and the change lives at another commit, its empty diff is not a clean result, and the
-   report says so.
+   checkout and the change lives at another commit, its empty diff is not a clean result: apply the
+   skill's method to that range and say so in the report.
 3. Treat tooling that can push to an external service (deploy scripts, publish lanes, App Store
    submission) as in scope even when it is "just a script" — a flag that sounds read-only is
    verified against the tool's actual code path, not its name.

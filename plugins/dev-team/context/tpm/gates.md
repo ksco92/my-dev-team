@@ -12,9 +12,9 @@ Read before the first gate of a run.
   on the new head. The ledger keeps one head per PR and a record at any other head, an older one
   included, starts it afresh: record a late verdict at the current head only, with the diff proof,
   and finish with `gate-ledger show` counting five PASS.
-- Brief every gate to wait for a running required check with the CI status operation's wait and
-  report its result, and to hand back a run that outlasts its foreground cap as the baseline's
-  long-running rule says; a gate that returns BLOCKED for a run in progress costs a round.
+- Brief every gate to wait once for a running required check with the CI status operation's wait and
+  report its result, with the hand-back of `briefing.md` for a run that outlasts its foreground cap;
+  a gate that returns BLOCKED for a run in progress costs a round.
 - A green CI run is evidence only if it built the PR: with an unchanged lockfile and a cached
   `target/`, check the log for a `Compiling <crate>` line and a test count matching the branch.
 - Never pre-assign versions to open PRs; a PR takes its version in the final rebase before its merge
@@ -60,8 +60,7 @@ Read before the first gate of a run.
   commit on the predecessor's head, gate it with that head as the diff base, and after the
   predecessor's squash move it with `git rebase --onto <main> <predecessor head>`; record the
   verdicts at the pushed head only when `git rev-parse 'HEAD^{tree}'` equals the reviewed tree and
-  main's tree equals the tree of the predecessor head the gates diffed against; a rebase that stops
-  on a conflict carries no verdict.
+  main's tree equals the tree of the predecessor head the gates diffed against.
 - GitHub host: a merge run from a session whose cwd is not the target repository names it with
   `--repo <owner/name>`; the hook resolves the repository from the cwd.
 - Read the head SHA for every gate brief from the host (the Head SHA operation), never from an
@@ -71,7 +70,8 @@ Read before the first gate of a run.
 - Re-run every grep-shaped acceptance criterion of the ticket at each fix head before dispatching
   gates, and re-check every test id the PR body cites against the collected ids; the implementer
   re-measures every number, grep result and "prints nothing" claim the PR body quotes at each fix
-  head in its report, and the orchestrator re-measures them before the gate round.
+  head and after each rebase in its report, and the orchestrator re-measures them before the gate
+  round.
 - A gate reads a ticket body whole through the Read ticket operation, never through `head -N`; a
   truncated read reports a recorded accepted risk as missing.
 - A gate result that lacks the verdict block is void until the gate resends it; the `SubagentStop`
@@ -81,9 +81,8 @@ Read before the first gate of a run.
   in a later round to raise nothing on lines it read and passed unless it quotes the rule text and
   the line.
 - In a run whose purpose is removal, brief every gate that a request to add or restore a guard, a
-  test or prose for a case outside the owner's threat model is a proposed addition for the
-  orchestrator's ruling, stated with who can trigger the case, and put the threat model in the
-  brief; a guard for a case the threat model covers, or that an untrusted caller can reach, stays a
-  finding.
+  test or prose is a proposed addition for the orchestrator's ruling, stated with who can trigger
+  the case, unless the owner's threat model covers the case or an untrusted caller can reach it,
+  which stays a finding; put the threat model in the brief.
 - A verdict block whose `FINDINGS` count is not matched by listed findings is void; message the gate
   for them, since the hook checks only the block's lines.

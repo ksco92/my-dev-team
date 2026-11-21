@@ -106,9 +106,8 @@ run.
   forces each alternate code path (for grants, a cross-account grantee that moves statements onto
   the resource policy).
 - For a dependency pin, compare the manifest inside the downloaded tarball with the registry
-  metadata and with the source manifest at the attested commit, look for a `binding.gyp` in the
-  tarball's root (npm runs `node-gyp rebuild` for one when the manifest has no `install` or
-  `preinstall` script) and read the lockfile's `hasInstallScript`, hash the tarball against the
-  lockfile's integrity, and read the provenance attestation's commit and check that its subject
-  digest equals the tarball's hash; registry metadata alone can omit an install script the tarball
-  carries.
+  metadata and with the source manifest at the attested commit, compare the lockfile's
+  `hasInstallScript` with whether the tarball carries an install script or a `binding.gyp` in its
+  root, hash the tarball against the lockfile's integrity, and check that the provenance
+  attestation's subject digest equals the tarball's hash before reading its commit; registry
+  metadata alone can omit an install script the tarball carries.
