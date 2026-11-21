@@ -100,10 +100,10 @@ fired.
 
 Disable each guard site in turn in the scratch clone and run the whole suite: replace the rejection
 with a no-op of the same shape (`throw new Error(...)` becomes `void new Error(...)`, `raise X(...)`
-becomes `X(...)`, an early return falls through), record the failing tests, and restore the file
-before the next site, clearing any build cache that keys on file time and size (Python's
-`__pycache__`) so a restored file is not read stale. Time one suite run first, and split by file
-when a run will not fit one command.
+becomes `X(...)`, an early return falls through), record the command that applied the mutant and the
+failing tests, and restore the file before the next site, clearing any build cache that keys on file
+time and size (Python's `__pycache__`) so a restored file is not read stale. Time one suite run
+first, and split by file when a run will not fit one command.
 
 - A site whose removal fails no test is untested when the economy lens reached it and dead when it
   did not.
