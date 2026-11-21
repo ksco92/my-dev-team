@@ -55,6 +55,9 @@ jobs:
       - name: Test merge-gate and attribution-guard hooks
         run: bash plugins/dev-team/tests/merge-gate.test.sh
 
+      - name: Test gate-ledger
+        run: bash plugins/dev-team/tests/gate-ledger.test.sh
+
       - name: Test verdict-guard hook
         run: bash plugins/dev-team/tests/verdict-guard.test.sh
 

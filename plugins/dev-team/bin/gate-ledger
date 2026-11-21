@@ -6,11 +6,17 @@
 # every required gate PASS with zero findings at the PR's CURRENT head. The ledger is the
 # mechanism that makes the merge gate deterministic instead of a model's recollection.
 #
+# A record at a different head than the ledger's current head resets the other gates: every gate
+# is re-recorded at the new head, by a re-run or by the carry proof the tpm skill names, so
+# verdicts from an older head never count on their own. Every record is also appended to a history
+# file, so the rounds a change took stay countable.
+#
 # Usage:
 #   gate-ledger record <repo-key> <id> <gate> <verdict> <findings> <head-sha> <model>
 #   gate-ledger check  <repo-key> <id> <head-sha>      # exit 0 = mergeable, 1 = not
 #   gate-ledger show   <repo-key> <id>
 #   gate-ledger reset  <repo-key> <id>
+#   gate-ledger stats  [<repo-key>]                    # per-gate and per-change totals
 #
 #   <repo-key> as the process file's Repo key operation defines it: owner/name on GitHub, or the
 #            absolute repo path for a no-remote repo
@@ -19,16 +25,13 @@
 #   <verdict> PASS | FAIL | BLOCKED
 #   <model>  alias the gate ran on (sonnet | opus | fable), or the local model name under Pi;
 #            recorded so the reviewer-tier rule is auditable after the fact
-#
-# A record at a different head than the ledger's current head resets the other gates: every gate
-# is re-recorded at the new head, by a re-run or by the carry proof the tpm skill names, so
-# verdicts from an older head never count on their own.
+#   history  <ledger-root>/<repo-slug>/<id>.history.jsonl, one JSON line per record
 set -euo pipefail
 
 LEDGER_ROOT="${GATE_LEDGER_ROOT:-$HOME/.claude/gate-ledger}"
 REQUIRED_GATES=(pr-reviewer code-health oss-reviewer security-review readme-writer)
 
-usage() { sed -n '9,21p' "$0"; exit 2; }
+usage() { sed -n '/^# Usage:/,/^[^#]/{/^#/p;}' "$0"; exit 2; }
 
 ledger_path() {
   # slugify repo + id into a stable path
@@ -57,6 +60,10 @@ cmd_record() {
       '{repo: $repo, id: $id, head: $head, gates: {($g): {verdict: $v, findings: $f, model: $m, at: $t}}}' > "$path.tmp"
   fi
   mv "$path.tmp" "$path"
+  jq -nc --arg repo "$repo" --arg id "$id" --arg head "$head" --arg g "$gate" --arg v "$verdict" \
+    --argjson f "$findings" --arg m "$model" --arg t "$now" \
+    '{repo: $repo, id: $id, head: $head, gate: $g, verdict: $v, findings: $f, model: $m, at: $t}' \
+    >> "${path%.json}.history.jsonl"
   echo "recorded $gate=$verdict ($findings findings, $model) for $repo#$id @ ${head:0:12}"
 }
 
@@ -95,6 +102,23 @@ cmd_reset() {
   rm -f "$path" && echo "reset $path"
 }
 
+cmd_stats() {
+  [[ $# -le 1 ]] || usage
+  local dir="$LEDGER_ROOT" f data
+  [[ $# -eq 0 ]] || dir="$(dirname "$(ledger_path "$1" x)")"
+  data="$(while IFS= read -r f; do
+    jq -c . "$f" || { echo "gate-ledger: cannot parse $f" >&2; exit 1; }
+  done < <(find "$dir" -name '*.history.jsonl' 2>/dev/null))"
+  [[ -n "$data" ]] || { echo "no history"; return 0; }
+  jq -rs '
+    (["gate", "records", "not_clean", "findings"] | @tsv),
+    (group_by(.gate)[] | [.[0].gate, length, (map(select(.verdict != "PASS" or .findings != 0)) | length), (map(.findings) | add)] | @tsv),
+    "",
+    (["repo", "id", "heads", "records", "findings"] | @tsv),
+    (group_by([.repo, .id])[] | [.[0].repo, .[0].id, (map(.head) | unique | length), length, (map(.findings) | add)] | @tsv)
+  ' <<< "$data"
+}
+
 [[ $# -ge 1 ]] || usage
 cmd="$1"; shift
 case "$cmd" in
@@ -102,6 +126,7 @@ case "$cmd" in
   check)  cmd_check "$@" ;;
   show)   cmd_show "$@" ;;
   reset)  cmd_reset "$@" ;;
+  stats)  cmd_stats "$@" ;;
   -h|--help) usage ;;
   *) echo "gate-ledger: unknown command '$cmd'" >&2; usage ;;
 esac

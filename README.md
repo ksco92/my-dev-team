@@ -46,6 +46,20 @@ agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require
 `jq` and does nothing without it; the exact patterns are in
 [`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
 
+## Gate ledger
+
+`plugins/dev-team/bin/gate-ledger` records each review gate's verdict per change for the merge hook
+to check; run it with no arguments for its commands and arguments. The ledger root is
+`~/.claude/gate-ledger`, or the directory `GATE_LEDGER_ROOT` names. A change's ledger is
+`<root>/<repo-slug>/<id>.json`, where the slug is the repo key with a leading `/` removed and each
+`/` or `:` replaced by `__`.
+
+Every record is also appended as one JSON line to `<root>/<repo-slug>/<id>.history.jsonl`, which a
+record at a new head and `reset` leave alone. `stats [<repo-key>]` reads the history files under the
+root, or the one repository's, and prints two tab-separated tables: per gate, the records, the
+records that are not `PASS` with zero findings (`not_clean`), and the findings; per change, the
+distinct heads, the records, and the findings. It prints `no history` when there is none.
+
 ## License
 
 Apache License 2.0; see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).

@@ -34,6 +34,7 @@ git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
 bash plugins/dev-team/tests/dev-process.test.sh
 bash plugins/dev-team/tests/lesson-lint.test.sh
 bash plugins/dev-team/tests/merge-gate.test.sh
+bash plugins/dev-team/tests/gate-ledger.test.sh
 bash plugins/dev-team/tests/verdict-guard.test.sh
 bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
