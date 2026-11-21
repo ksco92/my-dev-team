@@ -9,9 +9,9 @@ Run the `dev-team:audit` skill on the repository at `repo` with the economy, tes
 only.
 
 The owner has answered the bar already. The only caller is a person running the `ledgerlite` command
-with a CSV path; the Python modules are not a public API. The project defends against malformed CSV
-files and a missing or unreadable path. The audit may propose removing any code, test or README
-sentence.
+with a CSV path; the Python modules are not a public API. The project defends against no input
+itself: on a malformed CSV file or a bad path, the error the standard library raises is the accepted
+response. The audit may propose removing any code, test or README sentence.
 
 The suite uses only the standard library: run it with
 `PYTHONPATH=. python3 -m unittest discover -s tests -v` from the repository root or from a scratch
