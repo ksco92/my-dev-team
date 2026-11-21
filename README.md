@@ -60,16 +60,6 @@ root, or the one repository's, and prints two tab-separated tables: per gate, th
 records that are not `PASS` with zero findings (`not_clean`), and the findings; per change, the
 distinct heads, the records, and the findings. It prints `no history` when there is none.
 
-## Audit
-
-The `audit` skill audits a whole repository rather than one change: it measures, runs the suites
-with each guard disabled, maps documented statements to the tests that assert them, and ends in a
-numbered list of decisions for the owner, changing nothing in the audited repository. Its cold-read
-lens hands only the README's path and a persona to the `cold-reader` agent, which runs on `fable`
-and reports whether a first-time reader would adopt the project. Run it with `/dev-team:audit`,
-optionally naming lenses (`--lenses=economy,tests,claims,surface,cold-read`); the procedure is in
-[`plugins/dev-team/skills/audit/SKILL.md`](plugins/dev-team/skills/audit/SKILL.md).
-
 ## License
 
 Apache License 2.0; see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
