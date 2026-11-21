@@ -44,18 +44,48 @@ def total(entries: list[Entry]) -> Decimal:
     return sum((entry.amount for entry in entries), Decimal("0"))
 EOF
 
+cat >repo/tests/test_ledger.py <<'EOF'
+import tempfile
+import unittest
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
+
+from ledgerlite.ledger import Entry, read_entries, total
+
+
+class TotalTest(unittest.TestCase):
+    def test_total_sums_amounts(self) -> None:
+        entries = [Entry(date(2026, 1, 5), Decimal("10.50")), Entry(date(2026, 1, 6), Decimal("4.50"))]
+        self.assertEqual(total(entries), Decimal("15.00"))
+
+    def test_total_of_nothing_is_zero(self) -> None:
+        self.assertEqual(total([]), Decimal("0"))
+
+
+class ReadEntriesTest(unittest.TestCase):
+    def test_read_entries_parses_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "ledger.csv"
+            csv_file.write_text("date,amount\n2026-01-05,10.50\n")
+            self.assertEqual(read_entries(csv_file), [Entry(date(2026, 1, 5), Decimal("10.50"))])
+EOF
+
 cat >repo/tests/test_entry.py <<'EOF'
+import unittest
 from datetime import date
 from decimal import Decimal
 
 from ledgerlite.ledger import Entry
 
 
-def test_entry_holds_a_date_and_a_decimal() -> None:
-    entry = Entry(date(2026, 1, 5), Decimal("10.50"))
-    assert isinstance(entry.day, date)
-    assert isinstance(entry.amount, Decimal)
+class EntryTest(unittest.TestCase):
+    def test_entry_holds_a_date_and_a_decimal(self) -> None:
+        entry = Entry(date(2026, 1, 5), Decimal("10.50"))
+        self.assertIsInstance(entry.day, date)
+        self.assertIsInstance(entry.amount, Decimal)
 EOF
+
 
 cat >>repo/README.md <<'EOF'
 

@@ -13,7 +13,7 @@ with a CSV path; the Python modules are not a public API. The project defends ag
 files and a missing or unreadable path. The audit may propose removing any code, test or README
 sentence.
 
-Run the suite with `cd repo && PYTHONPATH=. python3 -m pytest -q`, or, when pytest is not
-importable, `cd repo && PYTHONPATH=. uv run --no-project --with pytest==9.1.1 python -m pytest -q`.
-The owner is not available to answer the decision list: stop after printing the full report with its
-decision list, and ticket, remove or change nothing.
+The suite uses only the standard library: run it with
+`PYTHONPATH=. python3 -m unittest discover -s tests -v` from the repository root or from a scratch
+copy of it. The owner is not available to answer the decision list: stop after printing the full
+report with its decision list, and ticket, remove or change nothing.

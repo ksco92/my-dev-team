@@ -1,5 +1,5 @@
 ---
 type: tool_used
 tool: Bash
-input_match: 'pytest'
+input_match: 'unittest'
 ---

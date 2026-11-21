@@ -16,9 +16,10 @@ README would adopt it. It proposes; the owner decides.
 - Run in the main session and do the measuring and probing yourself; the cold read is the only
   delegated step. The audit needs the owner's answers and the whole run's context, which a subagent
   does not have.
-- Every conclusion rests on a command that was run, quoted with the output lines that decide it. A
-  conclusion reached by reading code is a question for the owner, labelled unverified, never a
-  finding; when a command cannot be run, the item says which and why.
+- Every conclusion rests on a command that was run, quoted exactly as typed (a line the owner can
+  paste, never a description of it) with the output lines that decide it. A conclusion reached by
+  reading code is a question for the owner, labelled unverified, never a finding; when a command
+  cannot be run, the item says which and why.
 - Change no file in the repository under audit. Every mutation and probe runs in a scratch copy: a
   detached worktree at the audited head
   (`git -C <repo> worktree add --detach <scratch>/audit-<suffix> HEAD`), or a `cp -R` when the tree
@@ -116,8 +117,8 @@ or the runner's equivalent): another test must fail. A test whose mutation only 
 Map every documented statement from the measure table to the test or suite that asserts it, by name,
 with a run in which it passes and, in scratch, a mutation of the behaviour that makes it fail. A
 statement about an external system is asserted only by a suite that talks to that system or by a
-fixture copied from its real output. A statement with no such test becomes a decision: add the test,
-narrow the sentence, or remove it.
+fixture copied from its real output. A statement with no such test, shown by a quoted grep of the
+test tree that finds none, becomes a decision: add the test, narrow the sentence, or remove it.
 
 ### Surface
 
