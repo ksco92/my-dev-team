@@ -92,3 +92,22 @@ run.
 - A test that sends generated neighbours of a valid value is checked two ways: no generated value
   matches the pattern under test, and every candidate the generator leaves out does; an exclusion
   applied at every position hides a widening where the excluded character is not valid.
+- When a PR wraps an existing per-run sequence in a loop, mutate each step of the sequence to run on
+  the first pass only and on the last pass only, and assert each step's effect per pass, not on the
+  final state.
+- When a compound condition adds an item to one bucket of several (per period, per tenant), require
+  a fixture with two buckets where the item belongs to exactly one; a single bucket, or the item in
+  every bucket, leaves the bucket-equality operand unpinned.
+- When a PR deletes tests, the correctness gate runs targeted mutants on the code those tests
+  exercised (each render branch, each validate call) and does not rely on a sweep that disables
+  `throw` sites; a sweep cannot see a non-throwing path that lost its only test.
+- A mutant that no longer compiles proves nothing either way; rerun it with the test runner's type
+  diagnostics off before counting the site covered or dead.
+- When a PR removes validation or copying code, settle "nothing changed for valid input" by running
+  both commits over an input matrix and comparing whole rendered outputs, and add the dimension that
+  forces each alternate code path (for grants, a cross-account grantee that moves statements onto
+  the resource policy).
+- For a dependency pin, compare the manifest inside the downloaded tarball with the registry
+  metadata and with the source manifest, hash the tarball against the lockfile's integrity, and read
+  the provenance attestation's commit; registry metadata alone can omit an install script the
+  tarball carries.
