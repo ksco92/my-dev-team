@@ -41,20 +41,23 @@ where it belongs, and decides with evidence whether each is still worth keeping.
     only a session runs does not count); the rule is no longer true (the command that shows it); the
     rule would not hold in another repository (the row cites the merged change that carries it in
     that repository's own rules, and without one the decision is keep); a candidate has no evidence
-    on record. An existing bullet whose evidence cannot be found, after following every source its
-    landing change cites, is kept with a question to the owner.
-  - a bullet that carries rules with different homes is split, and each fragment gets its own
-    decision and row.
+    on record. A candidate that would hold in one repository only is landed in that repository's own
+    rules through that repository's process, never as a plugin bullet, and its outbox entry stays
+    until that change has merged. An existing bullet whose evidence cannot be found, after following
+    every source its landing change cites, is kept with a question to the owner.
+  - a bullet that carries rules with different homes (files or passages) is split, and each fragment
+    gets its own decision and row.
 - [x] The home test decides every candidate's place; a home the candidate names is a suggestion the
       test confirms or overrides. A candidate's claim about a tool is checked by a one-line
       reproduction or against the tool's source before it lands.
-- [x] After the change that lands an outbox entry has merged, the skill removes that entry.
+- [x] After a change has merged, the skill removes from the outbox each entry that change landed or
+      dropped with its evidence, and no other.
 - [x] Rules for every edit: the rule keeps the trigger words that say when it applies; the text
       states the rule and not the incident; each fragment of a split bullet is re-read alone; a
       bullet that records an owner decision is neither dropped nor weakened without the owner's
       answer; after the change every rule that was kept is found by a search for its trigger words
-      in a file its readers load. The counts sum to the bullets and candidates of the inventory plus
-      the fragments splits added.
+      in a file its readers load. The counts sum to the bullets and candidates of the inventory,
+      with a split bullet counted once per fragment.
 - [x] Budget outcome: after a run no list is over its budget, or the change body names the list, its
       count, and the split by trigger the skill proposes for it.
 - [x] Output: the change body carries the decision table (rule, decision, destination, evidence) and

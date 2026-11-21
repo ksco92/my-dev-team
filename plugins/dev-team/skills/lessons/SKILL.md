@@ -58,7 +58,8 @@ file, and at what moment, from the text that loads it: run
 `git grep -n '<file name>' plugins/dev-team` and read each hit. The stack guides are loaded through
 a pattern that search misses: `context/agent-baseline.md`'s first steps load them for the
 implementers, and the `pr-reviewer` agent's first steps and the `code-health` and `oss-reviewer`
-skills' context-loading steps for the gates.
+skills' context-loading steps for the gates; and it misses a skill that an agent file's `skills:`
+frontmatter preloads by its directory name.
 
 ## 3. Decide
 
@@ -74,9 +75,9 @@ lead-in names its trigger, to the agent or skill file of the agent that applies 
 `context/<stack>-coding-guide.md`. This test decides every candidate's place; a home the candidate
 names is a suggestion the test confirms or overrides.
 
-A bullet that carries rules with different homes is split, and each fragment gets its own decision
-and row. Give every bullet, fragment, and candidate exactly one decision, the first in this order
-that holds:
+A bullet that carries rules with different homes (different files or different passages) is split,
+and each fragment gets its own decision and row. Give every bullet, fragment, and candidate exactly
+one decision, the first in this order that holds:
 
 <!-- prettier-ignore -->
 | Decision | Holds when | Evidence in the row |
@@ -100,13 +101,15 @@ none:
    not count.
 3. The rule is no longer true: the command that shows it, with its output.
 4. The rule would not hold in another repository: cite the merged change that carries it in that
-   repository's own rules; without one, the decision is keep.
+   repository's own rules. Without one, an existing bullet is kept; a candidate is landed in that
+   repository's own rules through that repository's process, never as a plugin bullet, and its row
+   becomes this drop once that change has merged.
 5. A candidate has none of the evidence `context/policy.md`'s "Where lessons go" names.
 
-An existing bullet's evidence, and whether it records an owner decision, come from where its rule
-was first recorded: find the change that landed it (`git log -S '<phrase>'`, read with the process
-file's Read change operation) and follow every source that change cites. A bullet whose evidence is
-still not found is kept, with a question to the owner.
+An existing bullet's evidence comes from where its rule was first recorded: find the change that
+landed it (`git log -S '<phrase>'`, read with the process file's Read change operation) and follow
+every source that change cites. A bullet whose evidence is still not found is kept as it is, and the
+session asks the owner about it; it changes only on the owner's answer.
 
 ## 4. Edit rules
 
@@ -137,10 +140,11 @@ group's file or section, and the loader line that must name it. The owner choose
 The change body carries the inventory, a table of the lists (file, bullets, budget) and one of the
 candidates (text, source); the decision table, one row per bullet, fragment, and candidate (its
 first words, decision, destination, evidence, trigger-word hit); the count per decision, which sums
-to the inventory's bullets and candidates plus the fragments splits added; and each list still over
-its budget, with its count and its proposed split.
+to the inventory's bullets and candidates, with a split bullet counted once per fragment; and each
+list still over its budget, with its count and its proposed split.
 
 Land it as one change in the plugin's repository through the `tpm` skill's Phases 3 to 5, with the
 decision table as the ticket's requirements. On a machine that cannot push to the plugin's
 repository, append each candidate with its evidence to the lesson outbox and run this skill from a
-machine that can. After the change merges, remove from the outbox each entry it decided.
+machine that can. After a change has merged, remove from the outbox each entry that change landed or
+dropped with its evidence, and no other.

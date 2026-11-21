@@ -12,8 +12,6 @@ cp "$here/../../bin/lesson-lint" "$p/bin/lesson-lint"
 cat >plugin-repo/.github/workflows/ci.yml <<'EOF'
 name: CI
 on: [pull_request, push]
-permissions:
-  contents: read
 jobs:
   validate:
     runs-on: ubuntu-latest
