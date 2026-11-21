@@ -38,6 +38,7 @@ check "a history line holds the call's values" \
   "$(head -1 "$hist" | jq -c 'del(.at)')" '{"repo":"a/b","id":"1","head":"h1","gate":"code-health","verdict":"FAIL","findings":2,"model":"opus"}'
 check "the history line's time is the ledger entry's time" "$(tail -1 "$hist" | jq -r .at)" "$(jq -r '.gates["code-health"].at' "$ledger")"
 
+"$GL" record a/b 2 pr-reviewer FAIL 1 h3 opus >/dev/null
 "$GL" record a/bc 1 code-health PASS 0 h9 sonnet >/dev/null
 "$GL" record a/bc 1 security-review PASS 1 h9 sonnet >/dev/null
 "$GL" record a/bc 1 oss-reviewer BLOCKED 0 h9 sonnet >/dev/null
@@ -46,29 +47,30 @@ check "reset prints the ledger path" "$reset_out" "reset $ledger"
 check "reset removes the ledger" "$(test -e "$ledger" && echo present || echo gone)" "gone"
 check "reset leaves the history" "$(wc -l <"$hist" | tr -d ' ')" "3"
 
-mkdir -p "$GATE_LEDGER_ROOT/a__b/2.history.jsonl"
-check "record exits 1 when the history cannot be appended" "$("$GL" record a/b 2 code-health PASS 0 h1 opus >/dev/null 2>&1; echo $?)" "1"
-check "the ledger is written when the history cannot be appended" "$(jq -r .head "$GATE_LEDGER_ROOT/a__b/2.json")" "h1"
-rmdir "$GATE_LEDGER_ROOT/a__b/2.history.jsonl"
-rm "$GATE_LEDGER_ROOT/a__b/2.json"
+mkdir -p "$GATE_LEDGER_ROOT/a__b/9.history.jsonl"
+check "record exits 1 when the history cannot be appended" "$("$GL" record a/b 9 code-health PASS 0 h1 opus >/dev/null 2>&1; echo $?)" "1"
+check "the ledger is written when the history cannot be appended" "$(jq -r .head "$GATE_LEDGER_ROOT/a__b/9.json")" "h1"
+rmdir "$GATE_LEDGER_ROOT/a__b/9.history.jsonl"
 
 gate_header="$(tab gate records not_clean findings)"
 change_header="$(tab repo id heads records findings)"
 check "stats prints both tables" "$("$GL" stats)" "$gate_header
 $(tab code-health 3 1 2)
 $(tab oss-reviewer 1 1 0)
-$(tab pr-reviewer 1 0 0)
+$(tab pr-reviewer 2 1 1)
 $(tab security-review 1 1 1)
 
 $change_header
 $(tab a/b 1 2 3 2)
+$(tab a/b 2 1 1 1)
 $(tab a/bc 1 1 3 1)"
 check "stats <repo-key> leaves the other repository out" "$("$GL" stats a/b)" "$gate_header
 $(tab code-health 2 1 2)
-$(tab pr-reviewer 1 0 0)
+$(tab pr-reviewer 2 1 1)
 
 $change_header
-$(tab a/b 1 2 3 2)"
+$(tab a/b 1 2 3 2)
+$(tab a/b 2 1 1 1)"
 check "stats on an empty root" "$(GATE_LEDGER_ROOT="$TMP/empty" "$GL" stats; echo "rc=$?")" "no history
 rc=0"
 

@@ -9,7 +9,7 @@
 # A record at a different head than the ledger's current head resets the other gates: every gate
 # is re-recorded at the new head, by a re-run or by the carry proof the tpm skill names, so
 # verdicts from an older head never count on their own. Every record is also appended to a history
-# file that a head change and `reset` leave alone, so the rounds a change took stay countable.
+# file, so the rounds a change took stay countable.
 #
 # Usage:
 #   gate-ledger record <repo-key> <id> <gate> <verdict> <findings> <head-sha> <model>
