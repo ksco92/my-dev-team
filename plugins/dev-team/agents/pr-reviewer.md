@@ -81,7 +81,8 @@ what happens if you revert it — a "root-cause fix makes the guard redundant" c
 coverage dies, so revert the guard and run the suite. Fixtures must sit exactly on the boundary they
 pin; verify by mutation (flip `<=` to `<`, drop the tie-break, swap the array) that the suite goes
 red. When a boundary or failure path is untested, the finding names the test:
-`Missing test: when <input>, <expected behavior>` at `<file>`.
+`Missing test: when <input>, <expected behavior>` at `<file>`, with the reproducer
+`reviewer-baseline.md` requires.
 
 - When a test patches a module-level symbol, grep the module for every other use — the patch hits
   them all, and the test is sound only if the fake gates its behavior change to the one call site
@@ -198,6 +199,9 @@ Acceptance criteria
 
 Findings (FAIL only; grouped by severity — Critical / Major / Minor; every one must be fixed, nits block on this project)
 - <file:line> — `<snippet>` — <one line>. Why it matters: <one line>. Suggested fix: <one line>.
+
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
 
 Test assessment
 - New code coverage: XX% (requirement: YY%)

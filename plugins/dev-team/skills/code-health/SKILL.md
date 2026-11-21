@@ -290,6 +290,9 @@ a Part D fix (Operating Boundaries); state the expected delta.
 ### HIGH / MEDIUM / INFO
 - `<file>:<line>` — <current> → <recommended>. Rule: <A3/B2/C-review-fear/D3/...>.
 
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
+
 ## Provenance table (Part C, guards touched)
 | guard | origin | class | verdict |
 

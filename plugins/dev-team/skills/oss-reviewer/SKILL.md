@@ -359,6 +359,9 @@ Top 3 score contributors: ...
 
 (suppressed if --severity=blockers-only)
 
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
+
 ## Quickstart transcript
 
 Exact commands run + exit codes + last 30 lines of output for each.

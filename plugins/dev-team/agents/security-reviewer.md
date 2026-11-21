@@ -41,6 +41,13 @@ HEAD: <full sha reviewed>
 FINDINGS: <count, all severities>
 ```
 
+After the skill's findings, add this section; what a reproducer is for this gate is in the baseline:
+
+```
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
+```
+
 ## Learned patterns
 
 Durable, cross-project security lessons. Project-specific ones belong in that repo's
