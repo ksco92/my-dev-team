@@ -28,8 +28,8 @@ and a release change made on the owner's word sets the version.
   - before a release that bumps the minor, the `audit` skill's claims and cold-read lenses run on
     the repository, and their decision list goes to the owner before the release change opens;
   - an old version is patched from a branch cut at its tag, never from the trunk.
-- [x] `skills/tpm/SKILL.md` names the new file in its list of conditional references; the change
-      leaves `wc -l` no higher than it found it.
+- [x] `skills/tpm/SKILL.md` names the new file in its list of conditional references, and the file
+      stays under its limit of about 350 lines.
 - [x] Every statement in the plugin that a change takes its version in the final rebase is
       conditioned on a bump-per-change policy and points at `releases.md` for the other case:
       `grep -rniE "version bump|final rebase|bump-per|pre-assign versions" plugins/dev-team` lists
@@ -53,10 +53,9 @@ and a release change made on the owner's word sets the version.
 
 Write `context/tpm/releases.md` from the bullets above, each as a rule. Run the grep in the third
 requirement and edit each hit at clause level: add the condition, keep the sentence. Add the file to
-the conditional-reference list in `skills/tpm/SKILL.md`, folding it into existing lines so the count
-does not grow. The docs examples under `docs/examples/` are process files too; give each the same
-condition in its Version bump rule. This repository itself keeps bump-per-change. The version takes
-a minor bump in the final rebase.
+the conditional-reference list in `skills/tpm/SKILL.md`. The docs examples under `docs/examples/`
+are process files too; give each the same condition in its Version bump rule. This repository itself
+keeps bump-per-change. The version takes a minor bump in the final rebase.
 
 ## Dependencies
 
