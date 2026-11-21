@@ -63,8 +63,9 @@ loads it: run `git grep -n '<file name>' plugins/dev-team` and read each hit. Th
   its sentence names; a `context/tpm/*.md` file reaches a subagent only through a brief;
 - each agent file's opening lines and its `skills:` frontmatter, which preloads a skill into that
   agent;
-- the first steps of `context/agent-baseline.md` and `context/reviewer-baseline.md`, and each gate
-  skill's context-loading step, which load the stack guides;
+- the steps that load the stack guides: `context/agent-baseline.md`'s first steps for the
+  implementers, and the `pr-reviewer` agent's first steps and the `code-health` and `oss-reviewer`
+  skills' context-loading steps for the gates;
 - `context/policy.md`'s guide table, for the main session;
 - `hooks/session-context.sh`, which inlines `context/policy.md` into every session.
 
@@ -95,6 +96,8 @@ Give every bullet and every candidate exactly one decision, the first in this or
 | move | the rule's trigger fits another list better than its own | the destination, and for each agent that applied the rule the loader line that shows it reads the destination at the same moment |
 | merge | another bullet shares the rule's trigger | the merged bullet in full |
 | keep | none of the above; a candidate lands as a new bullet in its place | the rule's trigger words |
+
+A fold, a move, or a merge deletes the bullet where it sat.
 
 A drop needs one of these grounds, and a ground holds only with its evidence; "seems covered" is
 none:
