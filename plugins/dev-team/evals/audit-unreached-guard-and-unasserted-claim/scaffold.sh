@@ -80,7 +80,6 @@ class EntryTest(unittest.TestCase):
         self.assertIsInstance(entry.amount, Decimal)
 EOF
 
-
 cat >>repo/README.md <<'EOF'
 
 ## Spreadsheet exports
