@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: audit-unreached-guard-and-unasserted-claim
+description: >
+  Needs Bash granted with --allow-tools: the audit runs the suite and disables guards in a scratch
+  copy; under the default read-only grant it can only read, and the graders ask for quoted commands.
+tags: [audit, needs-bash]
+context:
+  scaffold_script: scaffold.sh
