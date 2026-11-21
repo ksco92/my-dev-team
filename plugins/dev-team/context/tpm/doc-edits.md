@@ -62,9 +62,6 @@ that changes it.
   reword each in the first head.
 - When a fix round restates an accepted risk, grep every file for the risk's subject, not only the
   lines the finding named; the doc page a security file links to otherwise keeps a partial copy.
-- When a guide names a setting as required for a security mode, read the service's own page for that
-  mode and require every setting it lists, each attached to the resource that carries it; a setting
-  that lives in account state is stated as a deployment precondition with a live check.
 - Rule text that makes an action wait on the owner says "and wait" or "until the owner agrees" at
   every such place; a file that says it in some bullets and only "put it to the owner" in others is
   read as notify-and-proceed in the second kind.

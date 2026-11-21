@@ -17,6 +17,9 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   hook, and opens with a sanity check (`git log -1` shows the expected head and the diff holds the
   expected symbols, else stop). A buried report is recoverable from
   `~/.claude/projects/<cwd-slug>/<session>.jsonl`.
+- Headless `claude -p`: `--allowedTools` is variadic and swallows a trailing prompt, so pass the
+  prompt on stdin; a PreToolUse hook parsing a number out of a compound line takes the first match
+  before stripping whitespace.
 - Every cross-repo implementer brief opens with explicit workspace creation in the target repo
   (Create workspace operation) and states the process file's Primary checkout rule for the target. A
   repo that gitignores `.claude/*` follows the Gitignored `.claude` operation: verify `.git`
@@ -86,6 +89,8 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   project's own settings, before trusting a failure, and to rerun a mutant that no longer compiles
   with the test runner's type diagnostics off before counting the site covered or dead; a mutant
   that swaps in an unimported symbol or fails the compile fails every test and reads as killed.
+- Send a change you already know you will ask for (an implementer's open question, a stale test
+  name) before dispatching gates on that head; a round on a head you will change is spent twice.
 - When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
   code, tests and body for statements that the path is still open; a brief that rewrites a mechanism
   likewise names the PR body sentences that describe the old form and, where the squash message is
@@ -105,6 +110,3 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   author's workspace, never an absolute local path.
 - When a fix brief prescribes a test's shape, check the block for a helper that already builds that
   shape first; a prescribed hand-built row is the next round's reuse finding.
-- Every cross-repo brief names the target repository's `CLAUDE.md` and `.claude/rules/` files as
-  required reading, read in the workspace or probe; a subagent loads the session repository's rules,
-  not the target's.

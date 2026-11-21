@@ -378,5 +378,3 @@ The reviewed repo is read-only.
   schema plus table), check that the join separator cannot occur inside either component; a
   dot-joined identity collides on dotted packages and nested classes exactly like the bare name it
   replaced. Compare the pair, or join with a byte neither part can contain.
-- When a sentence both enumerates a set and ends with the rule that defines it, keep the defining
-  rule and delete the enumeration; the list is a second statement that drifts.
