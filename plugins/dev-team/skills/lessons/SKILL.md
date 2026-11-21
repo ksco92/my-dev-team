@@ -90,7 +90,7 @@ Give every bullet and every candidate exactly one decision, the first in this or
 <!-- prettier-ignore -->
 | Decision | Holds when | Evidence in the row |
 | --- | --- | --- |
-| drop | one of the five grounds below holds | the ground and its evidence |
+| drop | one of the five grounds below holds | the ground, in its words, and its evidence |
 | fold | a section of a guide or of `context/policy.md`, a phase of a skill, or a check of an agent file already treats the rule's subject; a stack-specific rule folds into that stack's guide, a change to the procedure into the `tpm` skill's phase text | the passage (file and heading), its rewritten text in full, and the loader line that shows the applier reads it when the rule applies |
 | move | the rule's trigger fits another list better than its own | the destination, and for each agent that applied the rule the loader line that shows it reads the destination at the same moment |
 | merge | another bullet shares the rule's trigger | the merged bullet in full |
@@ -101,8 +101,9 @@ none:
 
 1. The rule is already stated: quote the sentence, with file and line, from a file the applier reads
    at the same moment. A rule the `tpm` skill's phase text states is never repeated as a bullet.
-2. A hook, a lint rule, or a test enforces it: name it, and show it failing on the rule's case by
-   committing the violation in a copy of the tree under `mktemp -d` and quoting the run's output.
+2. A hook, a lint rule, or a test enforces it: name it and what runs it on every change (a CI step
+   or the repository's listed checks), and show it failing on the rule's case by making the
+   violation in a copy of the tree under `mktemp -d` and quoting the run's output.
 3. The rule is no longer true: the command that shows it, with its output.
 4. The rule would not hold in another repository: name the file in that repository that
    `context/policy.md`'s "Where lessons go" sends it to, landed through that repository's own

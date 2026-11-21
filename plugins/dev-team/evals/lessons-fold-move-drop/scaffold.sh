@@ -6,6 +6,16 @@ set -euo pipefail
 p=plugin-repo/plugins/dev-team
 mkdir -p "$p/skills/tpm" "$p/agents" "$p/context/tpm" "$p/tests"
 
+cat >plugin-repo/CLAUDE.md <<'EOF'
+# Plugin repository
+
+## Local checks
+
+```
+bash plugins/dev-team/tests/skill-frontmatter.test.sh
+```
+EOF
+
 cat >"$p/skills/tpm/SKILL.md" <<'EOF'
 ---
 name: tpm
