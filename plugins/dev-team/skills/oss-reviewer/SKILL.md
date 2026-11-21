@@ -371,6 +371,9 @@ Exact commands run + exit codes + last 30 lines of output for each.
 A short triage list ordered as the user should address: BLOCKERS first, then CRITICAL by frequency, then HIGH by class.
 ```
 
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
+
 Verdicts:
 
 - **PASS** = zero BLOCKERS, zero CRITICAL, composite score < 6.

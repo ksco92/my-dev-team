@@ -305,6 +305,9 @@ a Part D fix (Operating Boundaries); state the expected delta.
 ## Ladder notes (Part A, per non-trivial addition)
 ```
 
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
+
 ## Self-mutation rule (binding)
 
 Durable, cross-project anti-patterns go under `## Learned patterns` below (imperative, one sentence,

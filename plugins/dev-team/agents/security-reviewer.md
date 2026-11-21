@@ -41,12 +41,15 @@ HEAD: <full sha reviewed>
 FINDINGS: <count, all severities>
 ```
 
-After the skill's findings, add this section; what a reproducer is for this gate is in the baseline:
+After the skill's findings, add this section:
 
 ```
 ## UNREPRODUCED (not counted in FINDINGS)
 - `<file>:<line>` — <the added code it asks for> — <the path you could not show>
 ```
+
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
 
 ## Learned patterns
 

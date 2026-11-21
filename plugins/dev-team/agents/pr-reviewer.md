@@ -215,6 +215,9 @@ Scope assessment
 - Leftover debug / TODO / commented code: <none | list>
 ```
 
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
+
 PASS requires every criterion met and zero findings of any severity. On BLOCKED return only `GATE`,
 `VERDICT: BLOCKED`, `Reason:` and `What you need:`.
 
