@@ -25,9 +25,9 @@ README would adopt it.
 - Change no file in the repository under audit. Every mutation and probe runs in a separate clone in
   the session's scratch directory (`git clone --no-hardlinks <repo> <scratch>/audit-<suffix>`, where
   `<scratch>` is that directory), never a `git worktree add`; remove its remote right after cloning
-  (`git -C <scratch>/audit-<suffix> remote remove origin`), or copy a tree that is not a git
-  repository with `cp -R`. Print `git -C <repo> status --porcelain` at the start and the end of the
-  run; both are empty or identical. Remove only the scratch copies you created.
+  (`git -C <scratch>/audit-<suffix> remote remove origin`). Print `git -C <repo> status --porcelain`
+  at the start and the end of the run; both are empty or identical. Remove only the scratch copies
+  you created.
 - Nothing is ticketed, removed or briefed before the owner answers the decision list.
 - Implementation of the decided items goes through the `tpm` skill.
 
