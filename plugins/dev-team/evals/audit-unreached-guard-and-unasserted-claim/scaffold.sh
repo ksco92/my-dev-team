@@ -8,12 +8,6 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p repo
 cp -R "$here/../fixtures/ledgerlite-base/." repo/
 
-cat >>repo/pyproject.toml <<'EOF'
-
-[tool.mypy]
-strict = true
-EOF
-
 cat >repo/ledgerlite/ledger.py <<'EOF'
 """Ledger parsing and totals."""
 

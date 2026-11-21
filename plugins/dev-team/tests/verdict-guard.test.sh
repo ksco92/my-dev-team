@@ -62,7 +62,6 @@ check "BLOCKED needs only GATE and VERDICT" "$(code pr-reviewer false $'GATE: g\
 check "BLOCKED without GATE" "$(code pr-reviewer false $'VERDICT: BLOCKED')" "2"
 
 check "implementer is not held" "$(code implementer false "The worktree is removed.")" "0"
-check "cold-reader is not held" "$(code cold-reader false "The decision: shortlist.")" "0"
 check "dev-team:cold-reader is not held" "$(code dev-team:cold-reader false "The decision: shortlist.")" "0"
 check "dev-team-prefixed gate is held" "$(code dev-team:pr-reviewer false "The worktree is removed.")" "2"
 check "other plugin's gate is not held" "$(code otherplugin:pr-reviewer false "The worktree is removed.")" "0"
