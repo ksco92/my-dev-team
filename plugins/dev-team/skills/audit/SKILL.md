@@ -93,8 +93,9 @@ fired.
 Disable each guard site in turn in the scratch copy and run the whole suite: replace the rejection
 with a no-op of the same shape (`throw new Error(...)` becomes `void new Error(...)`, `raise X(...)`
 becomes `X(...)`, an early return falls through), record the failing tests, and restore the file
-before the next site. Time one suite run first, and split by file when a run will not fit one
-command.
+before the next site, clearing any build cache that keys on file time and size (Python's
+`__pycache__`) so a restored file is not read stale. Time one suite run first, and split by file
+when a run will not fit one command.
 
 - A site whose removal fails no test is untested when the economy lens reached it and dead when it
   did not.
@@ -173,8 +174,9 @@ done until it merges.
 
 ## Report
 
-Write the report in the session's scratch directory, never in the audited repository, and give the
-owner its path:
+Print the whole report in your reply, the commands and their output lines included, and save a copy
+in the session's scratch directory, never in the audited repository. The owner decides from the
+reply, so a summary that drops the commands is not the report:
 
 ```markdown
 # Audit: <repository> at <short sha>
@@ -187,13 +189,15 @@ owner its path:
 
 ## Lenses
 ### <lens>
-| site or statement | evidence (command) | result |
+| site or statement | command | output that decides it | result |
 
 ## Cold read
 <the reader's part as written; the editor's proposals with the check made on each>
 
 ## Decisions
-1. <finding> · evidence · options · recommendation · lines removed/added · risk
+1. <finding>
+   evidence: `<command>` → <the output lines that decide it>
+   options · recommendation · lines removed/added · risk
 
 ## Owner's answers
 <item number: the answer>
