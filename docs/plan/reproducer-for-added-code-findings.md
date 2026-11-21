@@ -23,19 +23,20 @@ decided that a finding whose fix is added code blocks only when the gate shows t
       shows, a false statement in documentation or the change body, a failed acceptance criterion of
       the ticket (a test the ticket names included), a request to remove or shorten, and a style or
       register finding. Each still blocks with no reproducer.
-- [x] For the security gate the reproducer is the path from an input an untrusted party controls to
-      the code, cited line by line; a working exploit is not required, and a finding with such a
-      path blocks as it does today.
+- [x] For the security gate the reproducer is the path to the code from where an input an untrusted
+      party controls enters the repository, cited line by line; a working exploit is not required,
+      and a finding with such a path blocks as it does today.
 - [x] Each gate's output format (the five agent files and the three gate skills) carries the
       `UNREPRODUCED` section in the same position and form, after the verdict block's findings; the
       verdict block itself keeps its lines.
 - [x] `context/policy.md`, Merge authority and gating: "Every finding from every gate is fixed,
       never waived" is amended to exclude an unreproduced item, which is filed and not fixed.
       `policy.md` grows by at most 450 characters net.
-- [x] `skills/tpm/SKILL.md` 5.2: unreproduced items stay out of the fix brief; the orchestrator
-      files them, one follow-up per change, through the File a follow-up operation with a title that
-      starts `Audit:` (the prefix the `audit` skill reads). The file does not pass its limit of
-      about 350 lines.
+- [x] `skills/tpm/SKILL.md`: 5.2 keeps unreproduced items out of the fix brief; 5.3 has the
+      orchestrator file them before every merge, a round where every gate passed included, one
+      follow-up per change, through the File a follow-up operation with a title that starts `Audit:`
+      (the prefix the `audit` skill reads). The contract's File a follow-up row names this second
+      caller. The file does not pass its limit of about 350 lines.
 - [x] `context/tpm/gates.md`, the bullet for a run whose purpose is removal: a request the owner's
       threat model covers, or that an untrusted caller can reach, is decided by the baseline's
       reproducer rule as in any other run, so the two rules cannot give different answers for one
@@ -48,10 +49,11 @@ decided that a finding whose fix is added code blocks only when the gate shows t
       the unreproduced items is handled as a count mismatch is handled today.
 - [x] An eval case `plugins/dev-team/evals/pr-reviewer-unreached-null-guard`, in the form of
       `pr-reviewer-inclusive-end-bound`: the diff carries one defect a test can show and one place
-      where a missing null check on an internal function with a single typed caller is tempting; the
-      graders require the verdict to be `FAIL`, the shown defect to be among the findings, and the
-      null check to be absent from the findings (listed under `UNREPRODUCED` or not raised). How
-      many findings the gate splits the one defect into is not graded.
+      where a missing null check on an internal function with a single typed caller is tempting,
+      shown by the pre-rule plugin tree raising it on the same case in most runs; the graders
+      require the verdict to be `FAIL`, the shown defect to be among the findings, and the null
+      check to be absent from the findings (listed under `UNREPRODUCED` or not raised). How many
+      findings the gate splits the one defect into is not graded.
 
 ## Acceptance Criteria
 
@@ -59,7 +61,8 @@ decided that a finding whose fix is added code blocks only when the gate shows t
 - [x] Every local check in `CLAUDE.md` passes; `bash plugins/dev-team/tests/evals.test.sh` covers
       the new case
 - [x] The new eval case and `pr-reviewer-inclusive-end-bound` are each run once with the command
-      form `CLAUDE.md` gives, and both results are in the change body
+      form `CLAUDE.md` gives, the new case is also run on the base's plugin tree with only the case
+      and its fixture copied in, and the results are in the change body
 - [x] `grep -rn "UNREPRODUCED" plugins/dev-team` names the baseline, the five agent files or their
       skills, the tpm skill, and the two tests, and no file states the rule a second time in other
       words
