@@ -21,8 +21,8 @@ that a file may go over its budget here: a later change redistributes the lists.
       `.claude/rules/`.
 - [x] The candidate about re-measuring a number, a grep result or a "prints nothing" claim quoted in
       a change body folds into the existing `context/tpm/gates.md` bullet on re-running grep-shaped
-      acceptance criteria at each fix head, as a clause that names who re-measures where and leaves
-      the rebase case to the rebase-brief bullet that already states it.
+      acceptance criteria at each fix head, as a clause that names who re-measures where, at each
+      fix head and after each rebase.
 - [x] Each lesson states the rule, not the incident: one sentence, two at most, with no date and no
       repository, project, package, pull request or person name.
 - [x] Every factual claim about a tool that a lesson makes is checked by a one-line reproduction or
