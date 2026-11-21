@@ -225,7 +225,8 @@ operation), the ticket, the reviewer probe the gate reads the head in (Reviewer 
 the scope (`full` on the first cycle for oss-reviewer, `diff` on re-review), no writes to the repo
 and no commits anywhere, and the `GATE / VERDICT / HEAD / FINDINGS` header the agent files already
 require. Read the evidence, not just the header: gates hallucinate concrete file states, and one
-grep of the head decides a disputed claim. A verdict whose `HEAD` is not the PR head is void.
+grep of the head decides a disputed claim. When a gate's `HEAD` is not the PR head, the verdict is
+void.
 
 Record each verdict as it lands — this is what the merge hook reads:
 
@@ -245,11 +246,12 @@ nothing merges until the whole repo is pristine and the nits-block policy deadlo
 
 ### 5.2 Fix until clean
 
-Merge every gate's findings into one set; any finding at any severity blocks, nits included. Items a
-gate lists under `UNREPRODUCED` stay out of it: file them as one follow-up per change (File a
-follow-up operation) titled `Audit: <change>`, the prefix the `audit` skill reads. Send the set to
-the slice's implementer at its current tier as a fix brief quoting each `file:line` (prefer
-`SendMessage` to the same agent, which keeps its context, over relaunching). Re-run the gates on the
+Merge every gate's findings into one set. Any finding at any severity blocks — nits included. Items
+a gate lists under `UNREPRODUCED` stay out of the fix brief: file them as one follow-up per change
+(File a follow-up operation), titled `Audit: <change>` on a host tracker or with a slug starting
+`audit-` on a file tracker, which the `audit` skill reads as inputs. Send the whole set to the
+slice's implementer at its current tier as a fix brief quoting each `file:line` (prefer
+`SendMessage` to the same agent — it keeps its context — over relaunching). Re-run the gates on the
 new head. Two proofs carry every gate's verdict to the new head without a re-run: when a cycle's
 only prescribed change is mechanical (delete these lines, fix this PR body), a deterministic diff
 proof (`git diff -w old..new` shows exactly the prescribed edit); and for a clean rebase, per-path
@@ -259,7 +261,8 @@ must pass. Anything with semantic content re-runs every gate.
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof
 lives", and every fix brief ends with the same line: no doc-comment or comment prose added beyond
-what the round removes; the code-health gate counts prose added versus removed on re-review.
+what the round removes. Fix rounds are where doc comments grow into essays, one reviewer question at
+a time, and the code-health gate counts prose added versus removed on re-review.
 
 Escalate the model before the user: a `low` slice that reports ambiguity gets a fuller issue first;
 any slice where the same finding survives two fix attempts at its tier moves up one tier
