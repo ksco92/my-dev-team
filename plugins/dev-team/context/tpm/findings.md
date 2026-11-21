@@ -48,6 +48,9 @@ fix brief.
 - A gate finding that defers judgment to the orchestrator is ruled at once and the ruling stated in
   the fix brief and the re-review brief, so neither the implementer nor the re-review re-litigates
   it.
+- An unreproduced item enters a fix brief only when the orchestrator produces its reproducer itself;
+  a gate that lists a reproduced finding as unreproduced, or the reverse, or counts its unreproduced
+  items in `FINDINGS`, re-issues its verdict.
 - When a PR folds a child process's stderr into an error message, brief the correctness gate to
   trigger one real failure of the actual child, never a fake: a real crash's piped stderr can arrive
   truncated, with a bundled library's minified source line first, so only the real text shows what
