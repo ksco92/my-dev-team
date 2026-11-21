@@ -26,15 +26,15 @@ def month(text: str) -> date:
     return date.fromisoformat(f"{text}-01")
 
 
-def _in_month(entries: list[Entry], day: date | None) -> list[Entry]:
-    """Keep the entries dated in the calendar month that contains `day`."""
-    first = day.replace(day=1)
-    last = day.replace(day=monthrange(day.year, day.month)[1])
-    return [entry for entry in entries if first <= entry.day < last]
-
-
 def total(entries: list[Entry], of_month: date | None = None) -> Decimal:
     """Sum the amounts of the given entries; with `of_month`, only those in its calendar month."""
     if of_month is not None:
         entries = _in_month(entries, of_month)
     return sum((entry.amount for entry in entries), Decimal("0"))
+
+
+def _in_month(entries: list[Entry], day: date) -> list[Entry]:
+    """Keep the entries dated in the calendar month that contains `day`."""
+    first = day.replace(day=1)
+    last = day.replace(day=monthrange(day.year, day.month)[1])
+    return [entry for entry in entries if first <= entry.day < last]
