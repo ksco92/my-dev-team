@@ -1,0 +1,14 @@
+[project]
+name = "ledgerlite"
+version = "0.1.0"
+description = "Sum a CSV ledger from the command line"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+ledgerlite = "ledgerlite.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
