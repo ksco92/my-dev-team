@@ -176,7 +176,9 @@ exercises) and amend it first; before any dispatch, read the brief against the t
 line by line, since a brief instruction that contradicts the ticket costs a gate round. Run
 independent slices in parallel as far as the Parallelism operation allows, multiple Agent calls in
 one message. After each merge, remove the workspace and kill any process still running from it
-(Remove workspace operation).
+(Remove workspace operation). After any large delegation batch, check `git log` in every repo a
+subagent could have touched, the plugin's repository included, and verify an unauthorized commit's
+substance before reverting it.
 
 **Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer, and
 orchestrator in one process. Run the phases sequentially: implement one slice in its workspace and
@@ -316,34 +318,5 @@ workflow merged can never run that check; rebase it.
 
 ## Learned patterns and where they go
 
-At the end of a run, triage every `Proposed learned pattern:` a subagent returned and anything you
-learned yourself. One test decides the home: _would this be true in a different repo?_
-
-- Yes, and stack-agnostic → the matching `${CLAUDE_PLUGIN_ROOT}/context/tpm/<topic>.md` (`briefing`,
-  `doc-edits`, `gates`, `findings`, `review-probes`, `server-probes`, `verification`,
-  `measurements`, `operations`, `experiment`) or the relevant agent file, as a rule (imperative, one
-  sentence, two at most; no date, repo, or PR name, no incident narrative — the git log keeps the
-  archaeology). A change to the procedure itself goes into the phase text of this file, and a rule
-  already stated there is never repeated as a bullet.
-- Yes, and stack-specific → `${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`.
-- No → the target repo: `<repo>/.claude/rules/<topic>.md` (loaded for every session there) or the
-  agent's project memory under `<repo>/.claude/agent-memory/<agent>/`, landed through the normal PR
-  path. Never into these global files.
-
-Global files are shipped by the `dev-team` plugin; the orchestrating session lands changes through a
-PR in its repository (`ksco92/my-dev-team`). Refine an existing entry rather than adding a
-near-duplicate; keep this file under ~350 lines and each topic file under ~30 entries, and when a
-topic file grows past that, split it by trigger rather than trimming rules. A fold into an existing
-bullet keeps that bullet's trigger phrase; widening the trigger to admit a new rule is a split by
-trigger, not a fold. Re-read each fragment of a split bullet alone; a leftover purpose clause
-becomes a false claim. Verify a subagent's substance before landing it, and after any large
-delegation batch check `git log` in every repo a subagent could have touched, including the plugin
-repo; verify an unauthorized commit's substance before reverting it.
-
-A proposal lands only with the evidence it came from (a command, a transcript line, or a gate
-finding); drop one without it, and run a command a proposal prescribes against the case it cites
-before landing it. For each survivor, grep the target section for the same lesson, edit at bullet
-level only, and run `${CLAUDE_PLUGIN_ROOT}/bin/lesson-lint` on the file; then bump the patch version
-and open one lesson PR for the session's batch. On a machine that cannot push to the plugin
-repository, append each bullet with its evidence to `~/.claude/lesson-outbox.md` and drain it from a
-machine that can.
+At the end of a run, run the `lessons` skill on every `Proposed learned pattern:` a subagent
+returned and on anything you learned yourself; it decides each lesson's home and lands the batch.

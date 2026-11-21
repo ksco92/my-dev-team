@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: lessons-fold-move-drop
+description: >
+  Needs Bash granted with --allow-tools: the skill counts the lists, greps for loaders and runs the
+  fixture's test against a scratch copy.
+tags: [skill, lessons, needs-bash]
+context:
+  scaffold_script: scaffold.sh
