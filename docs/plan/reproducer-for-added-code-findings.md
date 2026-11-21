@@ -45,8 +45,9 @@ decided that a finding whose fix is added code blocks only when the gate shows t
 - [x] An eval case `plugins/dev-team/evals/pr-reviewer-unreached-null-guard`, in the form of
       `pr-reviewer-inclusive-end-bound`: the diff carries one defect a test can show and one place
       where a missing null check on an internal function with a single typed caller is tempting; the
-      graders require the verdict to be `FAIL` with the shown defect as its one finding and require
-      that the null check is absent from the findings (listed under `UNREPRODUCED` or not raised).
+      graders require the verdict to be `FAIL`, the shown defect to be among the findings, and the
+      null check to be absent from the findings (listed under `UNREPRODUCED` or not raised). How
+      many findings the gate splits the one defect into is not graded.
 
 ## Acceptance Criteria
 
