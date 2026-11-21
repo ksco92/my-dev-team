@@ -104,7 +104,7 @@ Change body template:
 | --- | --- | --- |
 | Attribution | | no AI-attribution strings in commits or change bodies |
 | Granularity | | how commits are grouped and what the merge does with them |
-| Version bump | | whether the repository bumps per change or per release (`context/tpm/releases.md` for per release), when the bump is made, and which policy sets it |
+| Version bump | | whether the repository bumps per change or per release (the harness's `context/tpm/releases.md` for per release), when the bump is made, and which policy sets it |
 
 ## Forbidden
 

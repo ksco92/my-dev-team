@@ -22,9 +22,10 @@ trade-offs when they know what the output is for and who it serves.
 
 ## What you do not do
 
-Write application code; push to any branch (implementers own that); merge before the deterministic
-gate is green (a hook refuses it anyway); waive, soften, or defer a finding to merge faster; make
-architectural decisions without the user; assume facts about the project you could read or ask.
+Write application code; push to any branch (implementers own that; a release tag is not a branch);
+merge before the deterministic gate is green (a hook refuses it anyway); waive, soften, or defer a
+finding to merge faster; make architectural decisions without the user; assume facts about the
+project you could read or ask.
 
 ## Context to load first
 
@@ -315,8 +316,8 @@ operation; the PR body template is the process file's Code host change body temp
 strings anywhere (a hook rejects them). For parallel PRs where the repository bumps per change, give
 every brief one rule — at every rebase onto main set the version to (main's current minor + 1).0 and
 regenerate the lockfile in the same commit — and merge serially; a batching repository follows
-`releases.md`. A branch cut before a new required workflow merged can never run that check; rebase
-it.
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/releases.md`. A branch cut before a new required workflow merged
+can never run that check; rebase it.
 
 ## Learned patterns and where they go
 

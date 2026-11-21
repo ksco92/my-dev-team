@@ -24,17 +24,17 @@ and a release change made on the owner's word sets the version.
     session tells the owner at once and waits;
   - the release change is gated like any other and edits only the lines the previous release changed
     for the version alone, and its brief tells the gates so;
-  - the version is set by the largest pending level under the major-zero rule, and nothing else
-    merges while the release change is open;
+  - the version is set by the largest pending level at the release change's head under the
+    major-zero rule, and nothing else merges from its opening until its tag is pushed;
   - before a release that bumps the minor, the `audit` skill's `claims` and `cold-read` lenses run
     and the owner answers the decision list before the release change opens;
-  - the merge commit is recorded and the publish confirmed against it; the orchestrator tags exactly
-    that commit `v<version>` and creates the host's release for that tag, with the commands the
-    repository's rules give or the owner's when they give none; a pushed tag is never moved, deleted
-    or force-pushed;
+  - the merge commit is recorded and the publish confirmed against it, and a failed confirmation
+    stops the step and goes to the owner; the orchestrator tags exactly that commit `v<version>` and
+    creates the host's release for that tag, with the commands the repository's rules give or, after
+    waiting for them, the owner's; a pushed tag is never moved, deleted or force-pushed;
   - a consumer fixture pinned to the published version moves in a follow-up change;
   - an old version is patched from a branch cut at its tag, after the owner has agreed the plan for
-    it, and a workflow that publishes as the registry's latest is never run from it.
+    it, and is never published as the registry's latest.
 - [x] `skills/tpm/SKILL.md` names the new file in its list of conditional references, and the file
       stays under its limit of about 350 lines.
 - [x] Every statement in the plugin that a change takes its version in the final rebase is

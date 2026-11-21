@@ -107,7 +107,7 @@ configured, the publish step fails without harm; CI and the version check still 
   explicit say-so); features / significant fixes → minor; everything else → patch.
 - `publish.yml` is a no-op unless the version is newer than the registry, so a forgotten bump does
   not error but does not ship. Where the repository bumps per change, reviewers reject PRs that
-  forget to bump; a repository that batches follows the harness's `context/tpm/releases.md`.
+  forget to bump; a repository that batches follows `${CLAUDE_PLUGIN_ROOT}/context/tpm/releases.md`.
 - When a repo ships sibling packages (e.g. an npm package and a PyPI package), keep their versions
   in lockstep and bump them together. Regenerate the lockfile (`npm install --package-lock-only`) so
   `package-lock.json` name/version match `package.json` — a stale lockfile is a common miss.
