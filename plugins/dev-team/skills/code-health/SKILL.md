@@ -370,6 +370,8 @@ The reviewed repo is read-only.
 - A crate under a package's `[dependencies]` is already linkable from that package's own
   `tests/*.rs`; a matching `[dev-dependencies]` entry is duplication that `cargo machete` cannot
   catch because the crate is used, only declared twice.
+- When a PR deletes the only other consumer of a shared helper, re-grep every export, `@internal`
+  tag and callback parameter that consumer used; they survive the deletion as dead surface.
 - When a new same-directory script already imports symbols from a sibling module, grep the sibling
   for any other identical expression before accepting a second copy: partial reuse in one import
   proves full reuse was available everywhere.

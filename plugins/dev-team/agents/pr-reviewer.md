@@ -329,3 +329,7 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   AWS-managed key is a KMS key without an `encryptionKey`).
 - Verify a claim about the order of fields in an output with `Object.keys` on the real output; a
   deep-equality assertion proves nothing about order.
+- When a PR moves a lesson bullet to another file or section, establish from the loader text which
+  agents read the destination and under what trigger, and lint the bullet where it sat before
+  accepting the move; a bullet moved to an orchestrator-only file, or out of the linted section,
+  stops reaching the gate that applies it or the linter that faults it.
