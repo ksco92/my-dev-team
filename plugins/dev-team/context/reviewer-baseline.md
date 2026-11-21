@@ -35,9 +35,10 @@ simplification, and the code-health gate requires it.
 A finding whose fix adds code of one of these kinds, and no other, is filed only with a reproducer:
 a guard, a validation, a fallback, a defensive copy, or a test for an input. The reproducer is the
 input reaching that code through the project's public interface, shown as a failing test, a command
-with its output, or the calling lines from that interface to the code. For the security gate it is
-the path from an input an untrusted party controls to the code, cited line by line; a working
-exploit is not required, and a finding with that path blocks as every finding does.
+with its output, or the calling lines from that interface to the code. It shows that the input can
+arrive, not that the code mishandles it; that stays the finding's own argument. For the security
+gate it is the path from an input an untrusted party controls to the code, cited line by line; a
+working exploit is not required, and a finding with that path blocks as every finding does.
 
 When you cannot show a reproducer, list the item under the `UNREPRODUCED` heading of your output
 format, after your findings, with the code it asks for and the path you could not show. An item
