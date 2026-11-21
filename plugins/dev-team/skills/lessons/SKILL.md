@@ -55,11 +55,11 @@ learned yourself with the command or transcript line it rests on.
 A rule's applier is the agent that acts on it, not the list's current reader: a Python rule in an
 orchestrator reference is applied by the implementer that writes the Python. Establish who reads a
 file, and at what moment, from the text that loads it: run
-`git grep -n '<file name>' plugins/dev-team` and read each hit. The stack guides are loaded through
-a pattern that search misses: `context/agent-baseline.md`'s first steps load them for the
+`git grep -n '<file name>' plugins/dev-team` and read each hit. That search misses the stack guides,
+which are loaded through a pattern (`context/agent-baseline.md`'s first steps load them for the
 implementers, and the `pr-reviewer` agent's first steps and the `code-health` and `oss-reviewer`
-skills' context-loading steps for the gates; and it misses a skill that an agent file's `skills:`
-frontmatter preloads by its directory name.
+skills' context-loading steps for the gates), and a skill that an agent file's `skills:` frontmatter
+preloads by its directory name.
 
 ## 3. Decide
 
@@ -140,8 +140,8 @@ group's file or section, and the loader line that must name it. The owner choose
 The change body carries the inventory, a table of the lists (file, bullets, budget) and one of the
 candidates (text, source); the decision table, one row per bullet, fragment, and candidate (its
 first words, decision, destination, evidence, trigger-word hit); the count per decision, which sums
-to the inventory's bullets and candidates, with a split bullet counted once per fragment; and each
-list still over its budget, with its count and its proposed split.
+to the inventory's bullets and candidates plus one for each fragment a split adds beyond the first;
+and each list still over its budget, with its count and its proposed split.
 
 Land it as one change in the plugin's repository through the `tpm` skill's Phases 3 to 5, with the
 decision table as the ticket's requirements. On a machine that cannot push to the plugin's

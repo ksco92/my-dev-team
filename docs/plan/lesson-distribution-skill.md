@@ -57,7 +57,7 @@ where it belongs, and decides with evidence whether each is still worth keeping.
       bullet that records an owner decision is neither dropped nor weakened without the owner's
       answer; after the change every rule that was kept is found by a search for its trigger words
       in a file its readers load. The counts sum to the bullets and candidates of the inventory,
-      with a split bullet counted once per fragment.
+      plus one for each fragment a split adds beyond the first.
 - [x] Budget outcome: after a run no list is over its budget, or the change body names the list, its
       count, and the split by trigger the skill proposes for it.
 - [x] Output: the change body carries the decision table (rule, decision, destination, evidence) and
