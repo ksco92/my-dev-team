@@ -6,7 +6,7 @@ See the root README for what this repo is.
 
 - `.claude-plugin/`, the marketplace manifest.
 - `plugins/dev-team/.claude-plugin/`, the plugin manifest.
-- `plugins/dev-team/skills/`, the TPM, PM, and three review-gate skills.
+- `plugins/dev-team/skills/`, the TPM, PM, lessons, and three review-gate skills.
 - `plugins/dev-team/agents/`, the implementer and reviewer agent definitions.
 - `plugins/dev-team/context/`, the stack guides, TPM procedure references, harness policy,
   `DEV_PROCESS.md` contract, and built-in default process.
@@ -15,8 +15,8 @@ See the root README for what this repo is.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
-- `plugins/dev-team/evals/`, the `claude plugin eval` suite for the implementer and the five review
-  gates.
+- `plugins/dev-team/evals/`, the `claude plugin eval` suite for the implementer, the five review
+  gates, and the `lessons` skill.
 - `plugins/dev-team/README.md`, the plugin's README.
 - `.github/workflows/ci.yml`, the validation CI workflow.
 - `docs/examples/`, example `DEV_PROCESS.md` files; the plugin never reads them.
