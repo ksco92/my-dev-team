@@ -246,14 +246,15 @@ nothing merges until the whole repo is pristine and the nits-block policy deadlo
 
 ### 5.2 Fix until clean
 
-Merge every gate's findings into one set. Any finding at any severity blocks — nits included. Send
-the whole set to the slice's implementer at its current tier as a fix brief quoting each `file:line`
-(prefer `SendMessage` to the same agent — it keeps its context — over relaunching). Re-run the gates
-on the new head. Two proofs carry every gate's verdict to the new head without a re-run: when a
-cycle's only prescribed change is mechanical (delete these lines, fix this PR body), a deterministic
-diff proof (`git diff -w old..new` shows exactly the prescribed edit); and for a clean rebase,
-per-path object-hash equality for every file the PR touches, onto a main that added no file or CI
-leg the PR must pass. Anything with semantic content re-runs every gate.
+Merge every gate's findings into one set. Any finding at any severity blocks — nits included. Items
+a gate lists under `UNREPRODUCED` stay out of the fix brief. Send the whole set to the slice's
+implementer at its current tier as a fix brief quoting each `file:line` (prefer `SendMessage` to the
+same agent — it keeps its context — over relaunching). Re-run the gates on the new head. Two proofs
+carry every gate's verdict to the new head without a re-run: when a cycle's only prescribed change
+is mechanical (delete these lines, fix this PR body), a deterministic diff proof
+(`git diff -w old..new` shows exactly the prescribed edit); and for a clean rebase, per-path
+object-hash equality for every file the PR touches, onto a main that added no file or CI leg the PR
+must pass. Anything with semantic content re-runs every gate.
 
 A fix brief never prescribes prose. A finding that asks why something is safe, correct, or
 equivalent is briefed as "add a test", "tighten the type", or "one-line pointer to where the proof
@@ -278,12 +279,14 @@ applicable); a repo with no CI runs its own lint/test/build locally and you reco
 before merging. When the hook denies, its reason names what is missing — run that, don't work around
 it.
 
-Before every Merge, whatever its form, run the Check ledger operation and require it to pass. Then
-confirm the CI status operation reports terminal-green, or in a repo with no CI that every recorded
-local check passed. Merge with the process file's Merge operation, using the merge method in the
-project's own `CLAUDE.md` when it names one and the process file's `merge_method` otherwise.
-Afterwards run the After merge operation, confirm the ticket closed (Link to a change and close
-operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
+Before every Merge, whatever its form, file the items the gates listed under `UNREPRODUCED` as one
+follow-up per change (File a follow-up operation), titled `Audit: <change>` on a host tracker or
+with a slug starting `audit-` on a file tracker, then run the Check ledger operation and require it
+to pass. Then confirm the CI status operation reports terminal-green, or in a repo with no CI that
+every recorded local check passed. Merge with the process file's Merge operation, using the merge
+method in the project's own `CLAUDE.md` when it names one and the process file's `merge_method`
+otherwise. Afterwards run the After merge operation, confirm the ticket closed (Link to a change and
+close operation), and report the merged PR. If the request or the project's `CLAUDE.md` says no
 auto-merge, stop at a green ledger and hand back the URL.
 
 ## Experiment mode

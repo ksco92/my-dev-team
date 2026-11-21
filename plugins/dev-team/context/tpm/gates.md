@@ -83,7 +83,8 @@ Read before the first gate of a run.
   the line.
 - In a run whose purpose is removal, brief every gate that a request to add or restore a guard, a
   test or prose is a proposed addition for the orchestrator's ruling, stated with who can trigger
-  the case, unless the owner's threat model covers the case or an untrusted caller can reach it,
-  which stays a finding; put the threat model in the brief.
+  the case, unless the owner's threat model covers the case or an untrusted caller can reach it, in
+  which case the reviewer baseline's reproducer rule decides it as in any other run; put the threat
+  model in the brief.
 - A verdict block whose `FINDINGS` count is not matched by listed findings is void; message the gate
   for them, since the hook checks only the block's lines.

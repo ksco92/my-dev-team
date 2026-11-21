@@ -82,8 +82,9 @@ tracker-less.
   on. It also refuses a `git push` of any non-main ref onto `main`, and any force or delete push of
   `main`. Nits block. A reviewer PASS is necessary, never sufficient. Owner-only bypass:
   `~/.claude/gate-ledger/.bypass`.
-- Every finding from every gate is fixed, never waived. Tier-escalation first; the user only when a
-  finding survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.
+- Every finding from every gate is fixed, never waived; an item a gate lists as unreproduced
+  (`reviewer-baseline.md`) is filed, not fixed. Tier-escalation first; the user only when a finding
+  survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.
 - A repo's own `CLAUDE.md` may disable auto-merge, change the merge method, or tighten the checks. A
   per-request "don't auto-merge" always wins.
 

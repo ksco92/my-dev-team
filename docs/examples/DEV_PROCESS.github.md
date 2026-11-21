@@ -23,7 +23,7 @@ Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
 | Amend ticket | `gh issue edit <n> --body-file <file>`; a fuller spec for an escalated slice or a recomputed numeric target is amended before the implementer starts |
 | Comment | Not used; progress and evidence live in the change request, not on the ticket |
 | Link to a change and close | The change request body carries `Closes #<n>`; the host closes the ticket on merge; after merging confirm with `gh issue view <n> --json state -q .state` = `CLOSED` |
-| File a follow-up | Create ticket as above, body opens with the originating change URL; used for out-of-diff findings a gate surfaces |
+| File a follow-up | Create ticket as above, body opens with the originating change URL; used for out-of-diff findings a gate surfaces and items it lists as unreproduced |
 
 Ticket body template:
 

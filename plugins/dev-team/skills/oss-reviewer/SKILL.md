@@ -359,6 +359,9 @@ Top 3 score contributors: ...
 
 (suppressed if --severity=blockers-only)
 
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
+
 ## Quickstart transcript
 
 Exact commands run + exit codes + last 30 lines of output for each.
@@ -367,6 +370,9 @@ Exact commands run + exit codes + last 30 lines of output for each.
 
 A short triage list ordered as the user should address: BLOCKERS first, then CRITICAL by frequency, then HIGH by class.
 ```
+
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
 
 Verdicts:
 

@@ -187,9 +187,18 @@ support is absent. Therefore:
 
 ## 7. REVIEW mode procedure (the gate)
 
-Findings-only report, file:line, severity (BLOCKER/HIGH/MEDIUM/LOW/NIT). Never modify the repo. On a
-PR, scope = the README(s) + every PR change that touches behavior any README describes. Full mode
-(pre-release/audit) = the whole README against the whole repo.
+Findings-only report, file:line, severity (BLOCKER/HIGH/MEDIUM/LOW/NIT), followed by this section:
+
+```markdown
+## UNREPRODUCED (not counted in FINDINGS)
+- `<file>:<line>` — <the added code it asks for> — <the path you could not show>
+```
+
+What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/reviewer-baseline.md`,
+"Findings that ask for added code".
+
+Never modify the repo. On a PR, scope = the README(s) + every PR change that touches behavior any
+README describes. Full mode (pre-release/audit) = the whole README against the whole repo.
 
 Checklist (each item is a concrete check):
 
