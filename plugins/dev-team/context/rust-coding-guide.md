@@ -174,6 +174,13 @@ verbatim when the repo goes remote. All parts blocking:
   eat the margin; exclude explicitly (documented) or test it.
 - clippy pedantic promotes `float_cmp` and `format_push_string`; see §2/§3 for the sanctioned
   resolutions.
+- Before accepting a doc comment on a `const` or small `type` alias, check the line above it for a
+  blank-line break: consecutive `///` blocks merge silently in Rust, so a paragraph left behind by a
+  moved or renamed function reattaches to whatever item follows, duplicating the function's real doc
+  and leaving the function itself undocumented.
+- A crate under a package's `[dependencies]` is already linkable from that package's own
+  `tests/*.rs`; a matching `[dev-dependencies]` entry is duplication that `cargo machete` cannot
+  catch because the crate is used, only declared twice.
 
 ## 7. Structure
 

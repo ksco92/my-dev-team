@@ -88,3 +88,8 @@ Read before the first gate of a run.
   model in the brief.
 - A verdict block whose `FINDINGS` count is not matched by listed findings is void; message the gate
   for them, since the hook checks only the block's lines.
+- Send a change you already know you will ask for (an implementer's open question, a stale test
+  name) before dispatching gates on that head; a round on a head you will change is spent twice.
+- Two open changes that touch the same file merge in the order that costs one review: the one that
+  is clean first merges first, and the other takes the next version in the fix round it already
+  needs; a planned order is not a reason to hold a clean change.

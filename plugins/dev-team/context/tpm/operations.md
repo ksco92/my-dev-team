@@ -86,3 +86,6 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
   resumed agent to write its report or verdict to a scratchpad file named for its gate, change and
   round as its last step and to start no background work after it, and judge a verdict read from
   that file by the block and head rules of `gates.md`.
+- Headless `claude -p`: `--allowedTools` is variadic and swallows a trailing prompt, so pass the
+  prompt on stdin; a PreToolUse hook parsing a number out of a compound line takes the first match
+  before stripping whitespace.

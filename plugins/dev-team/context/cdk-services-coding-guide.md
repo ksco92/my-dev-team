@@ -83,3 +83,5 @@ template-test lessons; its self-mutation rule governs this file, with the same ~
   URL-encodes it.
 - Glue `GetJobRun` returns in `Arguments` only what the caller of the run set; read a job default
   from `GetJob` `DefaultArguments` or from the driver's launch line, never from the run record.
+- Check a uniqueness guard on a name that becomes a physical resource name against the service's own
+  folding rule, not `===`.
