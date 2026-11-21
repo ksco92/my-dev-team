@@ -14,8 +14,8 @@ README would adopt it. It proposes; the owner decides.
 ## Operating boundaries
 
 - Run in the main session and do the measuring and probing yourself; the cold read is the only
-  delegated step. The audit needs Bash, the owner's answers and the whole run's context, which a
-  subagent lacks.
+  delegated step. The audit needs the owner's answers and the whole run's context, which a subagent
+  does not have.
 - Every conclusion rests on a command that was run, quoted with the output lines that decide it. A
   conclusion reached by reading code is a question for the owner, labelled unverified, never a
   finding; when a command cannot be run, the item says which and why.
@@ -156,8 +156,8 @@ following run's gate briefs quote.
 Hand the decided items to the `tpm` skill as slices. That skill's text governs the run; add only
 what a removal run needs:
 
-- Order the removals so each change merges on its own: a test leaves with or after the code it
-  covers, and a doc sentence with the code it describes.
+- Order the removals so each change merges on its own: a guard leaves with the tests that assert it,
+  and a doc sentence with the code it describes.
 - Settle "nothing changed for valid input" by running the base commit and the head commit over an
   input matrix (valid inputs for every caller class in the bar) and diffing the whole outputs, not
   selected fields; the empty diff and its command go in the change body.
@@ -168,8 +168,8 @@ what a removal run needs:
 
 At the final head, rerun the measure commands and print the new table beside the first, one row per
 fact. Rerun the guard-disabling method over every remaining guard site: each one has a test that
-fails when it is disabled, and a site without one is either given a test or put to the owner as a
-decision before the run ends.
+fails when it is disabled. A site without one gets that test as one more slice, and the run is not
+done until it merges.
 
 ## Report
 
