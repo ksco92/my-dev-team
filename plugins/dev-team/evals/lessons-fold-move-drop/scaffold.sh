@@ -90,8 +90,8 @@ cat >"$p/context/tpm/review-probes.md" <<'EOF'
 
 Binding rules for the probes a gate brief prescribes.
 
-- Have every gate on a skill change check that each `skills/*/SKILL.md` opens with frontmatter that
-  carries a `description:` line.
+- Have every gate on a change to this plugin's skills check that each
+  `plugins/dev-team/skills/*/SKILL.md` opens with frontmatter that carries a `description:` line.
 EOF
 
 cat >"$p/tests/skill-frontmatter.test.sh" <<'EOF'
