@@ -7,7 +7,7 @@ fixtures="$here/../fixtures"
 
 mkdir -p repo
 cp -R "$fixtures/ledgerlite-base/." repo/
-cp "$fixtures/ledgerlite-feature/ISSUE.md" ./ISSUE.md
+cp "$fixtures/ISSUE.md" ./ISSUE.md
 cp "$fixtures/grade-implementer.sh" ./grade-implementer.sh
 chmod +x ./grade-implementer.sh
 

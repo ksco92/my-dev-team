@@ -1,5 +1,0 @@
-schema_version: "1.1"
-name: pr-reviewer-unreached-null-guard
-tags: [gate, pr-reviewer]
-context:
-  scaffold_script: scaffold.sh

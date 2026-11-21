@@ -47,25 +47,15 @@ decided that a finding whose fix is added code blocks only when the gate shows t
 - [x] `tests/verdict-guard.test.sh`: a gate result with zero findings, a `PASS` verdict and a
       populated `UNREPRODUCED` section passes the guard; a result whose `FINDINGS` count includes
       the unreproduced items is handled as a count mismatch is handled today.
-- [x] An eval case `plugins/dev-team/evals/pr-reviewer-unreached-null-guard`, in the form of
-      `pr-reviewer-inclusive-end-bound`: the diff carries one defect a test can show and one place
-      where a missing null check on an internal function with a single typed caller is tempting,
-      shown by the pre-rule plugin tree raising it on the same case in most runs; the graders
-      require the verdict to be `FAIL`, the shown defect to be among the findings, and the null
-      check to be absent from the findings (listed under `UNREPRODUCED` or not raised). How many
-      findings the gate splits the one defect into is not graded.
 
 ## Acceptance Criteria
 
 - [x] All requirements verifiable from the files and the test scripts
-- [x] Every local check in `CLAUDE.md` passes; `bash plugins/dev-team/tests/evals.test.sh` covers
-      the new case
-- [x] The new eval case and `pr-reviewer-inclusive-end-bound` are each run once with the command
-      form `CLAUDE.md` gives, the new case is also run on the base's plugin tree with only the case
-      and its fixture copied in, and the results are in the change body
+- [x] Every local check in `CLAUDE.md` passes
+- [x] `git diff origin/main...HEAD -- plugins/dev-team/evals` is empty
 - [x] `grep -rn "UNREPRODUCED" plugins/dev-team` names the baseline, the five agent files or their
-      skills, the tpm skill, and the two tests, and no file states the rule a second time in other
-      words
+      skills, the tpm skill, and the guard's test, and no file states the rule a second time in
+      other words
 - [x] `wc -c plugins/dev-team/context/policy.md` is at most 450 above its size on the base
 
 ## Implementation Plan
@@ -86,4 +76,6 @@ need no edit. The version takes a minor bump in the final rebase.
 ## Out of Scope
 
 Which gates run on a change; the ledger; any reduction of what the security gate reviews; a change
-to `hooks/merge-gate.sh`.
+to `hooks/merge-gate.sh`. An eval case: a case with a tempting null check on an internal function
+was built in two shapes, and the reviewer without the rule did not raise the check in any run, so
+the case passed on both sides of the change and was removed.
