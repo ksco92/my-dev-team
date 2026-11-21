@@ -11,7 +11,7 @@ from ledgerlite.ledger import Entry, read_entries, total
 @pytest.fixture
 def ledger_csv(tmp_path: Path) -> Path:
     csv_file = tmp_path / "ledger.csv"
-    csv_file.write_text("date,amount\n2026-01-01,1.00\n2026-01-31,2.00\n2026-02-01,4.00\n")
+    csv_file.write_text("date,amount\n2025-12-31,8.00\n2026-01-01,1.00\n2026-01-31,2.00\n2026-02-01,4.00\n")
     return csv_file
 
 
@@ -41,7 +41,7 @@ def test_cli_without_month_sums_everything(
     ledger_csv: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main([str(ledger_csv)]) == 0
-    assert capsys.readouterr().out == "total: 7.00\n"
+    assert capsys.readouterr().out == "total: 15.00\n"
 
 
 def test_cli_rejects_a_malformed_month(ledger_csv: Path) -> None:
