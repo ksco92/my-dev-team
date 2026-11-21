@@ -5,19 +5,17 @@ Read with `briefing.md` before the first brief of such a run; a repository that 
 never reads it.
 
 - A repository batches only when its own rules or its process file's Version bump rule say so;
-  without that statement every change bumps and `gates.md` applies.
+  without that statement every change bumps, as `gates.md` says.
 - A change in a batching repository never edits the version, the lockfile's version or any other
   file the last release's commit moved for the version alone. It adds one line under the changelog's
   unreleased heading, tagged with its level by the semver policy.
-- Parallel changes in a batching repository need no version rebase and no merge order; a rebase
-  conflict on the changelog keeps both lines.
 - Make a release only when the owner asks, or at once for a fix the repository's rules name as
-  urgent; a pile of pending lines is no reason to release.
+  urgent, never because lines are pending.
 - A release is a change of its own, opened, gated and merged like any other. It edits the version,
   the changelog heading and whatever the previous release's commit shows (`git show <sha> --stat`),
   and nothing else.
 - The version is the current one raised by the largest level among the unreleased lines, under the
-  major-zero rule: on `0.y.z` a would-be major raises the minor, and `1.0.0` waits for the owner.
+  major-zero rule.
 - Before a release that bumps the minor, run the `audit` skill's `claims` and `cold read` lenses on
   the repository and send their decision list to the owner before the release change opens.
 - Create the tag and the host's release only after the publish is confirmed on the registry: tag the
