@@ -58,6 +58,12 @@ check "trailing space after a line" "$(code pr-reviewer false $'GATE: g \nVERDIC
 check "trailing CR after a line" "$(code pr-reviewer false $'GATE: g\r\nVERDICT: PASS\r\nHEAD: 0123456\r\nFINDINGS: 0\r')" "0"
 check "text after a complete block" "$(code pr-reviewer false "$(block)"$'\nThe worktree is removed.')" "0"
 
+UNREP=$'\n## UNREPRODUCED (not counted in FINDINGS)\n- `a.py:3` — a None guard — no caller passes None'
+check "PASS, zero findings, populated UNREPRODUCED" "$(run pr-reviewer false "$(block)$UNREP")" "0 "
+check "FINDINGS counting UNREPRODUCED items is a count mismatch" \
+  "$(run pr-reviewer false "$(block FAIL "$SHA" 2)"$'\n- `b.py:1` — off by one'"$UNREP")" \
+  "$(run pr-reviewer false "$(block FAIL "$SHA" 2)"$'\n- `b.py:1` — off by one')"
+
 check "BLOCKED needs only GATE and VERDICT" "$(code pr-reviewer false $'GATE: g\nVERDICT: BLOCKED\nReason: no CI')" "0"
 check "BLOCKED without GATE" "$(code pr-reviewer false $'VERDICT: BLOCKED')" "2"
 
