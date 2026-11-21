@@ -19,8 +19,9 @@ Users keep one ledger CSV per year and want the total for a single month without
 
 ## Implementation Plan
 
-Parse the flag in `cli.py` into the first day of the month and pass it to an optional argument of
-`total` in `ledgerlite/ledger.py`; extend `tests/test_ledger.py`.
+Add a `month` parser in `ledgerlite/ledger.py` that turns the flag into the first day of the month,
+use it as the flag's argparse type in `cli.py`, and pass the result to an optional argument of
+`total`; extend `tests/test_ledger.py`.
 
 ## Out of Scope
 
