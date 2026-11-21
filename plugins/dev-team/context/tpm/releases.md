@@ -16,8 +16,9 @@ never reads it.
   and nothing else.
 - The version is the current one raised by the largest level among the unreleased lines, under the
   major-zero rule.
-- Before a release that bumps the minor, run the `audit` skill's `claims` and `cold read` lenses on
-  the repository and send their decision list to the owner before the release change opens.
+- Before a release that bumps the minor, run the `audit` skill on the repository with
+  `--lenses=claims,cold-read`, and put its decision list to the owner, who answers it before the
+  release change opens.
 - Create the tag and the host's release only after the publish is confirmed on the registry: tag the
   released commit `v<version>`, then create the release from that changelog section, with the
   commands the process file gives.

@@ -158,7 +158,8 @@ policy-file, skill-file or doc-comment text, also read
 | `medium`   | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                               |
 | `high`     | `implementer` on Opus   | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent) |
 
-Under Pi there is no per-call model: every tier runs on the session's model (see Pi below).
+Under Pi there is no per-call model: every tier runs on the session's model (see the Pi paragraph
+below).
 
 Models are named by alias only (`sonnet`, `opus`); an alias resolves to the newest model in its
 line, so no brief, agent file, or skill ever carries a versioned id. The agent files carry the top
@@ -310,11 +311,12 @@ reversible option; when two approaches are equally good, present both.
 ## Git conventions
 
 Branches follow the process file's Branch name operation; implementers open PRs with its Open change
-operation; the PR body follows its change body template; no attribution strings anywhere (a hook
-rejects them). For parallel PRs under a bump-per-PR policy, give every brief one rule — at every
-rebase onto main set the version to (main's current minor + 1).0 and regenerate the lockfile in the
-same commit — and merge serially; batching repositories take no version (`releases.md`). A branch
-cut before a new required workflow merged can never run that check; rebase it.
+operation; the PR body template is the process file's Code host change body template; no attribution
+strings anywhere (a hook rejects them). For parallel PRs under a bump-per-PR policy, give every
+brief one rule — at every rebase onto main set the version to (main's current minor + 1).0 and
+regenerate the lockfile in the same commit — and merge serially; batching repositories take no
+version (`releases.md`). A branch cut before a new required workflow merged can never run that
+check; rebase it.
 
 ## Learned patterns and where they go
 
