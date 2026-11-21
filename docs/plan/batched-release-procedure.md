@@ -16,18 +16,25 @@ and a release change made on the owner's word sets the version.
 - [x] `plugins/dev-team/context/tpm/releases.md`, a tpm reference in the form of the others (binding
       bullets, one or two sentences each), read when the repository's rules batch releases or a
       slice is a release. It states:
-  - a change in a batching repository never edits the version; it adds one line under the
-    changelog's unreleased heading, tagged with its level by the semver policy;
-  - a release is made when the owner asks, or at once for a fix the repository's rules name as
-    urgent; the release change edits the version, the changelog heading and whatever the previous
-    release's commit shows (`git show <sha> --stat`), and nothing else;
-  - the version is set by the largest pending level, under the major-zero rule;
-  - after the publish is confirmed on the registry, the released commit is tagged `v<version>` and
-    the host's release is created from that changelog section, then the consumer pin follow-up runs
-    where the repository has one;
-  - before a release that bumps the minor, the `audit` skill's claims and cold-read lenses run on
-    the repository, and their decision list goes to the owner before the release change opens;
-  - an old version is patched from a branch cut at its tag, never from the trunk.
+  - a repository batches only when the statement is on the trunk when the change opens, and a change
+    that alters the statement follows the rule on its base;
+  - an ordinary change in a batching repository never edits the version or a line a release edits;
+    it adds one line under the changelog's unreleased heading, tagged with its level;
+  - a release is made only on the owner's word; for a fix the repository's rules call urgent the
+    session tells the owner at once and waits;
+  - the release change is gated like any other and edits only the lines the previous release changed
+    for the version alone, and its brief tells the gates so;
+  - the version is set by the largest pending level under the major-zero rule, and nothing else
+    merges while the release change is open;
+  - before a release that bumps the minor, the `audit` skill's `claims` and `cold-read` lenses run
+    and the owner answers the decision list before the release change opens;
+  - the merge commit is recorded and the publish confirmed against it; the orchestrator tags exactly
+    that commit `v<version>` and creates the host's release for that tag, with the commands the
+    repository's rules give or the owner's when they give none; a pushed tag is never moved, deleted
+    or force-pushed;
+  - a consumer fixture pinned to the published version moves in a follow-up change;
+  - an old version is patched from a branch cut at its tag, after the owner has agreed the plan for
+    it, and a workflow that publishes as the registry's latest is never run from it.
 - [x] `skills/tpm/SKILL.md` names the new file in its list of conditional references, and the file
       stays under its limit of about 350 lines.
 - [x] Every statement in the plugin that a change takes its version in the final rebase is
