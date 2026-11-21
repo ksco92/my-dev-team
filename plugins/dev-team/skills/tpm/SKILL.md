@@ -164,7 +164,7 @@ Models are named by alias only (`sonnet`, `opus`); an alias resolves to the newe
 line, so no brief, agent file, or skill ever carries a versioned id. The agent files carry the top
 of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium`. Specialists
 (`backend`/`frontend`) take the same shape. See the model policy in
-`${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is never a subagent).
+`${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is a subagent only as the `audit` cold reader).
 
 Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch name
 (the process file's Branch name operation), repo path, workspace instructions, the PR body template,

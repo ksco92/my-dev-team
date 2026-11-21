@@ -52,15 +52,17 @@ implements it (jr / mid / sr):
 
 **Model policy.**
 
-- The orchestrating session runs on Fable or Opus. Fable is never a subagent.
+- The orchestrating session runs on Fable or Opus. Fable is never a subagent, except the `audit`
+  skill's cold reader, which reads and reports and is never a gate or an implementer.
 - Models are named by **alias only** (`sonnet`, `opus`, `fable`) in agent frontmatter, in the Agent
   tool's per-call `model`, and in headless `claude -p --model`. An alias resolves to the newest
   model in its line, so a model release changes nothing here; a versioned id anywhere in the process
   is a defect.
 - Agent files carry the **top of their ladder** in frontmatter (`model: opus` for `implementer`,
-  `backend`, `frontend`, `pr-reviewer`, `security-reviewer`; `model: sonnet` for the other gates);
-  the orchestrator steps down per call (`model="sonnet"`). Do not pin models in skill files, and
-  never set `CLAUDE_CODE_SUBAGENT_MODEL` (process-global, overrides every per-call choice).
+  `backend`, `frontend`, `pr-reviewer`, `security-reviewer`; `model: sonnet` for the other gates;
+  `model: fable` for `cold-reader`); the orchestrator steps down per call (`model="sonnet"`). Do not
+  pin models in skill files, and never set `CLAUDE_CODE_SUBAGENT_MODEL` (process-global, overrides
+  every per-call choice).
 - Opus is both the top implementer tier and the top reviewer tier. Restricting a model from a role
   is an owner decision recorded in this section, never in an agent file or a brief.
 
