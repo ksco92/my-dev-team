@@ -155,11 +155,11 @@ mode off.
 
 ## Commits
 
-| Operation    | Called by                                       | Inputs | The file states                                           |
-| ------------ | ----------------------------------------------- | ------ | --------------------------------------------------------- |
-| Attribution  | every role that commits or writes a change body | none   | that no AI-attribution string appears                     |
-| Granularity  | implementer                                     | none   | how commits are grouped and what the merge does with them |
-| Version bump | implementer, final rebase                       | none   | when the bump is made and which policy sets it            |
+| Operation    | Called by                                       | Inputs | The file states                                                                                         |
+| ------------ | ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| Attribution  | every role that commits or writes a change body | none   | that no AI-attribution string appears                                                                   |
+| Granularity  | implementer                                     | none   | how commits are grouped and what the merge does with them                                               |
+| Version bump | implementer, final rebase or release change     | none   | whether the repository bumps per change or per release, when the bump is made, and which policy sets it |
 
 ## Forbidden
 

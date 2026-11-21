@@ -251,8 +251,9 @@ instead.
   does not mean `v8` resolves).
 - A CI lint step that runs an auto-fixing formatter can never fail; pair it with
   `git diff --exit-code`, which also catches lockfile churn.
-- After every rebase onto main, diff your version fields against `origin/main`: identical values
-  auto-merge with no conflict marker, so the PR silently ships no bump. Claim the next free version.
+- Where the repository bumps per change, after every rebase onto main, diff your version fields
+  against `origin/main`: identical values auto-merge with no conflict marker, so the PR silently
+  ships no bump. Claim the next free version.
 - When removing or guarding an env variable, grep the whole repo including `.github/workflows/` — CI
   step env blocks are where the old value hides.
 - Compute every ratio or multiple stated in prose (results docs, PR bodies), and every interval,
