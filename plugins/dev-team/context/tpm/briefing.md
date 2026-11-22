@@ -1,7 +1,8 @@
 # tpm briefing rules
 
 Binding rules for every implementer, reviewer, fix-round, and headless brief the `tpm` orchestrator
-writes. Read before the first brief of a run (Phase 4) and again before each fix brief (5.2).
+writes. Read with `fix-briefs.md` before the first brief of a run (Phase 4) and again before each
+fix brief (5.2).
 
 - Brief the `pr-reviewer` to simulate the pre-fix code path against the exact fixture literals
   whenever a change consolidates or reshapes a regression fixture — a merged fixture can pass a
@@ -33,10 +34,6 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
 - When a required gate command outlasts a subagent's foreground cap, brief the hand-back up front
   (return pid and log path; the orchestrator watches and resumes with fast-ops-only instructions)
   instead of demanding a foreground run that cannot happen.
-- A fix commit is new review surface: re-run gates on the fix delta, brief against review-pipeline
-  and ticket-referential wording leaking into comments and PR bodies, and, when a brief widens a
-  test case, have it name the identifiers to rename. Fix briefs describe defects by content, never
-  by round or finding number; implementers copy the brief's words into public content.
 - Never write `\b` into an acceptance grep; specify substrings with plain `grep -rniE` and have the
   reviewer re-run the command as written.
 - When the permission classifier denies a subagent the same benign edit three times, hand the step
@@ -59,9 +56,6 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   that baseline with its counter before editing, and it states whether the target is reachable
   through the issue's in-scope edits alone; an unreachable target is amended before the implementer
   starts, not argued in the PR body.
-- A fix brief for a security finding prescribes the property ("decode and parse exactly as the
-  consuming parser does, or store a placeholder"), never the mechanism that closes one case; a
-  mechanism written from one example opens the sibling case the next gate finds.
 - Every brief that touches a shared local resource (a database, a port) names a value unique to that
   agent, PR and round and forbids running any script whose default targets the owner's own resource;
   two gates for different PRs briefed with the same port collide.
@@ -73,31 +67,12 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   that main added on the rebased head before the push, and re-derive at that head every line-number
   cite and pasted diff stat in the PR body; where the squash message is built from the commit
   messages, the final rebase leaves one commit whose subject is the PR title.
-- When a fix brief asks for a test that kills a surviving mutant and the implementer instead deletes
-  the guarded code on an equivalence argument, treat the deletion as a design change that needs its
-  own gate round, not as the test fix; two gates disproved one such argument in a round.
-- When a rule enumerates unguarded paths or the sources of a property and each gate round finds one
-  more instance, restate the rule as the class defined by the mechanism with the known instances as
-  examples; listing instances costs a round per instance.
-- When a fix adds an exception subclass of a builtin to a shared primitive, check every sibling open
-  PR that catches the base class; the rebase brief names the new condition and re-derives its
-  reachability from the caller's preconditions.
-- When a fix centralises a predicate into a helper, brief the correctness gate to break the helper's
-  definition and to remove its use at each call site in turn; a test that fails on the broken
-  definition proves one call site only.
 - Brief every mutation run to check the mutant for undefined names, and that it compiles under the
   project's own settings, before trusting a failure, and to rerun a mutant that no longer compiles
   with the test runner's type diagnostics off before counting the site covered or dead; a mutant
   that swaps in an unimported symbol or fails the compile fails every test and reads as killed.
 - Send a change you already know you will ask for (an implementer's open question, a stale test
   name) before dispatching gates on that head; a round on a head you will change is spent twice.
-- When a sibling PR that closes a path merges mid-review, brief the next round to grep the open PR's
-  code, tests and body for statements that the path is still open; a brief that rewrites a mechanism
-  likewise names the PR body sentences that describe the old form and, where the squash message is
-  built from the commit messages, the PR title and each earlier commit message that does.
-- When a fix brief lets the implementer choose between two forms, name the file's existing shape as
-  the tie-breaker, never a line count; the shorter form with a side effect is the next round's
-  finding.
 - When an acceptance grep over the test tree must return nothing for a name that a test has to prove
   absent from the output, brief the test to match a distinctive substring the grep pattern misses;
   otherwise the test file itself fails the grep.
@@ -108,5 +83,3 @@ writes. Read before the first brief of a run (Phase 4) and again before each fix
   context, and a false statement there comes back as a finding against the brief.
 - Brief a live proof to name its evidence logs in the PR body by a directory name relative to the
   author's workspace, never an absolute local path.
-- When a fix brief prescribes a test's shape, check the block for a helper that already builds that
-  shape first; a prescribed hand-built row is the next round's reuse finding.
