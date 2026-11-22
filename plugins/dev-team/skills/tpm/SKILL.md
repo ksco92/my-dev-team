@@ -137,11 +137,12 @@ makes the assertion unsatisfiable and the implementer rewrites the fixture to fi
 
 ## Phase 4 — Delegation
 
-Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md` and
-`${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; both are binding on every brief. When a slice
-involves a deploy or data load, a post-publish install, interruption handling, a CI floor or new CI
-leg, a broadly failing UI suite, a tool flag a skill relies on, a value claimed to leave a tool's or
-a job's behaviour unchanged, a shipped skill's dry run, a live run or its recorded input, live
+Before the first brief of a run, read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md`,
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/fix-briefs.md` and
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; all three are binding. When a slice involves a
+deploy or data load, a post-publish install, interruption handling, a CI floor or new CI leg, a
+broadly failing UI suite, a tool flag a skill relies on, a value claimed to leave a tool's or a
+job's behaviour unchanged, a shipped skill's dry run, a live run or its recorded input, live
 evidence in a PR body or a walk-through, a live-proof claim after a policy change, a response-schema
 test, or a test count or mutation, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/verification.md`;
 when it involves a benchmark or published number, a performance or complexity fix, a timeout or
@@ -197,12 +198,13 @@ of the baseline explicitly; a `low` slice is where an over-build is cheapest to 
 
 ## Phase 5 — Gates, fix loop, merge
 
-Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md`, `${CLAUDE_PLUGIN_ROOT}/context/tpm/findings.md`
-and `${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run, also
+Read `${CLAUDE_PLUGIN_ROOT}/context/tpm/gates.md`, `${CLAUDE_PLUGIN_ROOT}/context/tpm/findings.md`,
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` and
+`${CLAUDE_PLUGIN_ROOT}/context/tpm/mutation-probes.md` before the first gate of a run, also
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/server-probes.md` when a PR starts a server, a child process or a
 JVM, and `${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md` when a PR changes a README, a rules or
-policy file, a skill file or doc comments; re-read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md`
-and `findings.md` before each fix brief.
+policy file, a skill file or doc comments; re-read `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md`,
+`fix-briefs.md` and `findings.md` before each fix brief.
 
 You drive this for every PR, including a local branch→main merge in a repo with no remote — that
 merge _is_ the PR for gate purposes, and the hook guards `git merge` on main the same way.
