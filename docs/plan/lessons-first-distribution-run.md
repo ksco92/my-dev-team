@@ -8,8 +8,8 @@ status: done
 
 Three lesson lists are over the budget `lesson-lint` enforces: `context/tpm/review-probes.md` (35 of
 30), `context/tpm/briefing.md` (31 of 30) and the `code-health` skill's Learned patterns (21 of 20).
-Nine candidates wait in the lesson outbox. This is the `lessons` skill's decision table for those
-three lists and those nine candidates; the orchestrating session made the decisions and gathered the
+Candidates wait in the lesson outbox. This is the `lessons` skill's decision table for those three
+lists and eight of the candidates; the orchestrating session made the decisions and gathered the
 evidence, and this change applies them. Every bullet of the three lists that the table does not name
 is a keep. A move is made only where the agent that applies the rule reads the destination at every
 moment it read the source; two lists stay over their budget for that reason and get a proposed
@@ -52,12 +52,6 @@ Each row is applied exactly: a moved or folded bullet keeps its words, and no ne
       replacement."
 - [x] Candidate, merge order: keep, new bullet in `gates.md`: "Two open changes that touch the same
       file merge the clean one first, so the other change is rebased once."
-- [x] Candidate, rule files in a cross-repo brief: fold into `skills/tpm/SKILL.md` Phase 4, the
-      sentence that ends "a cross-repo brief opens with that command run explicitly in the target
-      repo.", which becomes: "a cross-repo brief opens with that command run explicitly in the
-      target repo and names that repository's `CLAUDE.md` and `.claude/rules/` files as required
-      reading; a subagent loads the session repository's rules, not the target's." The file stays
-      under about 350 lines.
 - [x] Candidate, a ticket's size limit re-read at dispatch: drop, ground 1. `briefing.md` states it:
       "A numeric per-file target in an issue (a comment ratio, a line count) is recomputed at
       current main with the issue's own counting method at dispatch".
@@ -72,11 +66,11 @@ Each row is applied exactly: a moved or folded bullet keeps its words, and no ne
       `cdk-services-coding-guide.md` 19, `security-reviewer.md` 4, `rust-coding-guide.md` Learned
       patterns 23, by the counting command in `skills/lessons/SKILL.md` section 1.
 - [x] The change body carries what section 6 of the `lessons` skill lists: the two inventory tables,
-      the decision table with one row for each of the 87 bullets and 9 candidates (first words,
+      the decision table with one row for each of the 87 bullets and 8 candidates (first words,
       decision, destination, evidence, and for every kept, moved, folded or merged rule the
       `git grep` hit of its trigger words in a file its applier loads; a fold row quotes the passage
-      before and after), the count per decision (keep 87, move 1, fold 3, merge 1, drop 4), which
-      sums to 96, and for each of the two lists still over its budget its count and this proposed
+      before and after), the count per decision (keep 87, move 1, fold 2, merge 1, drop 4), which
+      sums to 95, and for each of the two lists still over its budget its count and this proposed
       split, which the owner chooses:
   - `review-probes.md` (33): the bullets whose trigger is a mutant or the fixture that kills it move
     to a new `context/tpm/mutation-probes.md`, read with `review-probes.md` before the first gate of
@@ -112,5 +106,6 @@ takes a patch bump in the final rebase.
 
 ## Out of Scope
 
-Every other lesson list; the nineteen later candidates in the outbox; carrying out either split,
-which waits on the owner's choice; the `pm` and `readme-writer` self-mutation paragraphs.
+Every other lesson list; the other candidates in the outbox, the cross-repo briefing rule among
+them; carrying out either split, which waits on the owner's choice; the `pm` and `readme-writer`
+self-mutation paragraphs.

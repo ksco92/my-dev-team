@@ -172,16 +172,15 @@ Brief a subagent like a smart colleague who just walked in: the ticket text or I
 (the process file's Branch name operation), repo path, workspace instructions, the PR body template,
 what to return (PR URL + a ≤2k-token summary). Every slice works in its own workspace (Create
 workspace operation), and the process file's Primary checkout rule applies; a cross-repo brief opens
-with that command run explicitly in the target repo and names that repository's `CLAUDE.md` and
-`.claude/rules/` files as required reading; a subagent loads the session repository's rules, not the
-target's. Before dispatching a slice another slice blocked, re-read its ticket against what the
-blocker merged (the version, the names, the rule it exercises) and amend it first; before any
-dispatch, read the brief against the ticket's requirements line by line, since a brief instruction
-that contradicts the ticket costs a gate round. Run independent slices in parallel as far as the
-Parallelism operation allows, multiple Agent calls in one message. After each merge, remove the
-workspace and kill any process still running from it (Remove workspace operation). After any large
-delegation batch, check `git log` in every repo a subagent could have touched, the plugin's
-repository included, and verify an unauthorized commit's substance before reverting it.
+with that command run explicitly in the target repo. Before dispatching a slice another slice
+blocked, re-read its ticket against what the blocker merged (the version, the names, the rule it
+exercises) and amend it first; before any dispatch, read the brief against the ticket's requirements
+line by line, since a brief instruction that contradicts the ticket costs a gate round. Run
+independent slices in parallel as far as the Parallelism operation allows, multiple Agent calls in
+one message. After each merge, remove the workspace and kill any process still running from it
+(Remove workspace operation). After any large delegation batch, check `git log` in every repo a
+subagent could have touched, the plugin's repository included, and verify an unauthorized commit's
+substance before reverting it.
 
 **Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer, and
 orchestrator in one process. Run the phases sequentially: implement one slice in its workspace and
