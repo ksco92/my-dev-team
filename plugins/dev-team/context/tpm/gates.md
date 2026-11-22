@@ -88,3 +88,5 @@ Read before the first gate of a run.
   model in the brief.
 - A verdict block whose `FINDINGS` count is not matched by listed findings is void; message the gate
   for them, since the hook checks only the block's lines.
+- Two open changes that touch the same file merge the clean one first, so the other change is
+  rebased once.

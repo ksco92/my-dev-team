@@ -13,9 +13,6 @@ run.
   that matched several representations, run the mutant that deletes each existing representation;
   and execute each parametrised security case through the library call the check reads before
   trusting its count.
-- Verify an "the ORM cannot do X" justification for raw SQL against the pinned framework's source
-  (`inspect.getsource` on the relevant method) before accepting it; one call turns a claim into a
-  citation, and the base manager or a conditional update often already does it.
 - Reviewing a limit or counter: swap the atomic statement for a read-then-write in the probe and
   require the threaded test to fail on every run; drive zero, negative and oversized well-typed
   values end to end (the insert side of a conflict-guarded limit never sees the limit; a huge day
@@ -37,13 +34,12 @@ run.
   phrasings (affixless, category label, substitution) before trusting its tests.
 - A sanitizer that strips a delimiter with one substitution pass is proved by nesting the delimiter
   inside itself, not by a fixture that carries it once.
-- When a PR validates input against a character-class pattern, delete each class from the regex one
-  at a time and require a test to fail for each; a fixture with one sample of every allowed
-  character usually leaves out a class.
 - Mutating a regex guard, change only the `RegExp` line, never the message that quotes it, and
-  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group, each position of a
-  counted class alone, each literal as a class of itself and a neighbouring class, each flag); a
-  mutant caught because the message changed failed on text, not behaviour.
+  mutate each piece (each alternative, `^`, `$`, `+` to `*`, each path group, each character class
+  deleted in turn, each position of a counted class alone, each literal as a class of itself and a
+  neighbouring class, each flag), requiring a test to fail for each; a mutant caught because the
+  message changed failed on text, not behaviour, and a fixture with one sample of every allowed
+  character usually leaves out a class.
 - When a fix replaces per-field reject tests with one fixture that is bad in every field at once,
   mutate each field out of the check in turn and require a test to fail for each.
 - When a change reroutes a hook's input source (the cwd to a parsed option), grep every denial

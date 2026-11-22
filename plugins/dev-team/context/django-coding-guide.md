@@ -166,3 +166,6 @@ into a convention to a numbered section above, and open a PR against the plugin 
 - A schema generator publishes docstrings (a view's as summary and description, a serializer's as
   its component description): review every published string from the generated document, and write
   those docstrings as the contract a customer reads, never the mechanism.
+- Verify an "the ORM cannot do X" justification for raw SQL against the pinned framework's source
+  (`inspect.getsource` on the relevant method) before accepting it; one call turns a claim into a
+  citation, and the base manager or a conditional update often already does it.

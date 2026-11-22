@@ -358,10 +358,6 @@ The reviewed repo is read-only.
   that needs a different comparison function but the runner's other structure (both modes, the same
   seed loop) is still a reuse case: extend the runner with a comparison hook mirroring its generator
   hook.
-- Before accepting a doc comment on a `const` or small `type` alias, check the line above it for a
-  blank-line break: consecutive `///` blocks merge silently in Rust, so a paragraph left behind by a
-  moved or renamed function reattaches to whatever item follows, duplicating the function's real doc
-  and leaving the function itself undocumented.
 - When a PR adds a table to one doc and a pointer to it from another, grep the pointing file for the
   referenced heading and require the pointer to name the file: a same-document word ("below",
   "above") is false the moment the table lands in a different file than the sentence naming it. A
@@ -373,9 +369,6 @@ The reviewed repo is read-only.
 - A new mode added to a script or example that already dispatches its modes extends the existing
   function with a parameter rather than adding a sibling function and an argument branch, and a new
   function whose return value every caller discards returns nothing.
-- A crate under a package's `[dependencies]` is already linkable from that package's own
-  `tests/*.rs`; a matching `[dev-dependencies]` entry is duplication that `cargo machete` cannot
-  catch because the crate is used, only declared twice.
 - When a PR deletes the only other consumer of a shared helper, re-grep every export, `@internal`
   tag and callback parameter that consumer used; they survive the deletion as dead surface.
 - When a new same-directory script already imports symbols from a sibling module, grep the sibling

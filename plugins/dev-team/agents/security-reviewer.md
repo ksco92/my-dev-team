@@ -68,3 +68,5 @@ bullet when you have one.
 - When a slice validates a caller-supplied string, check that the copy it validates (trimmed or
   otherwise normalised) is the copy it emits to the template, the wire or the store; a check on one
   form and an emit of another passes the check and fails downstream.
+- When a defect's fix is a replacement (parameterize, change the default, remove), word it as that
+  replacement, not as an added control, and never word an added control as a replacement.

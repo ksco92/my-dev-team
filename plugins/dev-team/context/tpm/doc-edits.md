@@ -62,3 +62,9 @@ that changes it.
   reword each in the first head.
 - When a fix round restates an accepted risk, grep every file for the risk's subject, not only the
   lines the finding named; the doc page a security file links to otherwise keeps a partial copy.
+- Rule text that makes an action wait on the owner says "and wait" or "until the owner agrees" at
+  every such place; a file that says it in some bullets and only "put it to the owner" in others is
+  read as notify-and-proceed in the second kind.
+- When a PR's procedure assigns the orchestrator an act that a skill's do-not list names (push,
+  merge, write), brief the correctness gate to grep that list for every verb the procedure assigns
+  and to require a clause at one of the two sites saying which wins.
