@@ -52,7 +52,7 @@ reads it or when: each new file is read at every moment its source file is read.
 - [x] `skills/tpm/SKILL.md`, Phase 4, first sentence becomes: "Before the first brief of a run, read
       `${CLAUDE_PLUGIN_ROOT}/context/tpm/briefing.md`,
       `${CLAUDE_PLUGIN_ROOT}/context/tpm/fix-briefs.md` and
-      `${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; all three are binding."
+      `${CLAUDE_PLUGIN_ROOT}/context/tpm/operations.md`; all three are binding on every brief."
 - [x] `skills/tpm/SKILL.md`, Phase 5, first sentence: "and
       `${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` before the first gate of a run" becomes
       "`${CLAUDE_PLUGIN_ROOT}/context/tpm/review-probes.md` and
