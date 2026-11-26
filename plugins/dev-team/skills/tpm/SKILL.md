@@ -168,8 +168,9 @@ text, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md`. For an experim
 | `medium`   | `implementer` on Sonnet | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                               |
 | `high`     | `implementer` on Opus   | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent) |
 
-Under Pi there is no per-call model: every tier runs on the session's model (see the Pi paragraph
-below).
+Under Pi use the `run_agent` tool (`backend: "pi"` for local subagents and pre-submission
+self-checks, or `backend: "claude"` / `backend: "agy"` for authoritative review gates; see the Pi
+paragraph below).
 
 Models are named by alias only (`sonnet`, `opus`); an alias resolves to the newest model in its
 line, so no brief, agent file, or skill ever carries a versioned id. The agent files carry the top
@@ -191,12 +192,13 @@ one message. After each merge, remove the workspace and kill any process still r
 subagent could have touched, the plugin's repository included, and verify an unauthorized commit's
 substance before reverting it.
 
-**Under Pi** (`PI_CODING_AGENT=true`) there is no Agent tool, so you are implementer, reviewer, and
-orchestrator in one process. Run the phases sequentially: implement one slice in its workspace and
-open the PR; then, for each of the five gates, re-read the PR diff cold (Diff operation), apply that
-gate's skill or agent checklist as written, and record the verdict with `gate-ledger`. The
-merge-gate extension refuses the merge until all five are PASS at the head. Say in the PR body that
-the gates ran in-process on one model; the reviewer-above-implementer rule cannot hold here.
+**Under Pi** (`PI_CODING_AGENT=true`) use the `run_agent` tool registered by the `my-dev-team` Pi
+package instead of `Agent`. Run `implementer` and `cold-reader` with `backend: "pi"` (default) and
+optionally run review gates with `backend: "pi"` for non-authoritative pre-submission self-checks
+only; never record a `pi`-backend gate result in `gate-ledger`. For authoritative merge-blocking
+verdicts, run every review gate with `backend: "claude"` (alias-only models: `sonnet` for lighter
+gates, `opus` for `high` `pr-reviewer` and every `security-reviewer`) or `backend: "agy"`, confirm
+`details.verdictValid` is `true`, and record the verdict with `gate-ledger`.
 
 **Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `low` slices,
 `"pro"` for `medium` slices and lighter gates, `"inherit"` for `high` slices, `high` `pr-reviewer`,
@@ -256,9 +258,9 @@ ${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger record <repo-key> <change-id> <gate> <PASS
 
 `<repo-key>` and `<change-id>` are what the process file's Repo key operation names. Gate names:
 `pr-reviewer code-health oss-reviewer security-review readme-writer`. `<model>` is the alias the
-gate ran on (`sonnet`/`opus`; under Pi the session's model), so the reviewer-tier rule is auditable
-from the ledger. A record at a new head resets the others; every gate is re-recorded at the new
-head, by a re-run or by the 5.2 carry proof.
+gate ran on (`sonnet`/`opus`, or the `claude`/`agy` backend model used via Pi's `run_agent`), so the
+reviewer-tier rule is auditable from the ledger. A record at a new head resets the others; every
+gate is re-recorded at the new head, by a re-run or by the 5.2 carry proof.
 
 Gate a PR on its own diff. Repo-level findings a full-scope pass surfaces in files the PR never
 touched become a follow-up ticket (File a follow-up operation) with their own fix PR — otherwise

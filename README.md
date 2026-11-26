@@ -8,6 +8,19 @@ stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
 It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and
 then to a built-in default.
 
+Status (November 2026): active development (v0.20.0); supports Claude Code, Antigravity, and Pi.
+
+## Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [DEV_PROCESS.md](#dev_processmd)
+- [Verdict guard](#verdict-guard)
+- [Preflight scan](#preflight-scan)
+- [Gate ledger](#gate-ledger)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Installation
 
 ### Claude Code
@@ -43,6 +56,47 @@ updates take effect in both Claude Code and Antigravity immediately with no dupl
 changes, or when `hooks.json` wiring in `install-agy` changes. Pass `--uninstall` to remove it
 cleanly.
 
+### Pi
+
+Install the root native Pi package (`package.json`) from a local clone:
+
+```
+pi install /path/to/clone
+```
+
+Or directly from GitHub:
+
+```
+pi install git:github.com/ksco92/my-dev-team
+```
+
+The package registers [`plugins/dev-team/pi/dev-team.ts`](plugins/dev-team/pi/dev-team.ts) and
+exposes [`plugins/dev-team/skills/`](plugins/dev-team/skills/). The extension delegates session
+context (`session-context.sh`) and Bash guards (`merge-gate.sh`, `attribution-guard.sh`) to the
+canonical hooks and provides the `run_agent` tool (see [Usage](#usage)).
+
+## Usage
+
+In Claude Code or Antigravity, open a repository and invoke a skill directly:
+
+```
+/tpm Add CSV export to the report command
+```
+
+Other entry points are `/pm` (product brief), `/audit` (repository audit), and `/lessons` (pattern
+distribution).
+
+In Pi, invoke the TPM skill with `/skill:tpm` or delegate a canonical agent through the registered
+`run_agent` tool:
+
+```
+/skill:tpm Add CSV export to the report command
+```
+
+Use `backend: "pi"` for local subagents (`implementer`, `cold-reader`) and non-authoritative
+pre-submission self-checks; use `backend: "claude"` or `backend: "agy"` for authoritative
+merge-blocking review gates.
+
 ## DEV_PROCESS.md
 
 `DEV_PROCESS.md` holds every tracker, code-host, experiment, and workspace command the skills and
@@ -64,10 +118,14 @@ Under Claude Code, the plugin registers a `SubagentStop` hook that refuses a rev
 stop when its final message lacks the verdict block, reports a mismatched `GATE:` name for that
 subagent, or reports an inconsistent `VERDICT:`/`FINDINGS:` pair (`PASS` requires `0`, `FAIL`
 requires `>= 1`), and asks it to resend once. Under Antigravity (which has no `SubagentStop` event),
-the orchestrator verifies the same verdict block before calling `gate-ledger record`. The block is
-the one the five reviewer agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/)
-require. The hook needs `jq` and does nothing without it; the exact patterns are in
-[`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
+the orchestrator verifies the same verdict block before calling `gate-ledger record`. Under Pi,
+`run_agent` validates review-gate output on exit code `0` by invoking `verdict-guard.sh` (failing
+closed with `verdictValid: false` when output is empty or `jq` is absent on `PATH`), reports
+`verdictValid`, and prepends a violation banner when invalid. The block is the one the five reviewer
+agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. Under Claude
+Code's `SubagentStop` hook,
+[`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh) needs `jq` and
+does nothing without it; the exact patterns are defined in that script.
 
 ## Preflight scan
 
@@ -91,6 +149,13 @@ record at a new head and `reset` leave alone. `stats [<repo-key>]` reads the his
 root, or the one repository's, and prints two tab-separated tables: per gate, the records, the
 records that are not `PASS` with zero findings (`not_clean`), and the findings; per change, the
 distinct heads, the records, and the findings. It prints `no history` when there is none.
+
+## Contributing
+
+Report bugs and open feature discussions in
+[GitHub Issues](https://github.com/ksco92/my-dev-team/issues). See [`CLAUDE.md`](CLAUDE.md) for
+local validation checks and [`DEV_PROCESS.md`](DEV_PROCESS.md) for the branch, review-gate, and
+merge workflow.
 
 ## License
 

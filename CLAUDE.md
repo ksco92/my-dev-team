@@ -5,6 +5,7 @@ See the root README for what this repo is.
 ## Layout
 
 - `.claude-plugin/`, the marketplace manifest.
+- `package.json`, the native Pi package manifest exposing the Pi extension and skills.
 - `plugins/dev-team/.claude-plugin/`, the plugin manifest.
 - `plugins/dev-team/skills/`, the TPM, PM, audit, lessons, and three review-gate skills.
 - `plugins/dev-team/agents/`, the implementer, reviewer, and cold-reader agent definitions.
@@ -12,6 +13,8 @@ See the root README for what this repo is.
   `DEV_PROCESS.md` contract, and built-in default process.
 - `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, session-context, and
   Antigravity adapter (`agy-hook.sh`) Bash hooks and `hooks.json`.
+- `plugins/dev-team/pi/`, the Pi extension adapter (`dev-team.ts`) delegating hooks and registering
+  `run_agent`.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, lesson-lint, preflight-scan, and
   Antigravity installer (`install-agy`) scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
@@ -25,7 +28,7 @@ See the root README for what this repo is.
 
 ## Local checks
 
-The checks need Node with `npx`, `python3`, `shellcheck`, `jq`, and the `claude` CLI.
+The checks need Node 22.6+ with `npx`, `python3`, `shellcheck`, `jq`, and the `claude` CLI.
 
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
@@ -40,6 +43,7 @@ bash plugins/dev-team/tests/gate-ledger.test.sh
 bash plugins/dev-team/tests/verdict-guard.test.sh
 bash plugins/dev-team/tests/preflight-scan.test.sh
 bash plugins/dev-team/tests/agy-adapter.test.sh
+bash plugins/dev-team/tests/pi-adapter.test.sh
 bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint $(git ls-files 'plugins/dev-team/*.md')
 claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2
@@ -50,9 +54,9 @@ Add `--write` in place of `--check` to reformat.
 
 ## Conventions
 
-Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` `version` per semver, with the
-major-zero rule: a breaking change or a feature bumps minor, everything else bumps patch. Never bump
-to `1.0.0` without the owner's explicit say-so.
+Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` and root `package.json` `version`
+together per semver, with the major-zero rule: a breaking change or a feature bumps minor,
+everything else bumps patch. Never bump to `1.0.0` without the owner's explicit say-so.
 
 Markdown prose in skills, agents, and guides states the rule, not the incident: one imperative
 sentence, two at most, no dates, no repo or PR names. Models are named by alias only (`sonnet`,
