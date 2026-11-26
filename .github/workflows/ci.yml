@@ -46,7 +46,7 @@ jobs:
           shellcheck "${scripts[@]}"
 
       - name: Syntax-check Python plugin scripts
-        run: python3 -m py_compile plugins/dev-team/bin/preflight-scan
+        run: python3 -m py_compile plugins/dev-team/bin/preflight-scan plugins/dev-team/bin/install-agy
 
       - name: Check Markdown formatting
         run: git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
@@ -68,6 +68,9 @@ jobs:
 
       - name: Test preflight-scan
         run: bash plugins/dev-team/tests/preflight-scan.test.sh
+
+      - name: Test Antigravity adapter and installer
+        run: bash plugins/dev-team/tests/agy-adapter.test.sh
 
       - name: Test eval suite (case.yaml parsing, scaffold scripts)
         run: bash plugins/dev-team/tests/evals.test.sh

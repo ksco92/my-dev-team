@@ -7,7 +7,7 @@
 # Exit 2 = blocked.
 set -uo pipefail
 
-ATTR='co-authored-by:[^\n]*(claude|anthropic)|claude-session:|generated with \[?claude code|🤖 generated'
+ATTR='co-authored-by:[^\n]*(claude|anthropic|gemini|antigravity)|claude-session:|generated with \[?(claude code|antigravity)|🤖 generated'
 
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"

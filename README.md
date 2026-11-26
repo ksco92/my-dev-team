@@ -10,6 +10,8 @@ then to a built-in default.
 
 ## Installation
 
+### Claude Code
+
 From this marketplace:
 
 ```
@@ -22,6 +24,22 @@ Or from a local clone, kept current with `git pull`:
 ```
 claude plugin marketplace add /path/to/clone
 ```
+
+### Antigravity
+
+Clone this repository once and run the adapter installer:
+
+```
+git clone https://github.com/ksco92/my-dev-team
+/path/to/my-dev-team/plugins/dev-team/bin/install-agy
+```
+
+`install-agy` installs into `~/.gemini/config/plugins/dev-team` (override with `--target <dir>`) by
+symlinking `skills/`, `context/`, `bin/`, `templates/`, `hooks/`, and `README.md` directly to your
+local clone and generating only the thin Antigravity `plugin.json`, `hooks.json` (wired through
+`hooks/agy-hook.sh`), and `agents/*.md` pointer stubs. Edits and `git pull` updates take effect in
+both Claude Code and Antigravity immediately with no duplicated files; re-run `install-agy` only
+when agents are added/removed or `plugin.json` changes, and pass `--uninstall` to remove it cleanly.
 
 ## DEV_PROCESS.md
 

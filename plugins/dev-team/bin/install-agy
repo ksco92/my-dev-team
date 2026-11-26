@@ -1,0 +1,358 @@
+#!/usr/bin/env python3
+"""Install or uninstall the dev-team plugin for Antigravity without duplicating files.
+
+Creates symlinks for shared directories (skills, context, bin, templates, hooks, README.md)
+pointing at the local clone of plugins/dev-team/, and generates only the thin Antigravity
+manifests (plugin.json, hooks.json) and agent pointer stubs (agents/*.md).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import sys
+from pathlib import Path
+
+SHARED_LINKS = ("skills", "context", "bin", "templates", "hooks", "README.md")
+MARKER_FILE = ".installed-by-dev-team"
+TOOL_MAP: dict[str, tuple[str, ...]] = {
+    "Read": ("read_file",),
+    "Glob": ("read_file",),
+    "Grep": ("read_file",),
+    "Edit": ("edit_file",),
+    "MultiEdit": ("edit_file",),
+    "Write": ("write_file",),
+    "Bash": ("run_command", "manage_task"),
+    "WebFetch": ("search_web",),
+    "WebSearch": ("search_web",),
+}
+DEFAULT_AGY_TOOLS = ("read_file", "edit_file", "write_file", "run_command", "manage_task", "search_web")
+SUGGESTED_PROMPTS = [
+    "Decompose this feature into vertical slices and drive it through review gates",
+    "Run a code-health and OSS readiness audit on the current branch",
+    "Review and update the repository README against the current implementation",
+]
+FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
+PLAIN_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _parse_frontmatter(text: str) -> dict[str, object]:
+    """
+    Parse the minimal YAML frontmatter subset used by plugin agent definitions.
+
+    :param text: full Markdown content of an agent file.
+    :return: dictionary of scalar strings and string lists parsed from frontmatter.
+    """
+    match = FRONTMATTER_RE.match(text)
+
+    if match is None:
+        return {}
+
+    result: dict[str, object] = {}
+    current_list_key: str | None = None
+
+    for raw_line in match.group(1).split("\n"):
+        stripped = raw_line.strip()
+
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        if current_list_key is not None and stripped.startswith("- "):
+            items = result[current_list_key]
+
+            if isinstance(items, list):
+                items.append(stripped[2:].strip().strip("'\""))
+
+            continue
+
+        current_list_key = None
+
+        if ":" not in raw_line:
+            continue
+
+        key, val = raw_line.split(":", 1)
+        key = key.strip()
+        val = val.strip()
+
+        if not val:
+            result[key] = []
+            current_list_key = key
+        else:
+            result[key] = val.strip("'\"")
+
+    return result
+
+
+def _map_tools(raw_tools: object) -> list[str]:
+    """
+    Map a Claude Code ``tools:`` frontmatter value to Antigravity native tool names.
+
+    :param raw_tools: comma-separated string, list of tool names, or None when omitted.
+    :return: deduplicated list of Antigravity tool names in deterministic order.
+    """
+    if raw_tools is None:
+        return list(DEFAULT_AGY_TOOLS)
+
+    if isinstance(raw_tools, list):
+        names = [str(item).strip() for item in raw_tools if str(item).strip()]
+    else:
+        names = [part.strip() for part in str(raw_tools).split(",") if part.strip()]
+
+    mapped: list[str] = []
+
+    for name in names:
+        for agy_tool in TOOL_MAP.get(name, ()):
+            if agy_tool not in mapped:
+                mapped.append(agy_tool)
+
+    return mapped or ["read_file"]
+
+
+def _build_plugin_manifest(source: Path) -> dict[str, object]:
+    """
+    Convert ``.claude-plugin/plugin.json`` into an Antigravity ``plugin.json`` object.
+
+    :param source: path to the ``plugins/dev-team`` directory.
+    :return: Antigravity manifest dictionary containing only supported top-level keys.
+    :raises RuntimeError: when the Claude plugin manifest is missing or malformed.
+    """
+    manifest_path = source / ".claude-plugin" / "plugin.json"
+
+    if not manifest_path.is_file():
+        raise RuntimeError(f"missing Claude plugin manifest: {manifest_path}.")
+
+    try:
+        claude_meta = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"invalid JSON in {manifest_path}: {exc}.") from exc
+
+    if not isinstance(claude_meta, dict):
+        raise RuntimeError(f"expected JSON object in {manifest_path}.")
+
+    manifest: dict[str, object] = {
+        "name": str(claude_meta.get("name", "dev-team")),
+        "displayName": "Dev Team",
+        "version": str(claude_meta.get("version", "0.0.0")),
+        "description": str(claude_meta.get("description", "")),
+        "repository": "https://github.com/ksco92/my-dev-team",
+        "suggestedPrompts": list(SUGGESTED_PROMPTS),
+    }
+    author = claude_meta.get("author")
+
+    if isinstance(author, (str, dict)):
+        manifest["author"] = author
+
+    return manifest
+
+
+def _build_hooks_manifest() -> dict[str, object]:
+    """
+    Build the Antigravity ``hooks.json`` wiring to ``./hooks/agy-hook.sh``.
+
+    :return: Antigravity hooks configuration dictionary.
+    """
+    return {
+        "dev-team-guards": {
+            "PreToolUse": [
+                {
+                    "matcher": "run_command",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "./hooks/agy-hook.sh merge-gate",
+                            "timeout": 60,
+                        },
+                        {
+                            "type": "command",
+                            "command": "./hooks/agy-hook.sh attribution-guard",
+                            "timeout": 10,
+                        },
+                    ],
+                },
+            ],
+            "SessionStart": [
+                {
+                    "type": "command",
+                    "command": "./hooks/agy-hook.sh session-context policy",
+                    "timeout": 10,
+                },
+                {
+                    "type": "command",
+                    "command": "./hooks/agy-hook.sh session-context process",
+                    "timeout": 10,
+                },
+            ],
+        },
+    }
+
+
+def _render_agent_stub(agent_path: Path, source: Path) -> str:
+    """
+    Generate a thin Antigravity agent stub pointing at the canonical source agent file.
+
+    :param agent_path: path to the source agent Markdown file under ``plugins/dev-team/agents/``.
+    :param source: resolved path to ``plugins/dev-team``.
+    :return: Antigravity-compatible Markdown content with translated frontmatter and pointer body.
+    """
+    meta = _parse_frontmatter(agent_path.read_text(encoding="utf-8"))
+    name = str(meta.get("name") or agent_path.stem)
+    description = str(meta.get("description") or f"Subagent for {name}.")
+    tools = _map_tools(meta.get("tools"))
+    skills = meta.get("skills")
+    tools_inline = ", ".join(tools)
+    formatted_name = name if PLAIN_NAME_RE.fullmatch(name) else json.dumps(name)
+    lines = [
+        "---",
+        f"name: {formatted_name}",
+        f"description: {json.dumps(description)}",
+        "subagent: true",
+        "mainAgent: false",
+        f"tools: [{tools_inline}]",
+        "---",
+        "",
+        f"Plugin root (`CLAUDE_PLUGIN_ROOT`): `{source}`",
+        "",
+        f"Read `{agent_path}` now and follow every instruction verbatim, resolving `${{CLAUDE_PLUGIN_ROOT}}` to `{source}`.",
+    ]
+
+    if isinstance(skills, list) and skills:
+        skill_paths = ", ".join(f"`{source / 'skills' / skill / 'SKILL.md'}`" for skill in skills)
+        lines.extend(["", f"Preloaded skill(s): read {skill_paths} before starting."])
+
+    return "\n".join(lines) + "\n"
+
+
+def _link_shared_entry(src: Path, dst: Path) -> None:
+    """
+    Create or refresh symlink ``dst -> src``, refusing to overwrite a non-symlink path.
+
+    :param src: target path inside the plugin repository.
+    :param dst: symlink path inside the Antigravity plugin directory.
+    :raises RuntimeError: when ``dst`` already exists as a non-symlink file or directory.
+    """
+    if dst.is_symlink():
+        dst.unlink()
+    elif dst.exists():
+        raise RuntimeError(f"refusing to overwrite non-symlink path: {dst}.")
+
+    dst.symlink_to(src)
+
+
+def install(source: Path, target: Path) -> None:
+    """
+    Install the Antigravity plugin at ``target`` linked to ``source``.
+
+    :param source: path to the canonical ``plugins/dev-team`` directory.
+    :param target: destination Antigravity plugin directory.
+    :raises RuntimeError: when ``source`` is invalid or ``target`` conflicts with unmanaged files.
+    """
+    resolved_source = source.resolve()
+
+    if target.is_symlink():
+        raise RuntimeError(f"refusing to install into a symlink target: {target}.")
+
+    if target.exists() and not target.is_dir():
+        raise RuntimeError(f"refusing to install into a non-directory target: {target}.")
+
+    agents_src_dir = resolved_source / "agents"
+
+    if not agents_src_dir.is_dir():
+        raise RuntimeError(f"missing source agents directory: {agents_src_dir}.")
+
+    manifest = _build_plugin_manifest(resolved_source)
+    hooks = _build_hooks_manifest()
+    target.mkdir(parents=True, exist_ok=True)
+
+    for entry in SHARED_LINKS:
+        src_entry = resolved_source / entry
+
+        if src_entry.exists():
+            _link_shared_entry(src_entry, target / entry)
+
+    (target / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (target / "hooks.json").write_text(json.dumps(hooks, indent=2) + "\n", encoding="utf-8")
+
+    agents_dst = target / "agents"
+
+    if agents_dst.is_symlink():
+        agents_dst.unlink()
+    elif agents_dst.exists() and not agents_dst.is_dir():
+        raise RuntimeError(f"refusing to overwrite non-directory agents path: {agents_dst}.")
+
+    agents_dst.mkdir(exist_ok=True)
+    expected_agents: set[str] = set()
+
+    for agent_src in sorted(agents_src_dir.glob("*.md")):
+        expected_agents.add(agent_src.name)
+        stub = _render_agent_stub(agent_src, resolved_source)
+        (agents_dst / agent_src.name).write_text(stub, encoding="utf-8")
+
+    for existing in list(agents_dst.glob("*.md")):
+        if existing.name not in expected_agents:
+            existing.unlink()
+
+    (target / MARKER_FILE).write_text(f"{resolved_source}\n", encoding="utf-8")
+
+
+def uninstall(target: Path) -> None:
+    """
+    Remove an Antigravity plugin directory previously created by ``install-agy``.
+
+    :param target: destination Antigravity plugin directory to remove.
+    :raises RuntimeError: when ``target`` is a symlink or lacks the installer marker file.
+    """
+    if target.is_symlink():
+        raise RuntimeError(f"refusing to uninstall symlink target: {target}.")
+
+    if not target.exists():
+        return
+
+    if not (target / MARKER_FILE).is_file():
+        raise RuntimeError(f"refusing to remove directory without {MARKER_FILE}: {target}.")
+
+    for child in list(target.iterdir()):
+        if child.is_symlink() or child.is_file():
+            child.unlink()
+        elif child.is_dir():
+            shutil.rmtree(child)
+
+    target.rmdir()
+
+
+def main(argv: list[str] | None = None) -> int:
+    """
+    Run the ``install-agy`` CLI and return its process exit code.
+
+    :param argv: optional argument list; defaults to ``sys.argv[1:]``.
+    :return: 0 on success, 2 on usage or safety errors.
+    """
+    default_source = Path(__file__).resolve().parent.parent
+    default_target = Path.home() / ".gemini" / "config" / "plugins" / "dev-team"
+    parser = argparse.ArgumentParser(
+        prog="install-agy",
+        description="Install or uninstall the dev-team plugin for Antigravity using symlinks to the local clone.",
+    )
+    parser.add_argument("--source", type=Path, default=default_source, help="Path to plugins/dev-team/ in the clone.")
+    parser.add_argument("--target", type=Path, default=default_target, help="Antigravity plugin install directory.")
+    parser.add_argument("--uninstall", action="store_true", help="Remove an existing install-agy installation.")
+    args = parser.parse_args(argv)
+
+    try:
+        if args.uninstall:
+            uninstall(args.target)
+            print(f"Uninstalled Antigravity plugin from {args.target}")
+        else:
+            install(args.source, args.target)
+            print(f"Installed Antigravity plugin at {args.target} -> {args.source.resolve()}")
+    except RuntimeError as exc:
+        print(f"install-agy: {exc}", file=sys.stderr)
+
+        return 2
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
