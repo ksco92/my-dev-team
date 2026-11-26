@@ -5,6 +5,7 @@ See the root README for what this repo is.
 ## Layout
 
 - `.claude-plugin/`, the marketplace manifest.
+- `package.json`, the native Pi package manifest exposing the Pi extension and skills.
 - `plugins/dev-team/.claude-plugin/`, the plugin manifest.
 - `plugins/dev-team/skills/`, the TPM, PM, audit, lessons, and three review-gate skills.
 - `plugins/dev-team/agents/`, the implementer, reviewer, and cold-reader agent definitions.
@@ -12,6 +13,8 @@ See the root README for what this repo is.
   `DEV_PROCESS.md` contract, and built-in default process.
 - `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, session-context, and
   Antigravity adapter (`agy-hook.sh`) Bash hooks and `hooks.json`.
+- `plugins/dev-team/pi/`, the Pi extension adapter (`dev-team.ts`) delegating hooks and registering
+  `run_agent`.
 - `plugins/dev-team/bin/`, the gate-ledger, dev-process, lesson-lint, preflight-scan, and
   Antigravity installer (`install-agy`) scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
@@ -40,6 +43,7 @@ bash plugins/dev-team/tests/gate-ledger.test.sh
 bash plugins/dev-team/tests/verdict-guard.test.sh
 bash plugins/dev-team/tests/preflight-scan.test.sh
 bash plugins/dev-team/tests/agy-adapter.test.sh
+bash plugins/dev-team/tests/pi-adapter.test.sh
 bash plugins/dev-team/tests/evals.test.sh
 plugins/dev-team/bin/lesson-lint $(git ls-files 'plugins/dev-team/*.md')
 claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2

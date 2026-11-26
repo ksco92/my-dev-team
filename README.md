@@ -8,6 +8,15 @@ stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
 It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and
 then to a built-in default.
 
+## Contents
+
+- [Installation](#installation)
+- [DEV_PROCESS.md](#dev_processmd)
+- [Verdict guard](#verdict-guard)
+- [Preflight scan](#preflight-scan)
+- [Gate ledger](#gate-ledger)
+- [License](#license)
+
 ## Installation
 
 ### Claude Code
@@ -43,6 +52,27 @@ updates take effect in both Claude Code and Antigravity immediately with no dupl
 changes, or when `hooks.json` wiring in `install-agy` changes. Pass `--uninstall` to remove it
 cleanly.
 
+### Pi
+
+Install the root native Pi package (`package.json`) from a local clone:
+
+```
+pi install /path/to/clone
+```
+
+Or directly from GitHub:
+
+```
+pi install git:github.com/ksco92/my-dev-team
+```
+
+The package registers [`plugins/dev-team/pi/dev-team.ts`](plugins/dev-team/pi/dev-team.ts) and
+exposes [`plugins/dev-team/skills/`](plugins/dev-team/skills/). The extension delegates session
+context (`session-context.sh`) and Bash guards (`merge-gate.sh`, `attribution-guard.sh`) to the
+canonical hooks and provides the `run_agent` tool: `backend: "pi"` runs local Pi subagents and
+non-authoritative pre-submission self-checks, while `backend: "claude"` and `backend: "agy"` run
+authoritative merge-blocking review gates.
+
 ## DEV_PROCESS.md
 
 `DEV_PROCESS.md` holds every tracker, code-host, experiment, and workspace command the skills and
@@ -64,9 +94,11 @@ Under Claude Code, the plugin registers a `SubagentStop` hook that refuses a rev
 stop when its final message lacks the verdict block, reports a mismatched `GATE:` name for that
 subagent, or reports an inconsistent `VERDICT:`/`FINDINGS:` pair (`PASS` requires `0`, `FAIL`
 requires `>= 1`), and asks it to resend once. Under Antigravity (which has no `SubagentStop` event),
-the orchestrator verifies the same verdict block before calling `gate-ledger record`. The block is
-the one the five reviewer agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/)
-require. The hook needs `jq` and does nothing without it; the exact patterns are in
+the orchestrator verifies the same verdict block before calling `gate-ledger record`. Under Pi,
+`run_agent` pipes every review-gate output into `verdict-guard.sh` and reports `verdictValid` and
+any violation banner before the verdict can be recorded. The block is the one the five reviewer
+agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. The hook needs
+`jq` and does nothing without it; the exact patterns are in
 [`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
 
 ## Preflight scan
