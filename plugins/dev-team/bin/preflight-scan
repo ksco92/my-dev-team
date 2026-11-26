@@ -1,0 +1,746 @@
+#!/usr/bin/env python3
+"""Deterministic pre-gate scanner for AI-tells, code-health and doc hygiene.
+
+Usage:
+  preflight-scan [--scope=diff|full] [--base <ref>] [--repo <dir>] [--json]
+
+Exits 0 with no findings, 1 with one or more findings, 2 on usage or git error.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import io
+import json
+import re
+import stat
+import subprocess
+import sys
+import tokenize
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+SOURCE_EXTS = frozenset({".py", ".ts", ".tsx", ".js", ".jsx", ".rs", ".go", ".sh", ".java", ".kt", ".rb"})
+JS_TS_EXTS = frozenset({".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".vue", ".svelte"})
+PRETTIER_EXTS = JS_TS_EXTS | frozenset({".md", ".json", ".yaml", ".yml", ".html", ".css", ".scss"})
+CONFIG_EXTS = frozenset({".json", ".toml", ".yaml", ".yml", ".ini", ".cfg"})
+MAX_FILE_BYTES = 2 * 1024 * 1024
+MAX_COMMENT_RATIO = 0.40
+MIN_RATIO_LINES = 20
+
+TASK_LEFTOVER_RE = re.compile(
+    r"(?:§\d+(?:\.\d+)*|"
+    r"(?:per|as[ \t]+per)[ \t]+the[ \t]+brief\b|"
+    r"(?:per|as)[ \t]+(?:the|this)[ \t]+spec\b|"
+    r"\bTODO[ \t]+from[ \t]+(?:brief|spec|task)\b|"
+    r"\bin[ \t]+(?:this|the|the[ \t]+next)[ \t]+PR\b|"
+    r"\bthis[ \t]+PR[ \t]+lands\b|"
+    r"\bdeferred[ \t]+to[ \t]+§|"
+    r"\bthe[ \t]+issue[ \t]+(?:asks?|says|requires?|specifie[sd]|calls?[ \t]+for)\b|"
+    r"\bfor[ \t]+issue[ \t]+#\d+\b|"
+    r"\bper[ \t]+reviewer[ \t]+request\b|"
+    r"\brequested[ \t]+during[ \t]+review\b|"
+    r"\bgenerated[ \t]+by[ \t]+(?:claude|gpt|chatgpt|gemini)\b|"
+    r"🤖[ \t]+Generated[ \t]+with[ \t]+\[?Claude[ \t]+Code)",
+    re.IGNORECASE,
+)
+CRUMB_RE = re.compile(
+    r"(?:(?:#|//|/\*)[ \t]*(?:TODO|FIXME|XXX|HACK)(?:[:(\s]|$)|"
+    r"(?:#|//)[ \t]*(?:DEFERRED\b|future[ \t]+PR\b|v2[ \t]+lift\b))",
+    re.IGNORECASE,
+)
+CHAT_LEAK_RE = re.compile(
+    r"(?:#|//)[ \t]*(?:Certainly[!,]|I'?ve[ \t]+(?:done|added|implemented)\b|"
+    r"We'?ll[ \t]+need[ \t]+to\b|Let'?s[ \t]+(?:also|now)\b|"
+    r"(?:Increment|Set|Return[ \t]+the|Loop[ \t]+through|Iterate[ \t]+over|Initialize)[ \t]+\w+)",
+)
+LOG_CALL_RE = re.compile(r"\b(?:print|console\.(?:log|info|warn|error)|logging\.(?:info|warning|error|debug))[ \t]*\(")
+STATUS_EMOJI_RE = re.compile(r"[✅❌🚀🎉🔧⚡🔥✨⚠️💡]")
+SLOP_VOCAB_RE = re.compile(
+    r"\b(?:delve|tapestry|landscape|testament|vibrant|pivotal|nuanced|seamless|"
+    r"robust[ \t]+and|comprehensive[ \t]+and)\b",
+    re.IGNORECASE,
+)
+PERSONAL_PATH_RE = re.compile(r"(?:/(?:Users|home)/[a-z][a-z0-9._-]+/|C:\\Users\\[A-Za-z]|/opt/homebrew/|/usr/local/Cellar/)")
+META_KEY_RE = re.compile(r"\b(?:author|maintainer|authors)[ \t]*[=:]", re.IGNORECASE)
+META_PLACEHOLDER_VAL_RE = re.compile(
+    r'(?:"Your Name"|<your name>|you@example\.com|yourname@|John Doe|jdoe@example)',
+    re.IGNORECASE,
+)
+README_PLACEHOLDER_RE = re.compile(r"\b(?:TODO|WIP|Coming soon|Lorem ipsum|XXX)\b|<placeholder>", re.IGNORECASE)
+DIRECT_ABSENCE_RE = re.compile(
+    r"(?:#[ \t]*Panics:[ \t]*never\b|^[ \t]*:raises(?:[ \t]+\w+)?:[ \t]*(?:none|nothing|never)\.?$)",
+    re.IGNORECASE,
+)
+ERRORS_HEADER_RE = re.compile(r"#[ \t]*Errors\b", re.IGNORECASE)
+NEVER_FAILS_RE = re.compile(r"\b(?:never[ \t]+fails|does[ \t]+not[ \t]+fail)\b", re.IGNORECASE)
+PERSUASION_RE = re.compile(
+    r"\b(?:deliberately|critically|surprisingly|dramatically|drop-in|exact[ \t]+same|overwhelming)\b",
+    re.IGNORECASE,
+)
+RUSTDOC_LINK_RE = re.compile(r"\[`crate::[^`]+`\]")
+INLINE_CODE_RE = re.compile(r"``.*?``|`[^`]*`")
+PONYTAIL_RE = re.compile(r"\bponytail:(.*)$", re.IGNORECASE)
+SPHINX_FIELD_RE = re.compile(r"^[ \t]*:(?:param|type|return|returns|rtype|yield|yields|ytype|raises|raise|ivar|cvar|var)\b")
+DOCSTRING_DELIMITER_RE = re.compile(r'^[rRuUfFbB]{0,2}(?:"""|\'\'\')$')
+BADGE_RE = re.compile(r"actions/workflows/[^/\s)\"']+/badge\.svg|img\.shields\.io/github/actions/workflow")
+TRANSCRIPT_PATTERNS = (
+    re.compile(r"^\.specstory/history/.*\.md$"),
+    re.compile(r"^\.aider\.(?:input\.history|chat\.history\.md)$"),
+    re.compile(r"^\.claude/projects/.*\.jsonl$"),
+    re.compile(r"^\.cursor/chats/"),
+    re.compile(r"^\.windsurf/history/"),
+    re.compile(r"^\.continue/sessions/"),
+)
+ARTIFACT_PATTERNS = (
+    re.compile(r"(?:^|/)htmlcov/"),
+    re.compile(r"(?:^|/)\.coverage$"),
+    re.compile(r"(?:^|/)coverage\.xml$"),
+    re.compile(r"(?:^|/)[^/]+\.egg-info/"),
+    re.compile(r"(?:^|/)node_modules/"),
+    re.compile(r"(?:^|/)\.next/"),
+    re.compile(r"(?:^|/)__pycache__/"),
+    re.compile(r"(?:^|/)\.pytest_cache/"),
+    re.compile(r"(?:^|/)\.mypy_cache/"),
+)
+MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+MD_LINK_RE = re.compile(r"(?<!!)\[[^\[\]]+\]\(([^)\s]+)\)")
+LICENSE_BODIES = (
+    "MIT License",
+    "Apache License",
+    "GNU GENERAL PUBLIC LICENSE",
+    "BSD 3-Clause",
+    "BSD 2-Clause",
+    "ISC License",
+    "Mozilla Public License",
+    "Boost Software License",
+    "The Unlicense",
+)
+
+
+@dataclass(frozen=True)
+class Finding:
+    """One deterministic scanner finding."""
+
+    path: str
+    line: int
+    rule: str
+    severity: str
+    message: str
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """
+    Run git in ``repo`` and capture UTF-8 text output.
+
+    :param repo: repository root directory.
+    :param args: arguments passed to ``git``.
+    :return: completed process result.
+    """
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
+
+
+def _is_test_path(rel: str) -> bool:
+    """
+    Return whether ``rel`` is a test or fixture path.
+
+    :param rel: repository-relative POSIX file path.
+    :return: True when the path belongs to tests, fixtures, or evals.
+    """
+    parts = Path(rel).parts
+    name = Path(rel).name
+
+    if any(p in {"tests", "test", "__tests__", "fixtures", "evals"} for p in parts):
+        return True
+
+    return name.startswith("test_") or ".test." in name or ".spec." in name or name.endswith("_test.py")
+
+
+def _read_repo_bytes(repo: Path, rel: str) -> bytes | None:
+    """
+    Safely read a regular, non-symlink file inside ``repo`` up to ``MAX_FILE_BYTES``.
+
+    :param repo: resolved repository root directory.
+    :param rel: repository-relative file path.
+    :return: file bytes, or None when skipped (symlink, non-regular, outside repo, oversized, or unreadable).
+    """
+    full = repo / rel
+
+    try:
+        st = full.lstat()
+
+        if not stat.S_ISREG(st.st_mode) or st.st_size > MAX_FILE_BYTES:
+            return None
+
+        resolved = full.resolve()
+
+        if not resolved.is_relative_to(repo):
+            return None
+
+        return resolved.read_bytes()
+    except OSError:
+        return None
+
+
+def _split_nul(raw: str) -> list[str]:
+    """
+    Split NUL-delimited git output into non-empty relative paths.
+
+    :param raw: stdout from a git command run with ``-z``.
+    :return: list of non-empty paths.
+    """
+    return [entry for entry in raw.split("\0") if entry]
+
+
+def _list_files(repo: Path, scope: str, base: str | None) -> tuple[list[str], list[str]]:
+    """
+    Return ``(all_tracked, in_scope)`` repository-relative paths.
+
+    :param repo: resolved repository root directory.
+    :param scope: scan scope (``"diff"`` or ``"full"``).
+    :param base: optional base git ref for diff mode.
+    :return: tuple of all tracked paths and paths selected by ``scope``.
+    :raises RuntimeError: when git commands fail or ``base`` is invalid.
+    """
+    tracked_proc = _git(repo, "ls-files", "-z")
+
+    if tracked_proc.returncode != 0:
+        raise RuntimeError(f"git ls-files failed: {tracked_proc.stderr.strip()}.")
+
+    all_tracked = _split_nul(tracked_proc.stdout)
+
+    if scope == "full":
+        return all_tracked, all_tracked
+
+    diff_ref = base
+
+    if diff_ref is not None:
+        if not diff_ref or diff_ref.startswith("-"):
+            raise RuntimeError(f"invalid --base ref {diff_ref!r}.")
+    else:
+        for candidate in ("origin/main", "origin/master", "main", "master"):
+            if _git(repo, "rev-parse", "--verify", "--end-of-options", f"{candidate}^{{commit}}").returncode == 0:
+                diff_ref = candidate
+                break
+
+    if diff_ref:
+        rev_proc = _git(repo, "rev-parse", "--verify", "--end-of-options", f"{diff_ref}^{{commit}}")
+
+        if rev_proc.returncode != 0:
+            raise RuntimeError(f"git diff base {diff_ref!r} could not be resolved.")
+
+        base_sha = rev_proc.stdout.strip()
+        diff_proc = _git(repo, "diff", "--name-only", "-z", f"{base_sha}...HEAD", "--")
+
+        if diff_proc.returncode != 0:
+            raise RuntimeError(f"git diff against {diff_ref!r} failed: {diff_proc.stderr.strip()}.")
+
+        staged_proc = _git(repo, "diff", "--name-only", "-z", "--")
+        cached_proc = _git(repo, "diff", "--name-only", "-z", "--cached", "--")
+        changed = set(_split_nul(diff_proc.stdout)) | set(_split_nul(staged_proc.stdout)) | set(_split_nul(cached_proc.stdout))
+        in_scope = sorted(p for p in changed if not (repo / p).is_symlink() and (repo / p).is_file())
+
+        return all_tracked, in_scope
+
+    return all_tracked, all_tracked
+
+
+def _check_duplicate_tests(rel: str, tree: ast.Module, findings: list[Finding]) -> None:
+    """
+    Report duplicate top-level ``test_*`` definitions in a Python test module (``CH006``).
+
+    :param rel: repository-relative file path.
+    :param tree: parsed module AST.
+    :param findings: output list appended with any ``CH006`` findings.
+    """
+    seen: dict[str, int] = {}
+
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.name.startswith("test_"):
+            continue
+
+        if node.name in seen:
+            findings.append(
+                Finding(
+                    rel,
+                    node.lineno,
+                    "CH006",
+                    "HIGH",
+                    f"duplicate test definition '{node.name}' (first defined at line {seen[node.name]})",
+                ),
+            )
+        else:
+            seen[node.name] = node.lineno
+
+
+def _check_python_ast_and_ratio(rel: str, text: str, lines: list[str], findings: list[Finding]) -> None:
+    """
+    Check Python comment/docstring prose ratio (``CH001``) and duplicate test defs (``CH006``).
+
+    :param rel: repository-relative file path.
+    :param text: normalized LF-only source text.
+    :param lines: physical lines split on ``"\\n"``.
+    :param findings: output list appended with findings.
+    """
+    try:
+        tree = ast.parse(text)
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except SyntaxError:
+        return
+    except tokenize.TokenError:
+        return
+
+    if _is_test_path(rel):
+        _check_duplicate_tests(rel, tree, findings)
+
+    non_blank = {i for i, line in enumerate(lines, 1) if line.strip()}
+
+    if len(non_blank) < MIN_RATIO_LINES:
+        return
+
+    doc_prose: set[int] = set()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) or not node.body:
+            continue
+
+        first = node.body[0]
+
+        if not (isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str)):
+            continue
+
+        end_ln = first.value.end_lineno or first.value.lineno
+        in_doctest = False
+        in_sphinx = False
+        field_indent = 0
+
+        for ln in range(first.value.lineno, min(end_ln, len(lines)) + 1):
+            raw = lines[ln - 1]
+            s = raw.strip()
+
+            if not s or DOCSTRING_DELIMITER_RE.match(s):
+                in_doctest = False
+                in_sphinx = False
+                continue
+
+            if s.startswith(">>>"):
+                in_doctest = True
+                in_sphinx = False
+                continue
+
+            if in_doctest:
+                continue
+
+            if SPHINX_FIELD_RE.match(raw):
+                in_sphinx = True
+                field_indent = len(raw) - len(raw.lstrip())
+                continue
+
+            if in_sphinx and (len(raw) - len(raw.lstrip())) > field_indent:
+                continue
+
+            in_sphinx = False
+            doc_prose.add(ln)
+
+    comment_lines: set[int] = set()
+    code_lines: set[int] = set()
+    skip_types = {tokenize.NL, tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT, tokenize.ENDMARKER, tokenize.ENCODING}
+
+    for tok in tokens:
+        if tok.type in skip_types:
+            continue
+
+        if tok.type == tokenize.COMMENT:
+            comment_lines.add(tok.start[0])
+        else:
+            for ln in range(tok.start[0], tok.end[0] + 1):
+                code_lines.add(ln)
+
+    prose = ((comment_lines - code_lines) | doc_prose) & non_blank
+    ratio = len(prose) / len(non_blank)
+
+    if ratio > MAX_COMMENT_RATIO:
+        msg = f"comment/docstring prose is {round(ratio * 100)}% of non-blank lines (max {MAX_COMMENT_RATIO:.0%})"
+        findings.append(Finding(rel, 1, "CH001", "HIGH", msg))
+
+
+def _check_c_style_comment_ratio(rel: str, lines: list[str], findings: list[Finding]) -> None:
+    """
+    Check comment ratio on JS/TS/Rust/Go source files (``CH001``).
+
+    :param rel: repository-relative file path.
+    :param lines: physical source lines.
+    :param findings: output list appended with any ``CH001`` finding.
+    """
+    non_blank = [line.strip() for line in lines if line.strip()]
+
+    if len(non_blank) < MIN_RATIO_LINES:
+        return
+
+    in_block = False
+    comment_count = 0
+
+    for s in non_blank:
+        if in_block:
+            comment_count += 1
+
+            if "*/" in s:
+                in_block = False
+
+            continue
+
+        if s.startswith("//"):
+            comment_count += 1
+        elif s.startswith("/*"):
+            comment_count += 1
+
+            if "*/" not in s:
+                in_block = True
+
+    ratio = comment_count / len(non_blank)
+
+    if ratio > MAX_COMMENT_RATIO:
+        msg = f"comment lines are {round(ratio * 100)}% of non-blank lines (max {MAX_COMMENT_RATIO:.0%})"
+        findings.append(Finding(rel, 1, "CH001", "HIGH", msg))
+
+
+def _check_markdown(repo: Path, rel: str, lines: list[str], findings: list[Finding]) -> None:
+    """
+    Check Markdown files for duplicate headings, broken relative links, rustdoc syntax and README placeholders.
+
+    :param repo: resolved repository root directory.
+    :param rel: repository-relative Markdown path.
+    :param lines: physical Markdown lines.
+    :param findings: output list appended with findings.
+    """
+    in_fence = False
+    seen_headings: dict[str, int] = {}
+    is_readme = Path(rel).name.lower() == "readme.md"
+
+    for idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+
+        if in_fence:
+            continue
+
+        prose_line = INLINE_CODE_RE.sub("", line)
+
+        if RUSTDOC_LINK_RE.search(prose_line):
+            findings.append(Finding(rel, idx, "CH004", "MEDIUM", "rustdoc intra-doc link syntax in Markdown; write plain name"))
+
+        if is_readme and README_PLACEHOLDER_RE.search(prose_line):
+            findings.append(Finding(rel, idx, "AI008", "CRITICAL", f"placeholder text in README: {stripped[:80]}"))
+
+        if is_readme and SLOP_VOCAB_RE.search(prose_line):
+            findings.append(Finding(rel, idx, "AI004", "INFO", f"AI-slop prose vocabulary in README: {stripped[:80]}"))
+
+        m = MD_HEADING_RE.match(line)
+
+        if m:
+            heading = re.sub(r"\s+", " ", m.group(2).strip()).lower()
+
+            if heading in seen_headings:
+                msg = f"duplicate heading '{m.group(2).strip()}' (first at line {seen_headings[heading]})"
+                findings.append(Finding(rel, idx, "DOC001", "MEDIUM", msg))
+            else:
+                seen_headings[heading] = idx
+
+        for link_match in MD_LINK_RE.finditer(prose_line):
+            target = link_match.group(1)
+
+            if target.startswith(("#", "http://", "https://", "mailto:", "file://", "customization://")):
+                continue
+
+            target_path = target.split("#", 1)[0].split("?", 1)[0]
+
+            if not target_path or target_path.startswith("<"):
+                continue
+
+            if target_path.startswith("/"):
+                candidate = repo / target_path.lstrip("/")
+            else:
+                candidate = (repo / rel).parent / target_path
+
+            try:
+                resolved = candidate.resolve()
+            except OSError:
+                findings.append(Finding(rel, idx, "DOC002", "HIGH", f"broken relative link '{target}'"))
+                continue
+
+            if not resolved.is_relative_to(repo) or not resolved.exists():
+                findings.append(Finding(rel, idx, "DOC002", "HIGH", f"broken relative link '{target}'"))
+
+
+def _has_documented_absence(line: str) -> bool:
+    """
+    Return whether ``line`` documents a guaranteed absence in linear time.
+
+    :param line: single physical source line.
+    :return: True when the line matches a documented-absence pattern.
+    """
+    if DIRECT_ABSENCE_RE.search(line):
+        return True
+
+    match = ERRORS_HEADER_RE.search(line)
+
+    return match is not None and NEVER_FAILS_RE.search(line, match.end()) is not None
+
+
+def _has_placeholder_metadata(line: str) -> bool:
+    """
+    Return whether ``line`` sets author/maintainer metadata to a placeholder in linear time.
+
+    :param line: single physical config line.
+    :return: True when placeholder metadata is present.
+    """
+    match = META_KEY_RE.search(line)
+
+    return match is not None and META_PLACEHOLDER_VAL_RE.search(line, match.end()) is not None
+
+
+def _has_emoji_log(line: str) -> bool:
+    """
+    Return whether ``line`` logs or prints a status emoji in linear time.
+
+    :param line: single physical source line.
+    :return: True when a log/print call is followed by a status emoji on the same line.
+    """
+    match = LOG_CALL_RE.search(line)
+
+    return match is not None and STATUS_EMOJI_RE.search(line, match.end()) is not None
+
+
+def _check_source_file(rel: str, text: str, lines: list[str], findings: list[Finding]) -> None:
+    """
+    Run deterministic checks on a source file.
+
+    :param rel: repository-relative file path.
+    :param text: normalized LF-only file text.
+    :param lines: physical lines split on ``"\\n"``.
+    :param findings: output list appended with findings.
+    """
+    is_test = _is_test_path(rel)
+    ext = Path(rel).suffix.lower()
+
+    if ext == ".py":
+        _check_python_ast_and_ratio(rel, text, lines, findings)
+    elif ext in {".ts", ".tsx", ".js", ".jsx", ".rs", ".go"} and not is_test:
+        _check_c_style_comment_ratio(rel, lines, findings)
+
+    for idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+        is_comment = stripped.startswith(("#", "//", "/*", "*"))
+
+        if not is_test and TASK_LEFTOVER_RE.search(line):
+            findings.append(Finding(rel, idx, "AI001", "CRITICAL", f"task/PR-referential leftover: {stripped[:80]}"))
+
+        if not is_test and CRUMB_RE.search(line):
+            findings.append(Finding(rel, idx, "AI002", "CRITICAL", f"TODO/FIXME/HACK or deferral crumb: {stripped[:80]}"))
+
+        if not is_test and (CHAT_LEAK_RE.search(line) or _has_emoji_log(line)):
+            findings.append(Finding(rel, idx, "AI003", "HIGH", f"chat-leak, narration, or status-emoji log: {stripped[:80]}"))
+
+        if not is_test and PERSONAL_PATH_RE.search(line):
+            findings.append(Finding(rel, idx, "AI007", "HIGH", f"personal machine path in source: {stripped[:80]}"))
+
+        if not is_test and (is_comment or ":raises" in stripped.lower()) and _has_documented_absence(line):
+            findings.append(Finding(rel, idx, "CH002", "HIGH", f"documented absence: {stripped[:80]}"))
+
+        if not is_test and is_comment and PERSUASION_RE.search(line):
+            findings.append(Finding(rel, idx, "CH003", "INFO", f"persuasion adverb in comment: {stripped[:80]}"))
+
+        if ext == ".py" and RUSTDOC_LINK_RE.search(line):
+            findings.append(Finding(rel, idx, "CH004", "MEDIUM", "rustdoc intra-doc link syntax in Python source"))
+
+        if not is_test and is_comment:
+            pm = PONYTAIL_RE.search(line)
+
+            if pm and "," not in pm.group(1):
+                findings.append(Finding(rel, idx, "CH005", "INFO", "ponytail marker missing ', <upgrade trigger>'"))
+
+
+def _check_repo_level(
+    repo: Path,
+    all_tracked: list[str],
+    in_scope: list[str],
+    scope: str,
+    findings: list[Finding],
+) -> None:
+    """
+    Check repo-level signals: transcripts, build artifacts, absent-language configs, LICENSE and CI badge.
+
+    :param repo: resolved repository root directory.
+    :param all_tracked: all tracked paths in ``repo``.
+    :param in_scope: tracked paths selected by ``scope``.
+    :param scope: scan scope (``"diff"`` or ``"full"``).
+    :param findings: output list appended with findings.
+    """
+    tracked_set = set(all_tracked)
+    scope_set = set(in_scope)
+
+    for rel in in_scope:
+        for pat in TRANSCRIPT_PATTERNS:
+            if pat.search(rel):
+                findings.append(Finding(rel, 1, "AI005", "CRITICAL", "committed coding-agent transcript"))
+                break
+
+        for pat in ARTIFACT_PATTERNS:
+            if pat.search(rel):
+                findings.append(Finding(rel, 1, "AI006", "HIGH", "committed build or cache artifact"))
+                break
+
+    if scope == "full":
+        js_cfg_prefixes = (".eslintrc", "eslint.config.", ".prettierrc")
+        non_cfg_tracked = [p for p in all_tracked if not Path(p).name.startswith(js_cfg_prefixes)]
+        has_js = any(Path(p).suffix.lower() in JS_TS_EXTS for p in non_cfg_tracked)
+        has_prettier_targets = any(Path(p).suffix.lower() in PRETTIER_EXTS for p in non_cfg_tracked)
+        has_py = any(p.endswith(".py") for p in all_tracked)
+
+        for p in all_tracked:
+            name = Path(p).name
+
+            if not has_js and name.startswith((".eslintrc", "eslint.config.")):
+                findings.append(Finding(p, 1, "AI009", "HIGH", "JS/TS tool config with no JS/TS files in repo"))
+            elif not has_prettier_targets and name.startswith(".prettierrc"):
+                findings.append(Finding(p, 1, "AI009", "HIGH", "Prettier config with no supported files in repo"))
+
+        if not has_py and "pyproject.toml" in tracked_set:
+            pyproj_raw = _read_repo_bytes(repo, "pyproject.toml")
+
+            if pyproj_raw is not None:
+                pyproj = pyproj_raw.decode("utf-8", errors="ignore")
+
+                if re.search(r"^\[tool\.(?:ruff|black|mypy|pytest)\b", pyproj, re.MULTILINE):
+                    findings.append(Finding("pyproject.toml", 1, "AI009", "HIGH", "Python tool config with no .py files in repo"))
+
+    license_candidates = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING")
+    license_file = next((c for c in license_candidates if c in tracked_set), None)
+
+    if scope == "full" or (license_file and license_file in scope_set):
+        if license_file is None:
+            findings.append(Finding("LICENSE", 1, "DOC003", "BLOCKER", "missing LICENSE file at repository root"))
+        else:
+            lraw = _read_repo_bytes(repo, license_file)
+
+            if lraw is not None:
+                ltext = lraw.decode("utf-8", errors="ignore")
+
+                if not any(body in ltext for body in LICENSE_BODIES):
+                    msg = "LICENSE text does not match a standard SPDX body"
+                    findings.append(Finding(license_file, 1, "DOC003", "CRITICAL", msg))
+
+                if "<COPYRIGHT HOLDER>" in ltext:
+                    msg = "unfilled <COPYRIGHT HOLDER> placeholder in LICENSE"
+                    findings.append(Finding(license_file, 1, "DOC003", "BLOCKER", msg))
+
+    workflows = [p for p in all_tracked if p.startswith(".github/workflows/") and p.endswith((".yml", ".yaml"))]
+    check_badge = scope == "full" or "README.md" in scope_set or any(w in scope_set for w in workflows)
+
+    if "README.md" in tracked_set and workflows and check_badge:
+        readme_raw = _read_repo_bytes(repo, "README.md")
+
+        if readme_raw is not None:
+            readme = readme_raw.decode("utf-8", errors="ignore")
+            has_main_wf = False
+
+            for wf in workflows:
+                wf_raw = _read_repo_bytes(repo, wf)
+
+                if wf_raw is not None and "main" in wf_raw.decode("utf-8", errors="ignore"):
+                    has_main_wf = True
+                    break
+
+            if has_main_wf and not BADGE_RE.search(readme):
+                msg = "GitHub workflow runs on main but README.md has no CI status badge"
+                findings.append(Finding("README.md", 1, "DOC004", "MEDIUM", msg))
+
+
+def scan(repo: Path, scope: str, base: str | None) -> list[Finding]:
+    """
+    Scan ``repo`` and return sorted deterministic findings.
+
+    :param repo: resolved repository root directory.
+    :param scope: scan scope (``"diff"`` or ``"full"``).
+    :param base: optional base git ref for diff mode.
+    :return: findings sorted by ``(path, line, rule, message)``.
+    """
+    all_tracked, in_scope = _list_files(repo, scope, base)
+    findings: list[Finding] = []
+    _check_repo_level(repo, all_tracked, in_scope, scope, findings)
+
+    for rel in in_scope:
+        raw = _read_repo_bytes(repo, rel)
+
+        if raw is None or b"\x00" in raw[:8192]:
+            continue
+
+        text = raw.decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
+        lines = text.split("\n")
+        ext = Path(rel).suffix.lower()
+
+        if ext == ".md":
+            _check_markdown(repo, rel, lines, findings)
+            continue
+
+        if ext in CONFIG_EXTS:
+            for idx, line in enumerate(lines, 1):
+                if _has_placeholder_metadata(line):
+                    findings.append(Finding(rel, idx, "AI008", "CRITICAL", f"placeholder author metadata: {line.strip()[:80]}"))
+
+                if PERSONAL_PATH_RE.search(line):
+                    findings.append(Finding(rel, idx, "AI007", "HIGH", f"personal machine path in config: {line.strip()[:80]}"))
+
+            continue
+
+        if ext in SOURCE_EXTS and {"docs", "doc"}.isdisjoint(Path(rel).parts):
+            _check_source_file(rel, text, lines, findings)
+
+    findings.sort(key=lambda f: (f.path, f.line, f.rule, f.message))
+
+    return findings
+
+
+def main(argv: list[str] | None = None) -> int:
+    """
+    Run the preflight-scan CLI and return its process exit code.
+
+    :param argv: optional argument vector; defaults to ``sys.argv[1:]``.
+    :return: 0 when clean, 1 when findings exist, 2 on usage or git errors.
+    """
+    parser = argparse.ArgumentParser(prog="preflight-scan", description="Deterministic pre-gate scanner.")
+    parser.add_argument("--scope", choices=("diff", "full"), default="diff", help="Scan diff against base or full tracked tree.")
+    parser.add_argument("--base", default=None, help="Base git ref for --scope=diff (default: origin/main or main).")
+    parser.add_argument("--repo", default=".", help="Repository path (default: current directory).")
+    parser.add_argument("--json", action="store_true", dest="as_json", help="Emit findings as a JSON array.")
+    args = parser.parse_args(argv)
+
+    repo = Path(args.repo).resolve()
+
+    if not repo.is_dir():
+        print(f"preflight-scan: not a directory: {repo}", file=sys.stderr)
+
+        return 2
+
+    try:
+        findings = scan(repo, args.scope, args.base)
+    except RuntimeError as exc:
+        print(f"preflight-scan: {exc}", file=sys.stderr)
+
+        return 2
+
+    if args.as_json:
+        print(json.dumps([asdict(f) for f in findings], indent=2))
+    else:
+        for f in findings:
+            print(f"{f.path}:{f.line}: [{f.rule}] ({f.severity}) {f.message}")
+
+    return 1 if findings else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

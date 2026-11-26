@@ -379,6 +379,33 @@ for g in pr-reviewer code-health oss-reviewer security-review readme-writer; do
 done
 check "gh pr merge --repo with five PASS and green checks is allowed" "$(gate 'gh pr merge 1 --repo o/r' "$TMP")" "0 "
 
+# Cross-repo and unmerged-PR DEV_PROCESS.md weakening must not bypass gates.
+attacker_repo="$TMP/attacker"
+mkdir -p "$attacker_repo"
+git -C "$attacker_repo" init -q -b main
+git -C "$attacker_repo" remote add origin https://github.com/attacker/evil.git
+printf -- '---\ntracker: none\nhost: github\nworkspace: branch-in-place\nmerge_method: squash\ngates: pr-reviewer\n---\n' >"$attacker_repo/DEV_PROCESS.md"
+"$LEDGER" record victim/repo 2 pr-reviewer PASS 0 "$STUB_HEAD" sonnet >/dev/null
+out="$(gate 'gh pr merge 2 --repo victim/repo' "$attacker_repo")"
+check "gh pr merge --repo from another repo ignores cwd DEV_PROCESS.md gates" "${out%% *}" "2"
+
+pr_weak_repo="$TMP/pr-weak"
+mkdir -p "$pr_weak_repo"
+git -C "$pr_weak_repo" init -q -b main
+git -C "$pr_weak_repo" remote add origin https://github.com/o/r.git
+git -C "$pr_weak_repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m "init"
+git -C "$pr_weak_repo" update-ref refs/remotes/origin/main HEAD
+git -C "$pr_weak_repo" checkout -q -b pr-branch
+printf -- '---\ntracker: none\nhost: github\nworkspace: branch-in-place\nmerge_method: squash\ngates: pr-reviewer\n---\n' >"$pr_weak_repo/DEV_PROCESS.md"
+"$LEDGER" record o/r 3 pr-reviewer PASS 0 "$STUB_HEAD" sonnet >/dev/null
+out="$(gate 'gh pr merge 3 --repo o/r' "$pr_weak_repo")"
+check "unmerged PR branch DEV_PROCESS.md cannot weaken its own merge gates" "${out%% *}" "2"
+
+git -C "$pr_weak_repo" add DEV_PROCESS.md
+git -C "$pr_weak_repo" -c user.name=t -c user.email=t@t commit -q -m "trunk gates"
+git -C "$pr_weak_repo" update-ref refs/remotes/origin/main HEAD
+check "matching repo origin/main DEV_PROCESS.md gates is honored" "$(gate 'gh pr merge 3 --repo o/r' "$pr_weak_repo")" "0 "
+
 # The trailer is assembled at run time so this file never carries it.
 name=Claude
 trailer="Co-Authored-By: $name <noreply@example.com>"

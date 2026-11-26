@@ -198,7 +198,14 @@ What goes under `UNREPRODUCED` is defined in `${CLAUDE_PLUGIN_ROOT}/context/revi
 "Findings that ask for added code".
 
 Never modify the repo. On a PR, scope = the README(s) + every PR change that touches behavior any
-README describes. Full mode (pre-release/audit) = the whole README against the whole repo.
+README describes. **Fast-skip:** when a PR diff touches no README, no public API/CLI/config/behavior
+surface, no manifest, and no CI workflow, confirm from `git diff --name-only` that no README claim
+is affected and return `VERDICT: PASS` with `FINDINGS: 0` without re-running the quickstart. Full
+mode (pre-release/audit) = the whole README against the whole repo.
+
+Run `${CLAUDE_PLUGIN_ROOT}/bin/preflight-scan --scope=<diff|full> --repo <probe>` first for
+mechanical doc checks (`DOC001` duplicate headings, `DOC002` broken relative links, `DOC003`
+LICENSE, `DOC004` missing CI badge, `AI008` README placeholders, `CH004` rustdoc links in Markdown).
 
 Checklist (each item is a concrete check):
 
@@ -244,24 +251,18 @@ Checklist (each item is a concrete check):
 
 ## Self-mutation rule
 
-This file is maintained by the **orchestrating session only** — never by a delegated subagent or
-headless worker, even one instructed to read it. Durable lessons from real README work: append a
-dated bullet under `## Learned patterns`, refine near-duplicates in place, keep the research
-grounding honest (if new evidence overturns §4/§5 claims, update the section, don't stack
-contradicting bullets). Open a PR against the plugin repository (`ksco92/my-dev-team`).
+Maintained by the **orchestrating session only** through the `lessons` skill — never by a delegated
+subagent or headless worker. Subagents propose durable README lessons under
+`Proposed learned pattern:` (imperative, one sentence, two at most, no date, no repo name, no "added
+after" tail), and the orchestrator lands them in `ksco92/my-dev-team`. Keep the research grounding
+honest (when new evidence overturns §4/§5 claims, update the section rather than stacking
+contradicting bullets).
 
 ## Learned patterns
 
-<!-- dated learned-pattern bullets get appended here -->
-
-<!-- Learned patterns (orchestrating session lands these; subagents propose only) -->
-
-- When reviewing a punctuation/em-dash-reduction pass, specifically check every double-dash
-  parenthetical whose enclosed text contains its own commas: converting that pair to commas is the
-  one dash substitution that reliably produces list-like misparse ambiguity while staying
-  technically grammatical. Prescribe parentheses or restructuring there, never a comma pair.
-- 2026-09-02: The anti-drift and completeness rules pull toward a contributor manual unless the
-  audience rule and the length budget pull back. A README whose first user-facing example sits below
-  a doc-comment reading path, a toolchain install, and a 60-line limitations list has satisfied
-  every correctness check and failed the reader; the gate now scores audience and length (§7) so
-  that shape is a finding, not a pass.
+- When reviewing an em-dash-reduction pass, check every double-dash parenthetical whose enclosed
+  text contains commas: converting that pair to commas creates list-like misparse ambiguity while
+  staying grammatical, so prescribe parentheses or restructuring instead.
+- Balance anti-drift completeness with the audience rule and length budget (§2, §7): a README that
+  buries its first user-facing example below contributor internals or long limitation lists fails
+  the reader even when every factual claim is accurate.

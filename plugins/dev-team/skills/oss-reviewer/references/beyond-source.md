@@ -1,6 +1,6 @@
-# Beyond-source signals — pattern catalog (Phase 5)
+# Beyond-source signals — pattern catalog (Phase 4)
 
-Companion reference for the `oss-reviewer` skill. Loaded on demand during Phase 5. Signals from git
+Companion reference for the `oss-reviewer` skill. Loaded on demand during Phase 4. Signals from git
 history, manifests, repo shape, and project metadata. Self-mutation additions land HERE: grep for
 the highest existing `### 5.N` and use N+1.
 
@@ -15,7 +15,7 @@ For each dependency declared in `requirements.txt` / `pyproject.toml` / `package
 ~19.7% hallucination rate (USENIX Security 2025); 43% of hallucinations repeat across model runs —
 the exact names attackers slopsquat.
 
-Related: §4.18 covers the same issue at the README install command surface; §5.1 covers the manifest
+Related: §4.8 covers the same issue at the README install command surface; §5.1 covers the manifest
 surface. Both can fire on the same repo for different reasons.
 
 Detection:
@@ -269,8 +269,6 @@ scaffolding:
 - `cookiecutter-pypackage` default README sections.
 
 Detection: hash known-template files and compare; or grep tell-strings.
-
-See ai-tells §4.146.
 
 Exclude: explicit tutorial / hello-world repos.
 

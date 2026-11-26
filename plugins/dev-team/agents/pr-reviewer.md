@@ -247,17 +247,14 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
 - Never run tests or mutations in a checkout another gate or implementer may be using: your own
   reviewer probe + scratch venv/DB name, removed when done. A parallel agent's probe edits and
   reverts will otherwise drift your counts mid-review.
-- A Claude Code `Stop`/`PreToolUse` hook blocks only on exit code 2; exit 1 and timeouts are
-  advisory. A hook chaining `lint && test` is a notifier, not a gate — trace the chain's real exit
-  code with a fake failing script before accepting it as a CI replacement. `${VAR:?}` exits the
-  shell directly with a shell-dependent code that `|| exit 2` cannot remap.
-- When re-verifying a "fixed" crash/stack-overflow finding, re-run your own original repro's exact
-  parameters against a verified-fresh build BEFORE trusting the shipped regression test: a fix can
-  correctly patch the named function while the crash persists one call-frame deeper in an untouched
-  function on the same path, and the regression test can pass because it was built with a different
-  parameter relationship (e.g. depth > max_depth exercising the fixed early-rejection guard, when
-  the original crash needed depth < max_depth to reach the traversal). Two boundary layers being
-  iterative does not make the engine sandwiched between them stack-safe at the same depths.
+- A Claude Code `Stop`/`PreToolUse` hook blocks only on exit code 2 (exit 1 and timeouts are
+  advisory), so trace a hook's real exit code with a fake failing script before accepting it as a CI
+  replacement; `${VAR:?}` exits directly with a shell-dependent code that `|| exit 2` cannot remap.
+- When re-verifying a fixed crash or stack-overflow finding, re-run your original reproducer's exact
+  parameters against a verified-fresh build before trusting the shipped regression test, because a
+  fix can patch one function while the crash persists one frame deeper or a test can exercise only
+  an early-rejection guard; iterative boundary layers do not make the engine between them
+  stack-safe.
 - When a fix introduces a "safe zone" architecture (worker thread, depth-gated fast path) built on a
   mental model of what can be deep, adversarially enumerate every OTHER value the same function
   touches that can independently reach the same depth — especially a value built successfully in
@@ -269,22 +266,17 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
   call: a uniform migration, unlike its size-gated sibling paths, or a dispatch gated only on the
   worker count, adds a fixed per-call cost that scales with the machine's core count, invisible to
   the benchmarks the PR ships (sized to show the win). Time a trivial-input call before and after.
-- When a doc rewrite frames its central claim as "independently verified, not just this run's label"
-  (e.g. "applying mutation X and running command Y makes the suite fail"), that framing is a direct,
-  cheap invitation to reproduce — always take it, in a scratch copy, before accepting the doc. A
-  rewrite can correctly fix the unreliable half of a claim (run-to-run classification noise) while
-  getting the reliable half (the one specific spot-check it presents as proof) wrong; the confident,
-  falsifiable phrasing is exactly what makes it worth five minutes to check rather than read past.
+- When a doc rewrite presents a falsifiable verification claim ("applying mutation X makes command Y
+  fail"), reproduce it in a scratch copy before accepting the doc, because a rewrite often fixes
+  noisy labels while getting the specific spot-check wrong.
 - A test added "specifically for" a fix is verified by reverting the fix and running that test file
   alone, not the aggregate suite. Inputs built through the host language's own collection
   constructor (`set(...)`, `dict(...)`) are normalized before they cross an FFI boundary, so a
   differential test built that way is vacuous for any defect that lives below the boundary.
 - A surviving mutant argued "equivalent" because the output is unchanged is accepted only when the
-  mutated line is not a cost control (a merge direction, small-into-large, a cache): there the
-  mutant is equivalent for correctness only, and the survivor means the cost fix has no test.
-  Require a counter or timing bound proven to fail on the mutant. The counter counts the unit the
-  fix removed from the loop (items visited), not a unit the retired items no longer carry; revert
-  the structural fix itself, not only its predecessor, and require the test to go red.
+  mutated line is not a cost control (merge direction, small-into-large, cache), where the survivor
+  proves the cost fix has no test; require a counter of the unit removed from the loop (items
+  visited) proven to fail when the structural fix is reverted.
 - When a PR adds a value-hashing or comparison path over a wide type system (Arrow DataType, a JSON
   schema, a protobuf descriptor), enumerate every type the "supported" predicate rejects and drive
   one end-to-end case per type: the predicate's doc is usually right while the README collapses the
@@ -330,9 +322,5 @@ verdict with a `Proposed learned pattern:` bullet when you have one.
 - When a PR replaces a typed refusal with a structural fallback, enumerate the fallback's degenerate
   outputs (an empty extraction, a self-similar one) and drive one end-to-end case each; a generator
   drawing only from the type set the feature was written for reaches neither.
-- When a fix swaps a helper that tolerated an absent optional member (`bucket.grantReadWrite`) for a
-  direct call on that member (`bucket.encryptionKey!.grant`), drive the absent case; and when a
-  guard's message names what the member stands for, list every option that leaves it unset (an
-  AWS-managed key is a KMS key without an `encryptionKey`).
 - Verify a claim about the order of fields in an output with `Object.keys` on the real output; a
   deep-equality assertion proves nothing about order.

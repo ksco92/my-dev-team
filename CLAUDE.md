@@ -12,11 +12,11 @@ See the root README for what this repo is.
   `DEV_PROCESS.md` contract, and built-in default process.
 - `plugins/dev-team/hooks/`, the merge-gate, attribution-guard, verdict-guard, and session-context
   Bash hooks and `hooks.json`.
-- `plugins/dev-team/bin/`, the gate-ledger, dev-process, and lesson-lint scripts.
+- `plugins/dev-team/bin/`, the gate-ledger, dev-process, lesson-lint, and preflight-scan scripts.
 - `plugins/dev-team/templates/`, the blank `DEV_PROCESS.md`.
 - `plugins/dev-team/tests/`, the Bash tests for the scripts and hooks.
-- `plugins/dev-team/evals/`, the `claude plugin eval` suite for the implementer, the five review
-  gates, the `lessons` skill, and the `audit` skill.
+- `plugins/dev-team/evals/`, the `claude plugin eval` suite for the implementer, the `tpm` skill,
+  the five review gates, the `lessons` skill, and the `audit` skill.
 - `plugins/dev-team/README.md`, the plugin's README.
 - `.github/workflows/ci.yml`, the validation CI workflow.
 - `docs/examples/`, example `DEV_PROCESS.md` files; the plugin never reads them.
@@ -24,20 +24,22 @@ See the root README for what this repo is.
 
 ## Local checks
 
-The checks need Node with `npx`, `shellcheck` and the `claude` CLI.
+The checks need Node with `npx`, `python3`, `shellcheck`, `jq`, and the `claude` CLI.
 
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate plugins/dev-team --strict
-shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/* plugins/dev-team/tests/*.sh
+shellcheck plugins/dev-team/hooks/*.sh plugins/dev-team/bin/dev-process plugins/dev-team/bin/gate-ledger plugins/dev-team/bin/lesson-lint plugins/dev-team/tests/*.sh
+python3 -m py_compile plugins/dev-team/bin/preflight-scan
 git ls-files -z '*.md' | xargs -0 npx --yes prettier@3.6.2 --check
 bash plugins/dev-team/tests/dev-process.test.sh
 bash plugins/dev-team/tests/lesson-lint.test.sh
 bash plugins/dev-team/tests/merge-gate.test.sh
 bash plugins/dev-team/tests/gate-ledger.test.sh
 bash plugins/dev-team/tests/verdict-guard.test.sh
+bash plugins/dev-team/tests/preflight-scan.test.sh
 bash plugins/dev-team/tests/evals.test.sh
-plugins/dev-team/bin/lesson-lint --added origin/main $(git ls-files 'plugins/dev-team/*.md')
+plugins/dev-team/bin/lesson-lint $(git ls-files 'plugins/dev-team/*.md')
 claude plugin eval plugins/dev-team --case readme-writer-doc-drift --scaffold --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 claude plugin eval plugins/dev-team --case implementer-date-range-filter --scaffold --allow-tools Bash Write Edit --runs 1 --ablation none --trust-plugin --max-cost-usd 2
 ```

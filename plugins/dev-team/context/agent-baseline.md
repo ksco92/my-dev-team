@@ -1,8 +1,8 @@
 # Implementer Agent Baseline
 
-Shared operating contract for the `implementer`, `backend`, and `frontend` subagents. Each agent's
-own definition file tells you to read this first; it is binding unless the agent file or a
-project-level override contradicts it, in which case the more specific file wins.
+Shared operating contract for the `implementer` subagent. The agent's own definition file tells you
+to read this first; it is binding unless the agent file or a project-level override contradicts it,
+in which case the more specific file wins.
 
 ## Context
 
@@ -181,7 +181,7 @@ process (a separate test binary) or a per-session token the recorder checks.
 2. Create the workspace for $branch (Create workspace operation)
    (skip when the brief already hands you a workspace)
 3. Work in that workspace in small, logically grouped commits
-4. Lint, typecheck, test — fix everything; verify coverage
+4. Lint, typecheck, test — fix everything; verify coverage, and run `${CLAUDE_PLUGIN_ROOT}/bin/preflight-scan --scope=diff` to catch deterministic AI-tell, comment-ratio, and doc hygiene faults before opening the PR
 5. git add <specific files> && git commit
 6. Open the change with the body described below (Open change operation)
 7. Return the PR URL and the workspace path
@@ -276,8 +276,8 @@ instead.
   suite stays green.
 - A module that ports code from another open-source project carries one attribution line (upstream,
   version read, license id) and the repo keeps a NOTICE file listing every such source.
-- macOS `git grep -E` ignores `\b`; verify an acceptance grep with plain `grep -rniE` on substrings
-  and paste the empty result in the PR body.
+- On macOS, `git grep -E` ignores `\b`; verify an acceptance grep with plain `grep -rniE` on
+  substrings and paste the empty result in the PR body.
 - A license text reproduced in a NOTICES file is quoted verbatim, copyright line included; year
   ranges and paraphrase go in the surrounding prose.
 - Never cite a path under `.claude/`, `.cursor/`, or any other agent-tooling directory in a PR body,

@@ -22,16 +22,17 @@ SessionStart hook puts the resolved file in every session's context. A blank fil
 
 ## Format
 
-YAML frontmatter with four keys, then eight `## ` sections in the order below. A heading starts with
-its section's first word (`## Tracker: Asana`, `## Code host: GitHub`), which is what
-`dev-process show <word>` matches.
+YAML frontmatter with four required keys and one optional key, then eight `## ` sections in the
+order below. A heading starts with its section's first word (`## Tracker: Asana`,
+`## Code host: GitHub`), which is what `dev-process show <word>` matches.
 
-| Key            | Values                                                  |
-| -------------- | ------------------------------------------------------- |
-| `tracker`      | an adapter name such as `github`, `asana`, or `none`    |
-| `host`         | an adapter name such as `github` or `none`              |
-| `workspace`    | an adapter name such as `worktree` or `branch-in-place` |
-| `merge_method` | `squash`, `merge`, or `rebase`                          |
+| Key            | Values                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| `tracker`      | an adapter name such as `github`, `asana`, or `none`                                               |
+| `host`         | an adapter name such as `github` or `none`                                                         |
+| `workspace`    | an adapter name such as `worktree` or `branch-in-place`                                            |
+| `merge_method` | `squash`, `merge`, or `rebase`                                                                     |
+| `gates`        | optional comma-separated subset of the five gate names; defaults to all five when omitted or empty |
 
 Any adapter name is valid as long as every operation in its section has a command or rule; the name
 is a label. `none` is the one built-in meaning: for `tracker`, tickets are files in the repository;

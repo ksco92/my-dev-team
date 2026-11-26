@@ -38,6 +38,9 @@ contradicts this skill's defaults, the project wins. Also load the resolved deve
 
 ## Phase 1 — Requirements
 
+When the request is an unvalidated product idea or lacks a Product Brief under `./docs/product/`,
+recommend running `/pm` first before decomposing.
+
 Confirm, with the user, before decomposing: **purpose** (the user problem, who has it, what changes
 if shipped, urgency); **scope** (in, and — more important — explicitly out; hard constraints;
 systems touched); **behavior** (the journey step by step, error states, edge cases —
@@ -78,7 +81,7 @@ meaningful lines), testable. Slice **vertically** — one user-facing flow throu
 and tests, owned end-to-end by one implementer — never "all models, then all endpoints, then all
 UI", which forces context hand-offs on shared state. Sequence: shared contracts/types first (one
 slice), then independent vertical slices in parallel, then integration-bearing slices, then polish.
-Reach for a `backend`/`frontend` specialist only when a sub-part is genuinely isolatable.
+Every slice goes to `implementer`, which loads the matching stack guides.
 
 **Difficulty drives routing and specification depth.** Tag every slice by how much judgment the
 implementation needs, not by line count:
@@ -97,6 +100,11 @@ or data integrity is never `low`.
 
 Present the numbered slice list with dependencies (`#3 blocks #5`) and tags for approval; the user
 may re-tag.
+
+**Design/contract micro-checkpoint for `high` slices.** Before dispatching Opus on a `high` slice,
+present a 10–20 line interface and architecture sketch (public signatures, data boundaries, failure
+semantics) and get explicit owner sign-off; catching a wrong boundary before implementation is far
+cheaper than catching it in review.
 
 ## Phase 3 — Tickets
 
@@ -165,9 +173,9 @@ below).
 
 Models are named by alias only (`sonnet`, `opus`); an alias resolves to the newest model in its
 line, so no brief, agent file, or skill ever carries a versioned id. The agent files carry the top
-of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium`. Specialists
-(`backend`/`frontend`) take the same shape. See the model policy in
-`${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is a subagent only as the `audit` cold reader).
+of their ladder in frontmatter and `model="sonnet"` steps down for `low`/`medium`. See the model
+policy in `${CLAUDE_PLUGIN_ROOT}/context/policy.md` (Fable is a subagent only as the `audit` cold
+reader).
 
 Brief a subagent like a smart colleague who just walked in: the ticket text or ID, the branch name
 (the process file's Branch name operation), repo path, workspace instructions, the PR body template,
@@ -211,8 +219,10 @@ merge _is_ the PR for gate purposes, and the hook guards `git merge` on main the
 
 ### 5.1 The five gates
 
-Run all five on the PR head, in parallel where the mechanism allows. Reviewer tier ≥ implementer
-tier always. `D` is the slice's difficulty tag.
+Run every required gate on the PR head, in parallel where the mechanism allows. By default all five
+gates run; a repository may configure a subset via the optional `gates:` key in its `DEV_PROCESS.md`
+frontmatter (read by `gate-ledger check --repo-dir`). Reviewer tier ≥ implementer tier always. `D`
+is the slice's difficulty tag.
 
 | Gate          | Agent / mechanism                                                                                                                                                           | Model                                                                                                                        |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
