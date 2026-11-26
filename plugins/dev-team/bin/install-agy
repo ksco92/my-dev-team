@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Install or uninstall the dev-team plugin for Antigravity without duplicating files.
 
-Creates symlinks for shared directories (skills, context, bin, templates, hooks, README.md)
-pointing at the local clone of plugins/dev-team/, and generates only the thin Antigravity
-manifests (plugin.json, hooks.json) and agent pointer stubs (agents/*.md).
+Creates symlinks for shared directories (``skills``, ``context``, ``bin``, ``templates``,
+``hooks``, ``README.md``) pointing at the local clone of ``plugins/dev-team/``, and generates
+only the thin Antigravity manifests (``plugin.json``, ``hooks.json``) and agent pointer stubs
+(``agents/*.md``).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
-import shutil
 import sys
 from pathlib import Path
 
 SHARED_LINKS = ("skills", "context", "bin", "templates", "hooks", "README.md")
+GENERATED_FILES = ("plugin.json", "hooks.json")
 MARKER_FILE = ".installed-by-dev-team"
 TOOL_MAP: dict[str, tuple[str, ...]] = {
     "Read": ("read_file",),
@@ -34,6 +36,39 @@ SUGGESTED_PROMPTS = [
     "Run a code-health and OSS readiness audit on the current branch",
     "Review and update the repository README against the current implementation",
 ]
+HOOKS_MANIFEST: dict[str, object] = {
+    "dev-team-guards": {
+        "PreToolUse": [
+            {
+                "matcher": "run_command",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "./hooks/agy-hook.sh merge-gate",
+                        "timeout": 60,
+                    },
+                    {
+                        "type": "command",
+                        "command": "./hooks/agy-hook.sh attribution-guard",
+                        "timeout": 10,
+                    },
+                ],
+            },
+        ],
+        "SessionStart": [
+            {
+                "type": "command",
+                "command": "./hooks/agy-hook.sh session-context policy",
+                "timeout": 10,
+            },
+            {
+                "type": "command",
+                "command": "./hooks/agy-hook.sh session-context process",
+                "timeout": 10,
+            },
+        ],
+    },
+}
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 PLAIN_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -139,53 +174,13 @@ def _build_plugin_manifest(source: Path) -> dict[str, object]:
         "repository": "https://github.com/ksco92/my-dev-team",
         "suggestedPrompts": list(SUGGESTED_PROMPTS),
     }
+
     author = claude_meta.get("author")
 
     if isinstance(author, (str, dict)):
         manifest["author"] = author
 
     return manifest
-
-
-def _build_hooks_manifest() -> dict[str, object]:
-    """
-    Build the Antigravity ``hooks.json`` wiring to ``./hooks/agy-hook.sh``.
-
-    :return: Antigravity hooks configuration dictionary.
-    """
-    return {
-        "dev-team-guards": {
-            "PreToolUse": [
-                {
-                    "matcher": "run_command",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": "./hooks/agy-hook.sh merge-gate",
-                            "timeout": 60,
-                        },
-                        {
-                            "type": "command",
-                            "command": "./hooks/agy-hook.sh attribution-guard",
-                            "timeout": 10,
-                        },
-                    ],
-                },
-            ],
-            "SessionStart": [
-                {
-                    "type": "command",
-                    "command": "./hooks/agy-hook.sh session-context policy",
-                    "timeout": 10,
-                },
-                {
-                    "type": "command",
-                    "command": "./hooks/agy-hook.sh session-context process",
-                    "timeout": 10,
-                },
-            ],
-        },
-    }
 
 
 def _render_agent_stub(agent_path: Path, source: Path) -> str:
@@ -203,6 +198,7 @@ def _render_agent_stub(agent_path: Path, source: Path) -> str:
     skills = meta.get("skills")
     tools_inline = ", ".join(tools)
     formatted_name = name if PLAIN_NAME_RE.fullmatch(name) else json.dumps(name)
+
     lines = [
         "---",
         f"name: {formatted_name}",
@@ -224,20 +220,72 @@ def _render_agent_stub(agent_path: Path, source: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _link_shared_entry(src: Path, dst: Path) -> None:
+def _write_no_follow(path: Path, content: str) -> None:
     """
-    Create or refresh symlink ``dst -> src``, refusing to overwrite a non-symlink path.
+    Write UTF-8 text to ``path`` without following symlinks.
 
-    :param src: target path inside the plugin repository.
-    :param dst: symlink path inside the Antigravity plugin directory.
-    :raises RuntimeError: when ``dst`` already exists as a non-symlink file or directory.
+    :param path: destination regular file path.
+    :param content: UTF-8 string content to write.
+    :raises RuntimeError: when ``path`` is a symlink or directory.
     """
-    if dst.is_symlink():
-        dst.unlink()
-    elif dst.exists():
-        raise RuntimeError(f"refusing to overwrite non-symlink path: {dst}.")
+    if path.is_symlink():
+        raise RuntimeError(f"refusing to write through symlink: {path}.")
 
-    dst.symlink_to(src)
+    if path.is_dir():
+        raise RuntimeError(f"refusing to overwrite directory with file: {path}.")
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o644)
+
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(content)
+
+
+def _validate_install_target(target: Path, agent_names: list[str]) -> None:
+    """
+    Verify ``target`` is safe to install into before mutating any filesystem entry.
+
+    :param target: destination Antigravity plugin directory.
+    :param agent_names: filenames of agent stubs to generate under ``target/agents``.
+    :raises RuntimeError: when ``target`` contains unmanaged files or conflicting paths.
+    """
+    if target.is_symlink():
+        raise RuntimeError(f"refusing to install into a symlink target: {target}.")
+
+    if not target.exists():
+        return
+
+    if not target.is_dir():
+        raise RuntimeError(f"refusing to install into a non-directory target: {target}.")
+
+    marker = target / MARKER_FILE
+
+    if any(target.iterdir()) and (marker.is_symlink() or not marker.is_file()):
+        raise RuntimeError(f"refusing to install into existing non-empty directory without {MARKER_FILE}: {target}.")
+
+    for entry in SHARED_LINKS:
+        dst = target / entry
+
+        if dst.exists() and not dst.is_symlink():
+            raise RuntimeError(f"refusing to overwrite non-symlink path: {dst}.")
+
+    for generated in (*GENERATED_FILES, MARKER_FILE):
+        dst = target / generated
+
+        if dst.is_symlink() or dst.is_dir():
+            raise RuntimeError(f"refusing to overwrite non-regular path: {dst}.")
+
+    agents_dst = target / "agents"
+
+    if agents_dst.exists() and not agents_dst.is_symlink() and not agents_dst.is_dir():
+        raise RuntimeError(f"refusing to overwrite non-directory agents path: {agents_dst}.")
+
+    if agents_dst.is_dir() and not agents_dst.is_symlink():
+        for name in agent_names:
+            stub_dst = agents_dst / name
+
+            if stub_dst.is_symlink() or stub_dst.is_dir():
+                raise RuntimeError(f"refusing to overwrite non-regular agent stub path: {stub_dst}.")
 
 
 def install(source: Path, target: Path) -> None:
@@ -249,59 +297,59 @@ def install(source: Path, target: Path) -> None:
     :raises RuntimeError: when ``source`` is invalid or ``target`` conflicts with unmanaged files.
     """
     resolved_source = source.resolve()
-
-    if target.is_symlink():
-        raise RuntimeError(f"refusing to install into a symlink target: {target}.")
-
-    if target.exists() and not target.is_dir():
-        raise RuntimeError(f"refusing to install into a non-directory target: {target}.")
-
     agents_src_dir = resolved_source / "agents"
 
     if not agents_src_dir.is_dir():
         raise RuntimeError(f"missing source agents directory: {agents_src_dir}.")
 
     manifest = _build_plugin_manifest(resolved_source)
-    hooks = _build_hooks_manifest()
+    agent_sources = sorted(agents_src_dir.glob("*.md"))
+    _validate_install_target(target, [path.name for path in agent_sources])
     target.mkdir(parents=True, exist_ok=True)
 
     for entry in SHARED_LINKS:
         src_entry = resolved_source / entry
 
         if src_entry.exists():
-            _link_shared_entry(src_entry, target / entry)
+            dst = target / entry
 
-    (target / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    (target / "hooks.json").write_text(json.dumps(hooks, indent=2) + "\n", encoding="utf-8")
+            if dst.is_symlink():
+                dst.unlink()
+
+            dst.symlink_to(src_entry)
+
+    _write_no_follow(target / "plugin.json", json.dumps(manifest, indent=2) + "\n")
+    _write_no_follow(target / "hooks.json", json.dumps(HOOKS_MANIFEST, indent=2) + "\n")
 
     agents_dst = target / "agents"
 
     if agents_dst.is_symlink():
         agents_dst.unlink()
-    elif agents_dst.exists() and not agents_dst.is_dir():
-        raise RuntimeError(f"refusing to overwrite non-directory agents path: {agents_dst}.")
 
     agents_dst.mkdir(exist_ok=True)
     expected_agents: set[str] = set()
 
-    for agent_src in sorted(agents_src_dir.glob("*.md")):
+    for agent_src in agent_sources:
         expected_agents.add(agent_src.name)
         stub = _render_agent_stub(agent_src, resolved_source)
-        (agents_dst / agent_src.name).write_text(stub, encoding="utf-8")
+        _write_no_follow(agents_dst / agent_src.name, stub)
 
     for existing in list(agents_dst.glob("*.md")):
-        if existing.name not in expected_agents:
+        if existing.name not in expected_agents and not existing.is_symlink():
             existing.unlink()
 
-    (target / MARKER_FILE).write_text(f"{resolved_source}\n", encoding="utf-8")
+    _write_no_follow(target / MARKER_FILE, f"{resolved_source}\n")
 
 
 def uninstall(target: Path) -> None:
     """
     Remove an Antigravity plugin directory previously created by ``install-agy``.
 
+    Only deletes installer-managed symlinks, manifests, agent stubs, and the marker file so
+    unrelated files inside ``target`` are never removed.
+
     :param target: destination Antigravity plugin directory to remove.
-    :raises RuntimeError: when ``target`` is a symlink or lacks the installer marker file.
+    :raises RuntimeError: when ``target`` is a symlink, lacks the marker, or holds unmanaged files.
     """
     if target.is_symlink():
         raise RuntimeError(f"refusing to uninstall symlink target: {target}.")
@@ -309,16 +357,48 @@ def uninstall(target: Path) -> None:
     if not target.exists():
         return
 
-    if not (target / MARKER_FILE).is_file():
-        raise RuntimeError(f"refusing to remove directory without {MARKER_FILE}: {target}.")
+    marker = target / MARKER_FILE
 
-    for child in list(target.iterdir()):
-        if child.is_symlink() or child.is_file():
-            child.unlink()
-        elif child.is_dir():
-            shutil.rmtree(child)
+    if marker.is_symlink() or not marker.is_file():
+        raise RuntimeError(f"refusing to remove directory without regular {MARKER_FILE}: {target}.")
 
-    target.rmdir()
+    for entry in SHARED_LINKS:
+        dst = target / entry
+
+        if dst.is_symlink():
+            dst.unlink()
+        elif dst.exists():
+            raise RuntimeError(f"refusing to remove non-symlink path: {dst}.")
+
+    for generated in GENERATED_FILES:
+        dst = target / generated
+
+        if dst.is_symlink() or dst.is_dir():
+            raise RuntimeError(f"refusing to remove non-regular generated file: {dst}.")
+
+        if dst.is_file():
+            dst.unlink()
+
+    agents_dst = target / "agents"
+
+    if agents_dst.is_dir() and not agents_dst.is_symlink():
+        for stub in list(agents_dst.glob("*.md")):
+            if stub.is_symlink():
+                raise RuntimeError(f"refusing to remove symlinked agent file: {stub}.")
+
+            stub.unlink()
+
+        try:
+            agents_dst.rmdir()
+        except OSError as exc:
+            raise RuntimeError(f"unmanaged files remain in {agents_dst}: {exc}.") from exc
+
+    marker.unlink()
+
+    try:
+        target.rmdir()
+    except OSError as exc:
+        raise RuntimeError(f"unmanaged files remain in {target}: {exc}.") from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -330,10 +410,12 @@ def main(argv: list[str] | None = None) -> int:
     """
     default_source = Path(__file__).resolve().parent.parent
     default_target = Path.home() / ".gemini" / "config" / "plugins" / "dev-team"
+
     parser = argparse.ArgumentParser(
         prog="install-agy",
         description="Install or uninstall the dev-team plugin for Antigravity using symlinks to the local clone.",
     )
+
     parser.add_argument("--source", type=Path, default=default_source, help="Path to plugins/dev-team/ in the clone.")
     parser.add_argument("--target", type=Path, default=default_target, help="Antigravity plugin install directory.")
     parser.add_argument("--uninstall", action="store_true", help="Remove an existing install-agy installation.")
@@ -348,6 +430,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Installed Antigravity plugin at {args.target} -> {args.source.resolve()}")
     except RuntimeError as exc:
         print(f"install-agy: {exc}", file=sys.stderr)
+
+        return 2
+    except OSError as exc:
+        print(f"install-agy: filesystem error: {exc}", file=sys.stderr)
 
         return 2
 

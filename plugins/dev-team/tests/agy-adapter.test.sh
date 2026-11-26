@@ -38,20 +38,45 @@ out="$(jq -n --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:"g
 check "merge-gate denies force push to main" "$(jq -r .decision <<<"$out")" "deny"
 check "merge-gate deny includes reason" "$(jq -r '.reason | length > 0' <<<"$out")" "true"
 
+# Oversized CommandLine exceeding Linux MAX_ARG_STRLEN (128 KiB) must not fail open.
+large_payload="$TMP/large-payload.json"
+python3 -c '
+import json, sys
+payload = {"toolCall": {"name": "run_command", "args": {"CommandLine": "git push --force origin main # " + ("A" * 200000)}}, "cwd": sys.argv[1]}
+sys.stdout.write(json.dumps(payload))
+' "$repo" >"$large_payload"
+out="$("$ADAPTER" merge-gate <"$large_payload")"
+check "merge-gate denies oversized force-push CommandLine" "$(jq -r .decision <<<"$out")" "deny"
+
 # Assemble attribution trailers at runtime so this test file never carries literal ones.
 trailer="Co-Authored-By: Cla""ude <noreply@example.com>"
 out="$(jq -n --arg c "git commit -m \"Msg\n\n$trailer\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
 check "attribution-guard denies commit carrying Claude trailer" "$(jq -r .decision <<<"$out")" "deny"
 
-agy_trailer="Co-Authored-By: Anti""gravity <noreply@example.com>"
+agy_trailer="Co-Authored-By: Agent (Anti""gravity) <noreply@example.com>"
 out="$(jq -n --arg c "git commit -m \"Msg\n\n$agy_trailer\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
-check "attribution-guard denies commit carrying Antigravity trailer" "$(jq -r .decision <<<"$out")" "deny"
+check "attribution-guard denies commit carrying Antigravity trailer with n before keyword" "$(jq -r .decision <<<"$out")" "deny"
+
+gem_trailer="Co-Authored-By: Agent <gem""ini@example.com>"
+out="$(jq -n --arg c "git commit -m \"Msg\n\n$gem_trailer\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
+check "attribution-guard denies commit carrying Gemini trailer" "$(jq -r .decision <<<"$out")" "deny"
+
+gen_gem="Generated with Gem""ini"
+out="$(jq -n --arg c "git commit -m \"Msg\n\n$gen_gem\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
+check "attribution-guard denies Generated with Gemini footer" "$(jq -r .decision <<<"$out")" "deny"
+
+gen_agy="Generated with Anti""gravity"
+out="$(jq -n --arg c "git commit -m \"Msg\n\n$gen_agy\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
+check "attribution-guard denies Generated with Antigravity footer" "$(jq -r .decision <<<"$out")" "deny"
 
 out="$(jq -n --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:"git commit -m \"Plain msg\""}},cwd:$d}' | "$ADAPTER" attribution-guard)"
 check "attribution-guard allows clean commit" "$(jq -r .decision <<<"$out")" "allow"
 
 out="$(jq -n --arg d "$repo" '{toolCall:{name:"read_file",args:{Path:"README.md"}},cwd:$d}' | "$ADAPTER" merge-gate)"
 check "missing CommandLine returns allow" "$(jq -r .decision <<<"$out")" "allow"
+
+out="$(jq -n --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:["git","status"]}},cwd:$d}' | "$ADAPTER" merge-gate)"
+check "non-string CommandLine fails closed" "$(jq -r .decision <<<"$out")" "deny"
 
 out="$("$ADAPTER" merge-gate <<<"not-valid-json")"
 check "malformed JSON on PreToolUse fails closed" "$(jq -r .decision <<<"$out")" "deny"
@@ -62,16 +87,15 @@ check "empty stdin on PreToolUse fails closed" "$(jq -r .decision <<<"$out")" "d
 "$ADAPTER" bogus >/dev/null 2>&1
 check "unknown adapter target exits 2" "$?" "2"
 
-# Fail-closed when jq is absent on PreToolUse.
-no_jq_out="$(PATH="/usr/bin:/bin" bash -c '
-  hash -r
-  if command -v jq >/dev/null 2>&1; then
-    echo "{\"decision\":\"deny\",\"reason\":\"jq-in-sysbin\"}"
-  else
-    "$1" merge-gate <<<"{\"toolCall\":{\"args\":{\"CommandLine\":\"git push -f origin main\"}}}"
-  fi
-' _ "$ADAPTER")"
+# Fail-closed when jq is genuinely absent from PATH.
+no_jq_bin="$TMP/no-jq-bin"
+mkdir -p "$no_jq_bin"
+for util in bash env dirname cat rm mktemp; do
+  ln -s "$(command -v "$util")" "$no_jq_bin/$util"
+done
+no_jq_out="$(PATH="$no_jq_bin" "$ADAPTER" merge-gate <<<'{"toolCall":{"args":{"CommandLine":"git push -f origin main"}}}')"
 check "PreToolUse fails closed without jq" "$(jq -r .decision <<<"$no_jq_out")" "deny"
+check "PreToolUse no-jq deny names agy-hook and jq" "$(jq -r '.reason | contains("agy-hook") and contains("jq")' <<<"$no_jq_out")" "true"
 
 # --- agy-hook.sh SessionStart tests ---
 pol_out="$(jq -n --arg d "$repo" '{cwd:$d}' | "$ADAPTER" session-context policy)"
@@ -124,7 +148,7 @@ check "re-run removes stale generated agent stub" \
 inst_out="$(cd "$target" && jq -n --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:"git push --force origin main"}},cwd:$d}' | PLUGIN_ROOT="$target" ./hooks/agy-hook.sh merge-gate)"
 check "installed hooks.json command denies force push from plugin root" "$(jq -r .decision <<<"$inst_out")" "deny"
 
-# Safety: install refuses symlink target, file target, and non-symlink collisions.
+# Safety: install refuses symlink target, file target, unmanaged non-empty dir, mid-loop collisions, and symlink clobbers.
 file_target="$TMP/file-target"
 touch "$file_target"
 "$INSTALLER" --source "$PLUGIN" --target "$file_target" >/dev/null 2>&1
@@ -135,18 +159,48 @@ ln -s "$TMP" "$symlink_target"
 "$INSTALLER" --source "$PLUGIN" --target "$symlink_target" >/dev/null 2>&1
 check "install refuses symlink target" "$?" "2"
 
+nonempty_unmanaged="$TMP/nonempty-unmanaged"
+mkdir -p "$nonempty_unmanaged/other-plugin"
+echo "keep" >"$nonempty_unmanaged/other-plugin/data.txt"
+"$INSTALLER" --source "$PLUGIN" --target "$nonempty_unmanaged" >/dev/null 2>&1
+check "install refuses existing non-empty unmanaged directory" "$?" "2"
+check "non-empty unmanaged directory untouched" "$(cat "$nonempty_unmanaged/other-plugin/data.txt")" "keep"
+check "non-empty unmanaged directory gets no marker" "$(test -e "$nonempty_unmanaged/.installed-by-dev-team" && echo yes || echo no)" "no"
+
 collision_target="$TMP/collision-target"
-mkdir -p "$collision_target/skills"
+mkdir -p "$collision_target/context"
+touch "$collision_target/.installed-by-dev-team"
 "$INSTALLER" --source "$PLUGIN" --target "$collision_target" >/dev/null 2>&1
 check "install refuses overwriting non-symlink directory" "$?" "2"
+check "pre-validation leaves earlier entry untouched on collision" "$(test -e "$collision_target/skills" && echo yes || echo no)" "no"
 
-# Safety: uninstall refuses unmanaged directory without marker, succeeds on installed target.
+victim="$TMP/victim.txt"
+echo "untouched" >"$victim"
+clobber_target="$TMP/clobber-target"
+mkdir -p "$clobber_target"
+touch "$clobber_target/.installed-by-dev-team"
+ln -s "$victim" "$clobber_target/plugin.json"
+"$INSTALLER" --source "$PLUGIN" --target "$clobber_target" >/dev/null 2>&1
+check "install refuses writing through symlinked plugin.json" "$?" "2"
+check "external symlink target left untouched" "$(cat "$victim")" "untouched"
+
+# Safety: uninstall refuses unmanaged directory without marker and preserves unmanaged sibling files.
 unmanaged="$TMP/unmanaged"
 mkdir -p "$unmanaged"
 "$INSTALLER" --uninstall --target "$unmanaged" >/dev/null 2>&1
 check "uninstall refuses directory without marker" "$?" "2"
 check "unmanaged directory left intact" "$(test -d "$unmanaged" && echo yes || echo no)" "yes"
 
+extra_file="$target/user-notes.txt"
+echo "preserve" >"$extra_file"
+"$INSTALLER" --uninstall --target "$target" >/dev/null 2>&1
+check "uninstall refuses removing target with unmanaged file" "$?" "2"
+check "unmanaged file inside target preserved on uninstall" "$(cat "$extra_file")" "preserve"
+rm -f "$extra_file"
+
+# Re-install cleanly and verify clean uninstall succeeds.
+"$INSTALLER" --source "$PLUGIN" --target "$target" >/dev/null
+check "re-install after removing unmanaged file exits 0" "$?" "0"
 "$INSTALLER" --uninstall --target "$target" >/dev/null
 check "uninstall removes installed plugin" "$(test -e "$target" && echo present || echo gone)" "gone"
 check "uninstall leaves source repo intact" "$(test -d "$PLUGIN/skills" && echo yes || echo no)" "yes"

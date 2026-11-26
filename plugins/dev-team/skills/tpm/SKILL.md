@@ -198,13 +198,13 @@ gate's skill or agent checklist as written, and record the verdict with `gate-le
 merge-gate extension refuses the merge until all five are PASS at the head. Say in the PR body that
 the gates ran in-process on one model; the reviewer-above-implementer rule cannot hold here.
 
-**Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `low`/`medium`
-or `"inherit"`/`"pro"` for `high` and `security-review`), `send_message` for `SendMessage`, and the
-`Plugin root` injected at session start for `${CLAUDE_PLUGIN_ROOT}`. Because Antigravity has no
-`SubagentStop` hook, verify each gate's `GATE / VERDICT / HEAD / FINDINGS` block before calling
-`gate-ledger record`; because sandboxed subagents cannot run live `gh` API queries, fetch branch
-protection, repo description, and remote CI status in the orchestrator once and pass them in the
-gate briefs.
+**Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `low` slices,
+`"pro"` for `medium` slices and lighter gates, `"inherit"` for `high` slices, `high` `pr-reviewer`,
+and `security-review`), `send_message` for `SendMessage`, and the `Plugin root` injected at session
+start for `${CLAUDE_PLUGIN_ROOT}`. Because Antigravity has no `SubagentStop` hook, verify each
+gate's `GATE / VERDICT / HEAD / FINDINGS` block before calling `gate-ledger record`; because
+sandboxed subagents cannot run live `gh` API queries, fetch branch protection, repo description, and
+remote CI status in the orchestrator once and pass them in the gate briefs.
 
 Every implementer brief, at any tier, carries the comment budget from
 `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` in one line: doc comments sized to the item, tests

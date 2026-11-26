@@ -21,8 +21,9 @@ adapter for Antigravity's hook JSON contract and a symlink-based installer for i
   `~/.gemini/config/plugins/dev-team` by symlinking `skills/`, `context/`, `bin/`, `templates/`,
   `hooks/`, and `README.md` to the local clone and generating only `plugin.json`, `hooks.json`, and
   thin `agents/*.md` pointer stubs (plus safe `--uninstall`).
-- Add a concise `Under Antigravity` note to `plugins/dev-team/skills/tpm/SKILL.md` and installation
-  instructions for both Claude Code and Antigravity in `README.md`.
+- Add a concise `Under Antigravity` note to `plugins/dev-team/skills/tpm/SKILL.md` (mapping tiers to
+  Antigravity's `flash`/`pro`/`inherit` aliases), a `cold-reader` inheritance note to
+  `plugins/dev-team/skills/audit/SKILL.md`, and dual installation instructions in `README.md`.
 - Add `plugins/dev-team/tests/agy-adapter.test.sh`, wire it and `install-agy` into
   `.github/workflows/ci.yml`, `CLAUDE.md`, and `DEV_PROCESS.md`, and bump `plugin.json` to `0.19.0`.
 

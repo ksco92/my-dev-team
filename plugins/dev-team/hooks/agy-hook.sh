@@ -22,21 +22,20 @@ target="${1:-}"
 shift || true
 
 emit_deny() {
-  local reason="$1"
-  if command -v jq >/dev/null 2>&1; then
-    jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
-  else
-    printf '{"decision":"deny","reason":"agy-hook: jq is required to evaluate security hooks."}\n'
-  fi
+  printf '%s' "$1" | jq -Rs '{decision: "deny", reason: .}' \
+    || printf '{"decision":"deny","reason":"agy-hook: blocked by security hook."}\n'
   exit 0
 }
 
 run_pre_tool_use() {
   local script="$ROOT/hooks/${1}.sh"
-  command -v jq >/dev/null 2>&1 || emit_deny "agy-hook: jq is required to run ${1}."
+  if ! command -v jq >/dev/null 2>&1; then
+    printf '{"decision":"deny","reason":"agy-hook: jq is required to run %s."}\n' "$1"
+    exit 0
+  fi
   [[ -x "$script" ]] || emit_deny "agy-hook: hook script not executable: $script"
 
-  local input cmd cwd translated rc=0 out err reason
+  local input translated rc=0 out err reason
   input="$(cat)"
   if [[ -z "$input" ]] || ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input"; then
     emit_deny "agy-hook: invalid or empty JSON payload on PreToolUse."
@@ -44,24 +43,21 @@ run_pre_tool_use() {
   if ! jq -e '(.toolCall.args.CommandLine == null) or ((.toolCall.args.CommandLine | type) == "string")' >/dev/null 2>&1 <<<"$input"; then
     emit_deny "agy-hook: unexpected non-string CommandLine on PreToolUse."
   fi
-
-  cmd="$(jq -r '.toolCall.args.CommandLine // empty' <<<"$input")"
-  cwd="$(jq -r '.cwd // (.workspacePaths[0] // empty)' <<<"$input" 2>/dev/null || true)"
-  if [[ -z "$cmd" ]]; then
+  if jq -e '(.toolCall.args.CommandLine // "") == ""' >/dev/null 2>&1 <<<"$input"; then
     printf '{"decision":"allow"}\n'
     exit 0
   fi
 
-  translated="$(jq -n --arg c "$cmd" --arg d "$cwd" '{tool_input: {command: $c}, cwd: $d}')"
-  TMP_OUT="$(mktemp)"
-  TMP_ERR="$(mktemp)"
+  if ! translated="$(jq -c '{tool_input: {command: .toolCall.args.CommandLine}, cwd: ((.cwd | strings) // (.workspacePaths | arrays | .[0] | strings) // "")}' <<<"$input" 2>/dev/null)" || [[ -z "$translated" ]]; then
+    emit_deny "agy-hook: failed to translate PreToolUse payload."
+  fi
+
+  TMP_OUT="$(mktemp)" || emit_deny "agy-hook: failed to create temporary output file."
+  TMP_ERR="$(mktemp)" || emit_deny "agy-hook: failed to create temporary error file."
 
   "$script" <<<"$translated" >"$TMP_OUT" 2>"$TMP_ERR" || rc=$?
   out="$(cat "$TMP_OUT")"
   err="$(cat "$TMP_ERR")"
-  rm -f "$TMP_OUT" "$TMP_ERR"
-  TMP_OUT=""
-  TMP_ERR=""
 
   if (( rc == 0 )); then
     printf '{"decision":"allow"}\n'
@@ -83,10 +79,9 @@ run_session_start() {
     exit 0
   fi
 
-  local input cwd translated text
+  local input translated text
   input="$(cat)"
-  cwd="$(jq -r '.cwd // (.workspacePaths[0] // empty)' <<<"$input" 2>/dev/null || true)"
-  translated="$(jq -n --arg d "$cwd" '{cwd: $d}')"
+  translated="$(jq -c '{cwd: ((.cwd | strings) // (.workspacePaths | arrays | .[0] | strings) // "")}' <<<"$input" 2>/dev/null || printf '{}')"
   text="$("$script" "$block" <<<"$translated" 2>/dev/null || true)"
 
   if [[ "$block" == "policy" && -n "$text" ]]; then
@@ -100,7 +95,7 @@ $text"
     exit 0
   fi
 
-  jq -n --arg m "$text" '{injectSteps: [{systemMessage: {systemMessage: $m}}]}'
+  printf '%s' "$text" | jq -Rs '{injectSteps: [{systemMessage: {systemMessage: .}}]}'
   exit 0
 }
 
