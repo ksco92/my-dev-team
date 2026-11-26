@@ -284,7 +284,7 @@ def _check_markdown(repo: Path, rel: str, lines: list[str], findings: list[Findi
         if RUSTDOC_LINK_RE.search(line):
             findings.append(Finding(rel, idx, "CH004", "MEDIUM", "rustdoc intra-doc link syntax in Markdown; write plain name"))
 
-        if is_readme and README_PLACEHOLDER_RE.search(line):
+        if is_readme and README_PLACEHOLDER_RE.search(re.sub(r"`[^`]*`", "", line)):
             findings.append(Finding(rel, idx, "AI008", "CRITICAL", f"placeholder text in README: {stripped[:80]}"))
 
         if SLOP_VOCAB_RE.search(line) and is_readme:
@@ -334,7 +334,7 @@ def _check_source_file(rel: str, text: str, lines: list[str], findings: list[Fin
             findings.append(Finding(rel, idx, "AI003", "HIGH", f"chat-leak or narration comment: {stripped[:80]}"))
         if PERSONAL_PATH_RE.search(line) and not is_test:
             findings.append(Finding(rel, idx, "AI007", "HIGH", f"personal machine path in source: {stripped[:80]}"))
-        if ABSENCE_RE.search(line):
+        if not is_test and (is_comment or ":raises" in stripped.lower()) and ABSENCE_RE.search(line):
             findings.append(Finding(rel, idx, "CH002", "HIGH", f"documented absence: {stripped[:80]}"))
         if is_comment and PERSUASION_RE.search(line):
             findings.append(Finding(rel, idx, "CH003", "INFO", f"persuasion adverb in comment: {stripped[:80]}"))

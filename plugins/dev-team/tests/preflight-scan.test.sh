@@ -122,6 +122,29 @@ git_clean "$repo" add src/noisy.py
 ratio_out="$("$SCAN" --scope=diff --base main --repo "$repo" 2>&1)"
 check "detects CH001 comment ratio > 40%" "$(grep -c '\[CH001\]' <<<"$ratio_out")" "1"
 
+# Regression: backticked TODO in README and absence string in test fixtures do not false-positive
+fp_repo="$TMP/fp"
+mkdir -p "$fp_repo/tests"
+git_clean "$fp_repo" init -q -b main
+cat >"$fp_repo/README.md" <<'MD'
+# sample
+
+Rejects source `TODO`/`FIXME`/`XXX`/`HACK` crumbs.
+MD
+cat >"$fp_repo/tests/test_sample.py" <<'PY'
+"""Fixture test."""
+
+
+def test_absence_fixture() -> None:
+    sample = "# Panics: never\n"
+    assert sample
+PY
+git_clean "$fp_repo" add -A
+git_clean "$fp_repo" commit -q -m "init"
+fp_out="$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1)"
+check "backticked TODO in README does not trip AI008" "$(grep -c '\[AI008\]' <<<"$fp_out")" "0"
+check "absence string in test file does not trip CH002" "$(grep -c '\[CH002\]' <<<"$fp_out")" "0"
+
 # Invalid repo exits 2
 "$SCAN" --repo "$TMP/missing" >/dev/null 2>&1
 check "missing repo exits 2" "$?" "2"
