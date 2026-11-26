@@ -6,11 +6,11 @@ resuming subagents, and heavy jobs. Read with `briefing.md` before the first bri
 - Never pipe a backgrounded command through `tail`/`head` — the pipe reports the filter's exit, not
   the command's. Redirect to a file, echo `EXIT=$?`, and read that line first; success lines also
   appear during rollbacks.
-- A subagent that backgrounds a long run with a self-notifying waiter returns to you and does not
-  auto-resume — its work sits uncommitted. Recognize it from its own "kicked off in the background"
-  ping; verify from your side (`ps`, `git status`), then `SendMessage` the same agent with
-  fast-ops-only instructions. Plan for gates that outlast a foreground call: the implementer hands
-  the run back, you watch the process, you resume it.
+- A subagent that backgrounds a long run with a self-notifying waiter returns to you without
+  auto-resuming, leaving work uncommitted: recognize its "kicked off in the background" ping, verify
+  via `ps` and `git status`, then `SendMessage` it with fast-ops-only instructions. Plan for gates
+  that outlast a foreground call so the implementer hands the run back, you watch the process, and
+  you resume it.
 - When a delegated fan-out is blocked by a recoverable environment issue, fix it and
   `SendMessage`-resume each finished agent rather than relaunching — they keep their context.
 - Serialize heavy local jobs (Spark, simulators, multi-hour training) on the shared box; a

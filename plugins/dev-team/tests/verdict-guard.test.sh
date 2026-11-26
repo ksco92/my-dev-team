@@ -41,21 +41,24 @@ check "41-hex HEAD" "$(code pr-reviewer false "$(block PASS "${SHA}a")")" "2"
 check "non-hex HEAD" "$(code pr-reviewer false "$(block PASS 0123456g)")" "2"
 
 check "cleanup sentence only" "$(run pr-reviewer false "The worktree is removed.")" \
-  "2 $LACKS GATE: <name>, VERDICT: PASS|FAIL|BLOCKED, HEAD: <sha>, FINDINGS: <count>; send the full verdict block as your final message."
-check "missing HEAD names only HEAD" "$(run code-health-reviewer false $'GATE: g\nVERDICT: FAIL\nFINDINGS: 2')" \
+  "2 $LACKS GATE: pr-reviewer, VERDICT: PASS|FAIL|BLOCKED, HEAD: <sha>, FINDINGS: <count>; send the full verdict block as your final message."
+check "missing HEAD names only HEAD" "$(run code-health-reviewer false $'GATE: code-health\nVERDICT: FAIL\nFINDINGS: 2')" \
   "2 $LACKS HEAD: <sha>; send the full verdict block as your final message."
 check "non-numeric FINDINGS names FINDINGS" "$(run pr-reviewer false "$(block PASS "$SHA" many)")" \
   "2 $LACKS FINDINGS: <count>; send the full verdict block as your final message."
+check "wrong GATE name rejected" "$(code code-health-reviewer false $'GATE: wrong-gate\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
+check "PASS with nonzero findings rejected" "$(code pr-reviewer false "$(block PASS "$SHA" 2)")" "2"
+check "FAIL with zero findings rejected" "$(code pr-reviewer false "$(block FAIL "$SHA" 0)")" "2"
 check "VERDICT: PASSING" "$(code pr-reviewer false "$(block PASSING)")" "2"
 check "VERDICT: PASSED" "$(code pr-reviewer false "$(block PASSED)")" "2"
 check "VERDICT: FAILED" "$(code pr-reviewer false "$(block FAILED)")" "2"
 check "VERDICT: WIP" "$(code pr-reviewer false "$(block WIP)")" "2"
 check "GATE without a name" "$(code pr-reviewer false $'GATE:\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
 check "GATE name with a space" "$(code pr-reviewer false $'GATE: pr reviewer\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
-check "markdown-wrapped GATE" "$(code pr-reviewer false $'**GATE: g**\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
-check "BLOCKED inline in prose" "$(code pr-reviewer false $'GATE: g\nsee VERDICT: BLOCKED')" "2"
-check "trailing space after a line" "$(code pr-reviewer false $'GATE: g \nVERDICT: PASS \nHEAD: 0123456 \nFINDINGS: 0 ')" "0"
-check "trailing CR after a line" "$(code pr-reviewer false $'GATE: g\r\nVERDICT: PASS\r\nHEAD: 0123456\r\nFINDINGS: 0\r')" "0"
+check "markdown-wrapped GATE" "$(code pr-reviewer false $'**GATE: pr-reviewer**\nVERDICT: PASS\nHEAD: 0123456\nFINDINGS: 0')" "2"
+check "BLOCKED inline in prose" "$(code pr-reviewer false $'GATE: pr-reviewer\nsee VERDICT: BLOCKED')" "2"
+check "trailing space after a line" "$(code pr-reviewer false $'GATE: pr-reviewer \nVERDICT: PASS \nHEAD: 0123456 \nFINDINGS: 0 ')" "0"
+check "trailing CR after a line" "$(code pr-reviewer false $'GATE: pr-reviewer\r\nVERDICT: PASS\r\nHEAD: 0123456\r\nFINDINGS: 0\r')" "0"
 check "text after a complete block" "$(code pr-reviewer false "$(block)"$'\nThe worktree is removed.')" "0"
 
 UNREP=$'\n## UNREPRODUCED (not counted in FINDINGS)\n- `a.py:3` — a None guard — no caller passes None'
@@ -63,7 +66,7 @@ check "PASS, zero findings, populated UNREPRODUCED" "$(run pr-reviewer false "$(
 check "UNREPRODUCED after a counted block leaves the result unchanged" \
   "$(run pr-reviewer false "$(block FAIL "$SHA" 2)"$'\n- `b.py:1` — off by one'"$UNREP")" "0 "
 
-check "BLOCKED needs only GATE and VERDICT" "$(code pr-reviewer false $'GATE: g\nVERDICT: BLOCKED\nReason: no CI')" "0"
+check "BLOCKED needs only GATE and VERDICT" "$(code pr-reviewer false $'GATE: pr-reviewer\nVERDICT: BLOCKED\nReason: no CI')" "0"
 check "BLOCKED without GATE" "$(code pr-reviewer false $'VERDICT: BLOCKED')" "2"
 
 check "implementer is not held" "$(code implementer false "The worktree is removed.")" "0"

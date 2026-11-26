@@ -1,0 +1,467 @@
+#!/usr/bin/env python3
+"""Deterministic pre-gate scanner for AI-tells, code-health and doc hygiene.
+
+Usage:
+  preflight-scan [--scope=diff|full] [--base <ref>] [--repo <dir>] [--json]
+
+Exits 0 with no findings, 1 with one or more findings, 2 on usage or git error.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import io
+import json
+import os
+import re
+import subprocess
+import sys
+import tokenize
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+SOURCE_EXTS = frozenset({".py", ".ts", ".tsx", ".js", ".jsx", ".rs", ".go", ".sh", ".java", ".kt", ".rb"})
+JS_TS_EXTS = frozenset({".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".vue", ".svelte"})
+CONFIG_EXTS = frozenset({".json", ".toml", ".yaml", ".yml", ".ini", ".cfg"})
+
+TASK_LEFTOVER_RE = re.compile(
+    r"(?:§\d+(?:\.\d+)*|"
+    r"(?:per|as\s+per)\s+the\s+brief\b|"
+    r"(?:per|as)\s+(?:the|this)\s+spec\b|"
+    r"\bTODO\s+from\s+(?:brief|spec|task)\b|"
+    r"\bin\s+(?:this|the|the\s+next)\s+PR\b|"
+    r"\bthis\s+PR\s+lands\b|"
+    r"\bdeferred\s+to\s+§|"
+    r"\bthe\s+issue\s+(?:asks?|says|requires?|specifie[sd]|calls?\s+for)\b|"
+    r"\bgenerated\s+by\s+(?:claude|gpt|chatgpt|gemini)\b|"
+    r"🤖\s+Generated\s+with\s+\[?Claude\s+Code)",
+    re.IGNORECASE,
+)
+CRUMB_RE = re.compile(
+    r"(?:(?:#|//|/\*)\s*(?:TODO|FIXME|XXX|HACK)(?:[:\s]|$)|"
+    r"(?:#|//)\s*(?:DEFERRED\b|future\s+PR\b|v2\s+lift\b))",
+    re.IGNORECASE,
+)
+CHAT_LEAK_RE = re.compile(
+    r"(?:#|//)\s*(?:Certainly[!,]|I'?ve\s+(?:done|added|implemented)\b|"
+    r"We'?ll\s+need\s+to\b|Let'?s\s+(?:also|now)\b|"
+    r"(?:Increment|Set|Return\s+the|Loop\s+through|Iterate\s+over|Initialize)\s+\w+)",
+)
+SLOP_VOCAB_RE = re.compile(
+    r"\b(?:delve|tapestry|landscape|testament|vibrant|pivotal|nuanced|seamless|"
+    r"robust\s+and|comprehensive\s+and)\b",
+    re.IGNORECASE,
+)
+PERSONAL_PATH_RE = re.compile(r"(?:/(?:Users|home)/[a-z][a-z0-9._-]+/|C:\\Users\\[A-Za-z]|/opt/homebrew/|/usr/local/Cellar/)")
+PLACEHOLDER_META_RE = re.compile(
+    r'(?:author|maintainer|authors)\s*[=:].*(?:"Your Name"|<your name>|you@example\.com|yourname@|John Doe|jdoe@example)',
+    re.IGNORECASE,
+)
+README_PLACEHOLDER_RE = re.compile(r"\b(?:TODO|WIP|Coming soon|Lorem ipsum|XXX)\b|<placeholder>", re.IGNORECASE)
+ABSENCE_RE = re.compile(
+    r"(?:#\s*Panics:\s*never\b|^\s*:raises(?:\s+\w+)?:\s*(?:none|nothing|never)\.?$|"
+    r"#\s*Errors\b.*\b(?:never\s+fails|does\s+not\s+fail)\b)",
+    re.IGNORECASE,
+)
+PERSUASION_RE = re.compile(
+    r"\b(?:deliberately|critically|surprisingly|dramatically|drop-in|exact\s+same|overwhelming)\b",
+    re.IGNORECASE,
+)
+RUSTDOC_LINK_RE = re.compile(r"\[`crate::[^`]+`\]")
+PONYTAIL_RE = re.compile(r"\bponytail:(.*)$", re.IGNORECASE)
+SPHINX_FIELD_RE = re.compile(r"^\s*:(?:param|type|return|returns|rtype|raises|raise|ivar|cvar|var)\b")
+TRANSCRIPT_PATTERNS = (
+    re.compile(r"^\.specstory/history/.*\.md$"),
+    re.compile(r"^\.aider\.(?:input\.history|chat\.history\.md)$"),
+    re.compile(r"^\.claude/projects/.*\.jsonl$"),
+    re.compile(r"^\.cursor/chats/"),
+    re.compile(r"^\.windsurf/history/"),
+    re.compile(r"^\.continue/sessions/"),
+)
+ARTIFACT_PATTERNS = (
+    re.compile(r"(?:^|/)htmlcov/"),
+    re.compile(r"(?:^|/)\.coverage$"),
+    re.compile(r"(?:^|/)coverage\.xml$"),
+    re.compile(r"(?:^|/)[^/]+\.egg-info/"),
+    re.compile(r"(?:^|/)node_modules/"),
+    re.compile(r"(?:^|/)\.next/"),
+    re.compile(r"(?:^|/)__pycache__/"),
+    re.compile(r"(?:^|/)\.pytest_cache/"),
+    re.compile(r"(?:^|/)\.mypy_cache/"),
+)
+MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+MD_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)\s]+)\)")
+LICENSE_BODIES = (
+    "MIT License",
+    "Apache License",
+    "GNU GENERAL PUBLIC LICENSE",
+    "BSD 3-Clause",
+    "BSD 2-Clause",
+    "ISC License",
+    "Mozilla Public License",
+    "Boost Software License",
+    "The Unlicense",
+)
+MAX_COMMENT_RATIO = 0.40
+MIN_RATIO_LINES = 20
+
+
+@dataclass(frozen=True)
+class Finding:
+    """One deterministic scanner finding."""
+
+    path: str
+    line: int
+    rule: str
+    severity: str
+    message: str
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run git in ``repo`` and capture text output."""
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
+
+
+def _is_test_path(rel: str) -> bool:
+    """Return whether ``rel`` is a test or fixture path."""
+    parts = Path(rel).parts
+    name = Path(rel).name
+    if any(p in {"tests", "test", "__tests__", "fixtures", "evals"} for p in parts):
+        return True
+    return name.startswith("test_") or ".test." in name or ".spec." in name or name.endswith("_test.py")
+
+
+def _is_doc_path(rel: str) -> bool:
+    """Return whether ``rel`` is a documentation or plan path."""
+    parts = Path(rel).parts
+    return rel.endswith(".md") or any(p in {"docs", "doc"} for p in parts)
+
+
+def _list_files(repo: Path, scope: str, base: str | None) -> tuple[list[str], list[str]]:
+    """Return ``(all_tracked, in_scope)`` relative POSIX paths."""
+    tracked_proc = _git(repo, "ls-files")
+    if tracked_proc.returncode != 0:
+        raise RuntimeError(f"git ls-files failed: {tracked_proc.stderr.strip()}")
+    all_tracked = [p for p in tracked_proc.stdout.splitlines() if p]
+
+    if scope == "full":
+        return all_tracked, all_tracked
+
+    diff_ref = base
+    if not diff_ref:
+        for candidate in ("origin/main", "origin/master", "main", "master"):
+            if _git(repo, "rev-parse", "--verify", candidate).returncode == 0:
+                diff_ref = candidate
+                break
+
+    if diff_ref:
+        diff_proc = _git(repo, "diff", "--name-only", f"{diff_ref}...HEAD")
+        if diff_proc.returncode != 0:
+            raise RuntimeError(f"git diff against {diff_ref!r} failed: {diff_proc.stderr.strip()}")
+        staged_proc = _git(repo, "diff", "--name-only")
+        cached_proc = _git(repo, "diff", "--name-only", "--cached")
+        changed = set(diff_proc.stdout.splitlines()) | set(staged_proc.stdout.splitlines()) | set(cached_proc.stdout.splitlines())
+        in_scope = sorted(p for p in changed if p and (repo / p).is_file())
+        return all_tracked, in_scope
+
+    return all_tracked, all_tracked
+
+
+def _check_python_ast_and_ratio(rel: str, text: str, findings: list[Finding]) -> None:
+    """Check Python comment/docstring prose ratio (CH001) and duplicate test defs (CH006)."""
+    lines = text.splitlines(keepends=True)
+    try:
+        tree = ast.parse(text)
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (SyntaxError, tokenize.TokenError):
+        return
+
+    if _is_test_path(rel):
+        seen: dict[str, int] = {}
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_"):
+                if node.name in seen:
+                    findings.append(
+                        Finding(
+                            rel,
+                            node.lineno,
+                            "CH006",
+                            "HIGH",
+                            f"duplicate test definition '{node.name}' (first defined at line {seen[node.name]})",
+                        )
+                    )
+                else:
+                    seen[node.name] = node.lineno
+
+    non_blank = {i for i, line in enumerate(lines, 1) if line.strip()}
+    if len(non_blank) < MIN_RATIO_LINES:
+        return
+
+    doc_prose: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not node.body:
+            continue
+        first = node.body[0]
+        if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+            end_ln = first.value.end_lineno or first.value.lineno
+            in_doctest = False
+            for ln in range(first.value.lineno, min(end_ln, len(lines)) + 1):
+                raw = lines[ln - 1]
+                s = raw.strip()
+                if not s:
+                    in_doctest = False
+                    continue
+                if s.startswith(">>>"):
+                    in_doctest = True
+                    continue
+                if in_doctest or SPHINX_FIELD_RE.match(raw):
+                    continue
+                doc_prose.add(ln)
+
+    comment_lines: set[int] = set()
+    code_lines: set[int] = set()
+    skip_types = {tokenize.NL, tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT, tokenize.ENDMARKER, tokenize.ENCODING}
+    for tok in tokens:
+        if tok.type in skip_types:
+            continue
+        if tok.type == tokenize.COMMENT:
+            comment_lines.add(tok.start[0])
+        else:
+            for ln in range(tok.start[0], tok.end[0] + 1):
+                code_lines.add(ln)
+
+    prose = ((comment_lines - code_lines) | doc_prose) & non_blank
+    ratio = len(prose) / len(non_blank)
+    if ratio > MAX_COMMENT_RATIO:
+        findings.append(
+            Finding(rel, 1, "CH001", "HIGH", f"comment/docstring prose is {int(round(ratio * 100))}% of non-blank lines (max 40%)")
+        )
+
+
+def _check_c_style_comment_ratio(rel: str, lines: list[str], findings: list[Finding]) -> None:
+    """Check comment ratio on JS/TS/Rust/Go source files."""
+    non_blank = [line.strip() for line in lines if line.strip()]
+    if len(non_blank) < MIN_RATIO_LINES:
+        return
+    in_block = False
+    comment_count = 0
+    for s in non_blank:
+        if in_block:
+            comment_count += 1
+            if "*/" in s:
+                in_block = False
+            continue
+        if s.startswith("//"):
+            comment_count += 1
+        elif s.startswith("/*"):
+            comment_count += 1
+            if "*/" not in s:
+                in_block = True
+    ratio = comment_count / len(non_blank)
+    if ratio > MAX_COMMENT_RATIO:
+        findings.append(
+            Finding(rel, 1, "CH001", "HIGH", f"comment lines are {int(round(ratio * 100))}% of non-blank lines (max 40%)")
+        )
+
+
+def _check_markdown(repo: Path, rel: str, lines: list[str], findings: list[Finding]) -> None:
+    """Check Markdown files for duplicate headings, broken relative links, rustdoc syntax and README placeholders."""
+    in_fence = False
+    seen_headings: dict[str, int] = {}
+    is_readme = Path(rel).name.lower() == "readme.md"
+
+    for idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+
+        if RUSTDOC_LINK_RE.search(line):
+            findings.append(Finding(rel, idx, "CH004", "MEDIUM", "rustdoc intra-doc link syntax in Markdown; write plain name"))
+
+        if is_readme and README_PLACEHOLDER_RE.search(line):
+            findings.append(Finding(rel, idx, "AI008", "CRITICAL", f"placeholder text in README: {stripped[:80]}"))
+
+        if SLOP_VOCAB_RE.search(line) and is_readme:
+            findings.append(Finding(rel, idx, "AI004", "INFO", f"AI-slop prose vocabulary in README: {stripped[:80]}"))
+
+        m = MD_HEADING_RE.match(line)
+        if m:
+            heading = re.sub(r"\s+", " ", m.group(2).strip()).lower()
+            if heading in seen_headings:
+                findings.append(
+                    Finding(rel, idx, "DOC001", "MEDIUM", f"duplicate heading '{m.group(2).strip()}' (first at line {seen_headings[heading]})")
+                )
+            else:
+                seen_headings[heading] = idx
+
+        for link_match in MD_LINK_RE.finditer(line):
+            target = link_match.group(1)
+            if target.startswith(("#", "http://", "https://", "mailto:", "file://", "customization://")):
+                continue
+            target_path = target.split("#", 1)[0].split("?", 1)[0]
+            if not target_path or target_path.startswith("<"):
+                continue
+            resolved = (repo / rel).parent / target_path
+            if not resolved.exists():
+                findings.append(Finding(rel, idx, "DOC002", "HIGH", f"broken relative link '{target}'"))
+
+
+def _check_source_file(rel: str, text: str, lines: list[str], findings: list[Finding]) -> None:
+    """Run line-level deterministic checks on a source file."""
+    is_test = _is_test_path(rel)
+    ext = Path(rel).suffix.lower()
+
+    if ext == ".py":
+        _check_python_ast_and_ratio(rel, text, findings)
+    elif ext in {".ts", ".tsx", ".js", ".jsx", ".rs", ".go"} and not is_test:
+        _check_c_style_comment_ratio(rel, lines, findings)
+
+    for idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+        is_comment = stripped.startswith(("#", "//", "/*", "*"))
+
+        if not is_test and TASK_LEFTOVER_RE.search(line):
+            findings.append(Finding(rel, idx, "AI001", "CRITICAL", f"task/PR-referential leftover: {stripped[:80]}"))
+        if not is_test and CRUMB_RE.search(line):
+            findings.append(Finding(rel, idx, "AI002", "CRITICAL", f"TODO/FIXME/HACK or deferral crumb: {stripped[:80]}"))
+        if CHAT_LEAK_RE.search(line):
+            findings.append(Finding(rel, idx, "AI003", "HIGH", f"chat-leak or narration comment: {stripped[:80]}"))
+        if PERSONAL_PATH_RE.search(line) and not is_test:
+            findings.append(Finding(rel, idx, "AI007", "HIGH", f"personal machine path in source: {stripped[:80]}"))
+        if ABSENCE_RE.search(line):
+            findings.append(Finding(rel, idx, "CH002", "HIGH", f"documented absence: {stripped[:80]}"))
+        if is_comment and PERSUASION_RE.search(line):
+            findings.append(Finding(rel, idx, "CH003", "INFO", f"persuasion adverb in comment: {stripped[:80]}"))
+        if ext == ".py" and RUSTDOC_LINK_RE.search(line):
+            findings.append(Finding(rel, idx, "CH004", "MEDIUM", "rustdoc intra-doc link syntax in Python source"))
+
+        pm = PONYTAIL_RE.search(line)
+        if pm and "," not in pm.group(1):
+            findings.append(Finding(rel, idx, "CH005", "INFO", "ponytail marker missing ', <upgrade trigger>'"))
+
+
+def _check_repo_level(repo: Path, all_tracked: list[str], in_scope: list[str], scope: str, findings: list[Finding]) -> None:
+    """Check repo-level signals: transcripts, build artifacts, absent-language configs, LICENSE, CI badge."""
+    tracked_set = set(all_tracked)
+    scope_set = set(in_scope)
+
+    for rel in in_scope:
+        for pat in TRANSCRIPT_PATTERNS:
+            if pat.search(rel):
+                findings.append(Finding(rel, 1, "AI005", "CRITICAL", "committed coding-agent transcript"))
+                break
+        for pat in ARTIFACT_PATTERNS:
+            if pat.search(rel):
+                findings.append(Finding(rel, 1, "AI006", "HIGH", "committed build or cache artifact"))
+                break
+
+    if scope == "full":
+        has_js = any(Path(p).suffix.lower() in JS_TS_EXTS for p in all_tracked)
+        has_py = any(p.endswith(".py") for p in all_tracked)
+        if not has_js:
+            for p in all_tracked:
+                name = Path(p).name
+                if name.startswith((".eslintrc", "eslint.config.", ".prettierrc")):
+                    findings.append(Finding(p, 1, "AI009", "HIGH", "JS/TS tool config with no JS/TS files in repo"))
+        if not has_py and "pyproject.toml" in tracked_set:
+            pyproj = (repo / "pyproject.toml").read_text(encoding="utf-8", errors="ignore")
+            if re.search(r"^\[tool\.(?:ruff|black|mypy|pytest)\b", pyproj, re.MULTILINE):
+                findings.append(Finding("pyproject.toml", 1, "AI009", "HIGH", "Python tool config with no .py files in repo"))
+
+    license_candidates = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING")
+    license_file = next((c for c in license_candidates if c in tracked_set), None)
+    if scope == "full" or (license_file and license_file in scope_set):
+        if license_file is None:
+            if scope == "full":
+                findings.append(Finding("LICENSE", 1, "DOC003", "BLOCKER", "missing LICENSE file at repository root"))
+        else:
+            ltext = (repo / license_file).read_text(encoding="utf-8", errors="ignore")
+            if not any(body in ltext for body in LICENSE_BODIES):
+                findings.append(Finding(license_file, 1, "DOC003", "CRITICAL", "LICENSE text does not match a standard SPDX body"))
+            if "<COPYRIGHT HOLDER>" in ltext:
+                findings.append(Finding(license_file, 1, "DOC003", "BLOCKER", "unfilled <COPYRIGHT HOLDER> placeholder in LICENSE"))
+
+    workflows = [p for p in all_tracked if p.startswith(".github/workflows/") and p.endswith((".yml", ".yaml"))]
+    if "README.md" in tracked_set and workflows and (scope == "full" or "README.md" in scope_set or any(w in scope_set for w in workflows)):
+        readme = (repo / "README.md").read_text(encoding="utf-8", errors="ignore")
+        has_main_wf = any("main" in (repo / w).read_text(encoding="utf-8", errors="ignore") for w in workflows)
+        if has_main_wf and not re.search(r"actions/workflows/.*badge\.svg|img\.shields\.io/github/actions/workflow", readme):
+            findings.append(Finding("README.md", 1, "DOC004", "MEDIUM", "GitHub workflow runs on main but README.md has no CI status badge"))
+
+
+def scan(repo: Path, scope: str, base: str | None) -> list[Finding]:
+    """Scan ``repo`` and return sorted deterministic findings."""
+    all_tracked, in_scope = _list_files(repo, scope, base)
+    findings: list[Finding] = []
+    _check_repo_level(repo, all_tracked, in_scope, scope, findings)
+
+    for rel in in_scope:
+        full = repo / rel
+        if not full.is_file():
+            continue
+        try:
+            raw = full.read_bytes()
+        except OSError:
+            continue
+        if b"\x00" in raw[:8192]:
+            continue
+        text = raw.decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        ext = full.suffix.lower()
+
+        if ext == ".md":
+            _check_markdown(repo, rel, lines, findings)
+            continue
+
+        if ext in CONFIG_EXTS or full.name in {"pyproject.toml", "package.json", "Cargo.toml", "setup.cfg"}:
+            for idx, line in enumerate(lines, 1):
+                if PLACEHOLDER_META_RE.search(line):
+                    findings.append(Finding(rel, idx, "AI008", "CRITICAL", f"placeholder author metadata: {line.strip()[:80]}"))
+                if PERSONAL_PATH_RE.search(line):
+                    findings.append(Finding(rel, idx, "AI007", "HIGH", f"personal machine path in config: {line.strip()[:80]}"))
+            continue
+
+        if ext in SOURCE_EXTS and not _is_doc_path(rel):
+            _check_source_file(rel, text, lines, findings)
+
+    findings.sort(key=lambda f: (f.path, f.line, f.rule, f.message))
+    return findings
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(prog="preflight-scan", description="Deterministic pre-gate scanner.")
+    parser.add_argument("--scope", choices=("diff", "full"), default="diff", help="Scan diff against base or full tracked tree.")
+    parser.add_argument("--base", default=None, help="Base git ref for --scope=diff (default: origin/main or main).")
+    parser.add_argument("--repo", default=".", help="Repository path (default: current directory).")
+    parser.add_argument("--json", action="store_true", dest="as_json", help="Emit findings as a JSON array.")
+    args = parser.parse_args(argv)
+
+    repo = Path(args.repo).resolve()
+    if not repo.is_dir():
+        print(f"preflight-scan: not a directory: {repo}", file=sys.stderr)
+        return 2
+
+    try:
+        findings = scan(repo, args.scope, args.base)
+    except RuntimeError as exc:
+        print(f"preflight-scan: {exc}", file=sys.stderr)
+        return 2
+
+    if args.as_json:
+        print(json.dumps([asdict(f) for f in findings], indent=2))
+    else:
+        for f in findings:
+            print(f"{f.path}:{f.line}: [{f.rule}] ({f.severity}) {f.message}")
+
+    return 1 if findings else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

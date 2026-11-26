@@ -83,3 +83,8 @@ template-test lessons; its self-mutation rule governs this file, with the same ~
   URL-encodes it.
 - Glue `GetJobRun` returns in `Arguments` only what the caller of the run set; read a job default
   from `GetJob` `DefaultArguments` or from the driver's launch line, never from the run record.
+- When a value is interpolated inside quotes of a target grammar (such as DQDL `QUOTED_STRING`,
+  `ESC: '\\"' | '\\\\'`), check the grammar's escape rules as well as its quote character: rejecting
+  `"` alone lets a trailing `\` swallow the closing quote.
+- When building an AWS service hostname from a region id, check the partitions it admits (`cn-*`
+  regions use `.com.cn`) and compare against sibling URLs in the same flow.

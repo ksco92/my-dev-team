@@ -4,9 +4,6 @@ Binding rules for what a gate probes in a PR's code and claims: mutants, hostile
 paths, and statements checked against the source. Read with `gates.md` and `mutation-probes.md`
 before the first gate of a run.
 
-- A PR body that calls a state unreachable ("nothing soft-deletes X today") is checked against the
-  admin surface as well as the application paths: a `ModelAdmin` that overrides add but not delete
-  permission still reaches the state, and the gate reproduces it before accepting the claim.
 - Reviewing a redactor or parser fix, re-run every earlier regression input with the parser's
   delimiters placed inside the secret and with the payload at every position the parser splits (a
   later field, a value, the query string); after a normalising step is added in front of a check
@@ -47,16 +44,9 @@ before the first gate of a run.
 - A name joined from two consumer names with a separator legal in both (`dq_${db}_${table}`) is
   probed with two pairs that split at different points (`a_b`+`c` and `a`+`b_c`), since uniqueness
   per pair is not uniqueness across the set.
-- When a value is interpolated inside quotes of a target grammar, read that grammar's escape rules,
-  not only its quote character; rejecting `"` alone lets a trailing `\` swallow the closing quote
-  (DQDL `QUOTED_STRING`, `ESC: '\\"' | '\\\\'`).
 - A lesson or PR body that classifies a CLI flag by its mechanism is checked by running the command
   with the flag alone and with its companions, never from the `--help` line; a default filter can
   cancel one flag's effect so the artifact comes only from the combination.
-- When a fix builds a hostname from a region or a similar id, compare the id pattern with the
-  partitions it admits (a `cn-*` region's hosts end in `.com.cn`) and check whether a sibling URL in
-  the same flow already hardcodes the suffix, which decides whether the gap is new or an existing
-  limit.
 - When a PR fixes one switch of a family of related ones (metrics flags, logging options), list the
   synthesized defaults and check every feature the title and the upgrade note name against each
   sibling a caller can still change.

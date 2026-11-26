@@ -177,7 +177,7 @@ if (( is_git_merge )); then
     else
       repo="$(git -C "$repo_dir" rev-parse --show-toplevel 2>/dev/null)"
       head="$(git -C "$repo_dir" rev-parse "$branch" 2>/dev/null)" || deny "merge-gate: unknown branch '$branch'."
-      ledger_out="$("$LEDGER" check "$repo" "$branch" "$head" 2>&1)" \
+      ledger_out="$("$LEDGER" check "$repo" "$branch" "$head" --repo-dir "$repo" 2>&1)" \
         || deny "merge-gate: review gates not proven for $branch at ${head:0:12}: $ledger_out. A local branch→main merge is a PR for gate purposes — run all gates and record them."
     fi
   fi
@@ -261,7 +261,7 @@ gate_pr() {
   local repo="$1" pr="$2" head ledger_out checks bad
   head="$(gh pr view "$pr" --repo "$repo" --json headRefOid --jq .headRefOid 2>/dev/null)" \
     || deny "merge-gate: gh pr view $pr failed for $repo."
-  ledger_out="$("$LEDGER" check "$repo" "$pr" "$head" 2>&1)" \
+  ledger_out="$("$LEDGER" check "$repo" "$pr" "$head" ${cwd:+--repo-dir "$cwd"} 2>&1)" \
     || deny "merge-gate: review gates not proven at head ${head:0:12}: $ledger_out. Run every gate on this head and record verdicts with gate-ledger before merging."
   # Owner-approved: a repo with no CI configured ("no checks reported") counts as an empty, green list.
   if ! checks="$(gh pr checks "$pr" --repo "$repo" --json name,bucket 2>&1)"; then

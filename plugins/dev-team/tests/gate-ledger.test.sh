@@ -89,5 +89,39 @@ padded="$TMP/gate-ledger"
 check "usage prints the stats, inserted and history lines of a longer header" \
   "$(bash "$padded" 2>&1 | grep -cE 'gate-ledger stats  |inserted-after-stats|history.jsonl')" "3"
 
+# Configurable gate roster via DEV_PROCESS.md frontmatter and GATE_LEDGER_GATES.
+cfg_repo="$TMP/cfg-repo"
+mkdir -p "$cfg_repo"
+cat >"$cfg_repo/DEV_PROCESS.md" <<'MD'
+---
+tracker: none
+host: none
+workspace: branch-in-place
+merge_method: merge
+gates: pr-reviewer, code-health, security-review
+---
+MD
+"$GL" record cfg/repo 7 pr-reviewer PASS 0 h7 sonnet >/dev/null
+"$GL" record cfg/repo 7 code-health PASS 0 h7 sonnet >/dev/null
+"$GL" record cfg/repo 7 security-review PASS 0 h7 opus >/dev/null
+check "custom gates in DEV_PROCESS.md passes with configured subset" \
+  "$("$GL" check cfg/repo 7 h7 --repo-dir "$cfg_repo" >/dev/null 2>&1; echo $?)" "0"
+check "default 5-gate check fails when oss-reviewer and readme-writer missing" \
+  "$("$GL" check cfg/repo 7 h7 --repo-dir "$TMP" >/dev/null 2>&1; echo $?)" "1"
+check "GATE_LEDGER_GATES overrides required gates" \
+  "$(GATE_LEDGER_GATES="pr-reviewer,code-health" "$GL" check cfg/repo 7 h7 >/dev/null 2>&1; echo $?)" "0"
+
+# Concurrent record calls do not clobber each other.
+(
+  "$GL" record conc/repo 1 pr-reviewer PASS 0 hc1 sonnet >/dev/null &
+  "$GL" record conc/repo 1 code-health PASS 0 hc1 sonnet >/dev/null &
+  "$GL" record conc/repo 1 oss-reviewer PASS 0 hc1 sonnet >/dev/null &
+  "$GL" record conc/repo 1 security-review PASS 0 hc1 opus >/dev/null &
+  "$GL" record conc/repo 1 readme-writer PASS 0 hc1 sonnet >/dev/null &
+  wait
+)
+check "concurrent records preserve all 5 gates" \
+  "$("$GL" check conc/repo 1 hc1 --repo-dir "$TMP" >/dev/null 2>&1; echo $?)" "0"
+
 echo "$pass passed, $fail failed"
 (( fail == 0 ))

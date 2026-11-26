@@ -62,7 +62,11 @@ All projects use TypeScript with `strict: true`. This means:
 
 ### Documentation (JSDoc)
 
-Every function and component must have a JSDoc docstring.
+Every exported function, component, service method, and public interface/prop carries a JSDoc
+comment with `@param` and `@returns` descriptions (and no `{type}` annotations, since TypeScript
+owns the types), enforced by `eslint-plugin-jsdoc` and sized to the budget in
+`${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`. Private file-local helpers take a brief one-line
+JSDoc when non-obvious.
 
 **Function documentation:**
 
@@ -325,13 +329,26 @@ export default ItemService;
 The Axios instance in `api.ts` handles CSRF token injection and `withCredentials: true`
 automatically. Services do not need to manage authentication headers.
 
+### Accessibility & UI PR Checklist
+
+- **Accessibility (non-negotiable):** accessible names on every interactive element; descriptions on
+  images/icons (or marked decorative); flexible text sizes; 44×44 pt / 48×48 dp tap targets;
+  reduced-motion respected; WCAG AA contrast; focus trapped in modals and returned on dismiss;
+  end-to-end keyboard navigation.
+- **State & composition:** keep state local by default, derive rather than store, keep server state
+  separate from client UI state, and split components past ~150 lines.
+- **UI PR body sections:** include `## Visual Changes` (affected screens/components) and
+  `## Accessibility` (screen reader, large text, keyboard navigation) when a PR changes UI.
+
 ---
 
 ## Unit Testing Standards
 
 ### Test Framework
 
-Use **Jest** (via react-scripts) and **React Testing Library** for all tests.
+Use **Jest** or **Vitest** with **React Testing Library** for all tests. 95%+ coverage applies to
+logic (hooks, formatters, validators, state transitions), with component tests covering empty,
+loading, error, and populated states plus accessible names.
 
 ### Test File Structure
 
@@ -417,25 +434,29 @@ The project uses ESLint 9 with `@typescript-eslint`. The configuration is in `es
 
 ### Enforced Rules Summary
 
-| Rule                                | Setting           | Description                  |
-| ----------------------------------- | ----------------- | ---------------------------- |
-| `indent`                            | 4 spaces          | Consistent indentation       |
-| `quotes`                            | single            | Single quotes everywhere     |
-| `comma-dangle`                      | always-multiline  | Trailing commas in multiline |
-| `array-bracket-newline`             | minItems: 1       | One element per line         |
-| `array-element-newline`             | minItems: 1       | One element per line         |
-| `object-curly-newline`              | minProperties: 1  | One property per line        |
-| `object-property-newline`           | no same line      | One property per line        |
-| `quote-props`                       | as-needed         | Quote only when required     |
-| `@typescript-eslint/no-unused-vars` | error, ignore `_` | No unused variables          |
+| Rule                                | Setting                                | Description                      |
+| ----------------------------------- | -------------------------------------- | -------------------------------- |
+| `indent`                            | 4 spaces                               | Consistent indentation           |
+| `quotes`                            | single (`avoidEscape: true`)           | Single quotes everywhere         |
+| `comma-dangle`                      | always-multiline                       | Trailing commas in multiline     |
+| `array-bracket-newline`             | minItems: 1                            | One element per line             |
+| `array-element-newline`             | minItems: 1                            | One element per line             |
+| `object-curly-newline`              | minProperties: 1                       | One property per line            |
+| `object-property-newline`           | no same line                           | One property per line            |
+| `quote-props`                       | as-needed                              | Quote only when required         |
+| `@typescript-eslint/no-unused-vars` | error, ignore `_`                      | No unused variables              |
+| `max-depth`                         | max: 4                                 | Cap control-flow nesting depth   |
+| `no-warning-comments`               | `todo`, `fixme`, `xxx`, `hack` (src)   | No crumb comments in source      |
+| `jsdoc/*` (`eslint-plugin-jsdoc`)   | public functions/methods, no `{types}` | Enforce `@param`/`@returns` tags |
 
 ### Running the Linter
 
 ```bash
-npm run lint
+npm run lint      # check-only (CI and pre-push)
+npm run lint:fix  # apply autofixes locally
 ```
 
-This runs ESLint with `--fix` on `src/` and `eslint.config.mjs` itself.
+`npm run lint` must never pass `--fix` so CI and check runs stay non-mutating.
 
 ---
 
@@ -444,8 +465,9 @@ This runs ESLint with `--fix` on `src/` and `eslint.config.mjs` itself.
 ### Key Principles
 
 1. **Type everything**: Strict TypeScript, no implicit `any`
-2. **Document everything**: JSDoc on all functions, interfaces, and components
-3. **Test everything**: Jest + React Testing Library, mirror source structure
+2. **Document the public surface**: JSDoc (`@param`/`@returns`, no `{types}`) on exported functions,
+   interfaces, and components (enforced by `eslint-plugin-jsdoc`)
+3. **Test everything**: Jest/Vitest + React Testing Library, mirror source structure
 4. **Format consistently**: 4 spaces, single quotes, trailing commas, multiline everything
 5. **Follow the linter**: Do not fight ESLint's rules
 6. **One thing per file**: One component, service, or utility per file
@@ -455,9 +477,9 @@ This runs ESLint with `--fix` on `src/` and `eslint.config.mjs` itself.
 
 These standards are enforced through:
 
-- **ESLint 9**: Style checking with `@typescript-eslint`
+- **ESLint 9**: Style and JSDoc checking with `@typescript-eslint` and `eslint-plugin-jsdoc`
 - **TypeScript**: Strict mode type checking
-- **Jest**: Testing with coverage reporting
+- **Jest / Vitest**: Testing with coverage reporting
 
 ## Self-mutation rule
 
@@ -509,3 +531,6 @@ the plugin repository (`ksco92/my-dev-team`).
   click on the current page's link keeps the pathname.
 - Under jsdom, define `window.matchMedia` per test with a configurable `Object.defineProperty` and
   delete it in `afterEach`; `vi.spyOn` throws because it is absent.
+- When a migration deletes a toolchain, audit what it configured implicitly (such as a Jest
+  `resetMocks` default inside `react-scripts` or a `browserslist` transpile floor) by diffing the
+  old tool's defaults against the new config before claiming parity.

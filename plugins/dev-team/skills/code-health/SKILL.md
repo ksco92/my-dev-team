@@ -36,11 +36,15 @@ You do **not**:
 
 ## Context Loading (MANDATORY)
 
-1. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`** for each stack the review touches —
+1. Run `${CLAUDE_PLUGIN_ROOT}/bin/preflight-scan --scope=<diff|full> --repo <probe>` first for
+   mechanical code-economy checks (`CH001` comment ratio > 40%, `CH002` documented absences, `CH003`
+   persuasion adverbs, `CH004` rustdoc links outside rustdoc, `CH005` triggerless `ponytail:`
+   markers, `CH006` duplicate `def test_`).
+2. **`${CLAUDE_PLUGIN_ROOT}/context/<stack>-coding-guide.md`** for each stack the review touches —
    its numbered sections and `## Learned patterns` are binding law; every rule is a review
    criterion.
-2. **`<repo>/CLAUDE.md`** — project conventions override this skill's defaults.
-3. For diff mode: the PR body and linked issue — an "unrequested abstraction" finding requires
+3. **`<repo>/CLAUDE.md`** — project conventions override this skill's defaults.
+4. For diff mode: the PR body and linked issue — an "unrequested abstraction" finding requires
    knowing what was requested.
 
 ## Part A — The Decision Ladder (economy questions)
@@ -350,14 +354,10 @@ The reviewed repo is read-only.
   trivial input twice (two empty-list cases among "15 seeded"). Hash every new golden case's inputs
   against its siblings before trusting a case count, and read the generator's size draw for a zero
   lower bound.
-- When a fuzz or property suite already has one shared batch runner, check a new batch against it
-  first: the generator is usually new logic, but the loop-seeds-collect-mismatches scaffolding
-  around it is what a fix round copies instead of passing a callable to the existing runner. A fix
-  that adds a parameter to the runner is verified by grepping the parameter's name for a call site,
-  not for its definition: a knob with zero callers is the same duplication, plus dead code. A batch
-  that needs a different comparison function but the runner's other structure (both modes, the same
-  seed loop) is still a reuse case: extend the runner with a comparison hook mirroring its generator
-  hook.
+- When a fuzz or property suite already has a shared batch runner, pass a callable or comparison
+  hook to it rather than copying the seed-and-mismatch loop. Verify any new parameter added to the
+  runner by grepping for a call site, not its definition, because a knob with zero callers is dead
+  code.
 - When a PR adds a table to one doc and a pointer to it from another, grep the pointing file for the
   referenced heading and require the pointer to name the file: a same-document word ("below",
   "above") is false the moment the table lands in a different file than the sentence naming it. A

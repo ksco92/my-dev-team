@@ -38,10 +38,10 @@ fix brief (5.2).
   reviewer re-run the command as written.
 - When the permission classifier denies a subagent the same benign edit three times, hand the step
   to a fresh implementer in the same workspace; never let the blocked agent route around the denial.
-- Fix-loop validation scales to the delta: each round re-runs the fast suite plus mutants on touched
-  files; the full mutation run, the largest parity case, and memory measurements run once on the
-  merging head. Never hold a push for pending verdicts; reviewers verify the final head once. No
-  pre-push self-check list for implementers (owner decision).
+- Fix-loop validation scales to the delta (fast suite plus mutants on touched files each round; full
+  mutation run, largest parity case, and memory measurements once on the merging head), and never
+  hold a push for pending verdicts because reviewers verify the final head once. No pre-push
+  self-check list for implementers (owner decision).
 - When briefing a recurring mechanical chore (version bump, release prep, changelog roll), derive
   the file checklist from the previous instance's actual commit (`git show <sha> --stat`), never
   from the documented convention alone; the precedent commit shows every real touch-point. A brief

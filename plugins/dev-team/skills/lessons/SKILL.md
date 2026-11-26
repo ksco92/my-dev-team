@@ -82,7 +82,7 @@ one decision, the first in this order that holds:
 <!-- prettier-ignore -->
 | Decision | Holds when | Evidence in the row |
 | --- | --- | --- |
-| drop | one of the five grounds below holds | the ground, in its words, and its evidence |
+| drop | one of the six grounds below holds | the ground, in its words, and its evidence |
 | fold | a section of a guide or of `context/policy.md`, a phase of a skill, or a check of an agent file already treats the rule's subject; a stack-specific rule folds into that stack's guide, a change to the procedure into the `tpm` skill's phase text; the passage gains the rule and loses nothing it stated | the passage (file and heading) quoted before and after, and for a fold into another file the evidence a move needs |
 | move | the rule's trigger fits another list better than its own | the destination, and for each agent that applied the rule the loader line that shows it reads the destination at the same moment |
 | merge | another bullet shares the rule's trigger | the merged bullet in full |
@@ -105,6 +105,11 @@ none:
    repository's own rules through that repository's process, never as a plugin bullet, and its row
    becomes this drop once that change has merged.
 5. A candidate has none of the evidence `context/policy.md`'s "Where lessons go" names.
+6. A rule has been automated into a deterministic linter or scanner (`max-lint`, ESLint,
+   `preflight-scan`) that runs in CI, or is a single-incident rule that has not recurred across
+   repositories and adds context weight without active value: cite the automated rule code (or the
+   owner's retirement approval for a non-automated rule) and drop it so the harness does not act as
+   a one-way ratchet.
 
 An existing bullet's evidence comes from where its rule was first recorded: find the change that
 landed it (`git log -S '<phrase>'`, read with the process file's Read change operation) and follow
@@ -134,6 +139,13 @@ session asks the owner about it; it changes only on the owner's answer.
 Count again with step 1's command. A list over its budget after every fold, move, merge, and drop
 its evidence supports gets a proposed split by trigger: the bullets grouped by trigger phrase, each
 group's file or section, and the loader line that must name it. The owner chooses the split.
+
+Also measure the **total-phase context budget**: sum the byte size of every file loaded
+unconditionally at the same moment (Phase 4: `briefing.md` + `fix-briefs.md` + `operations.md`;
+Phase 5: `gates.md` + `findings.md` + `review-probes.md` + `mutation-probes.md`). Splitting one list
+into sibling files that load together does not reduce context load; keep unconditional load per
+phase under ~18 KB by gating topic files on triggers, folding overlapping bullets, or moving checks
+into deterministic linters and `preflight-scan`.
 
 ## 6. Report and land
 

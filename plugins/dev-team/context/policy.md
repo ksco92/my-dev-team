@@ -59,10 +59,10 @@ implements it (jr / mid / sr):
   model in its line, so a model release changes nothing here; a versioned id anywhere in the process
   is a defect.
 - Agent files carry the **top of their ladder** in frontmatter (`model: opus` for `implementer`,
-  `backend`, `frontend`, `pr-reviewer`, `security-reviewer`; `model: sonnet` for the other gates;
-  `model: fable` for `cold-reader`); the orchestrator steps down per call (`model="sonnet"`). Do not
-  pin models in skill files, and never set `CLAUDE_CODE_SUBAGENT_MODEL` (process-global, overrides
-  every per-call choice).
+  `pr-reviewer`, `security-reviewer`; `model: sonnet` for the other gates; `model: fable` for
+  `cold-reader`); the orchestrator steps down per call (`model="sonnet"`). Do not pin models in
+  skill files, and never set `CLAUDE_CODE_SUBAGENT_MODEL` (process-global, overrides every per-call
+  choice).
 - Opus is both the top implementer tier and the top reviewer tier. Restricting a model from a role
   is an owner decision recorded in this section, never in an agent file or a brief.
 
@@ -75,13 +75,13 @@ tracker-less.
 - The `tpm` orchestrator alone merges; implementers and reviewers never do.
 - The merge gate is a mechanism, not a verdict: `${CLAUDE_PLUGIN_ROOT}/hooks/merge-gate.sh`
   (PreToolUse, wired in the plugin's `hooks/hooks.json`) refuses the guarded merge forms unless
-  `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger` shows all five gates (`pr-reviewer`, `code-health`,
-  `oss-reviewer`, `security-review`, `readme-writer`) PASS with zero findings at the PR's current
-  head; what it checks per form is stated in
-  `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`. Each record names the model the gate ran
-  on. It also refuses a `git push` of any non-main ref onto `main`, and any force or delete push of
-  `main`. Nits block. A reviewer PASS is necessary, never sufficient. Owner-only bypass:
-  `~/.claude/gate-ledger/.bypass`.
+  `${CLAUDE_PLUGIN_ROOT}/bin/gate-ledger` shows every required gate (all five by default:
+  `pr-reviewer`, `code-health`, `oss-reviewer`, `security-review`, `readme-writer`; overridable via
+  `gates:` in `DEV_PROCESS.md` frontmatter) PASS with zero findings at the PR's current head; what
+  it checks per form is stated in `${CLAUDE_PLUGIN_ROOT}/context/dev-process-contract.md`. Each
+  record names the model the gate ran on. It also refuses a `git push` of any non-main ref onto
+  `main`, and any force or delete push of `main`. Nits block. A reviewer PASS is necessary, never
+  sufficient. Owner-only bypass: `~/.claude/gate-ledger/.bypass`.
 - Every finding from every gate is fixed, never waived; an item a gate lists as unreproduced
   (`reviewer-baseline.md`) is filed, not fixed. Tier-escalation first; the user only when a finding
   survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict.

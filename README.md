@@ -41,15 +41,26 @@ gated change; a file whose section is absent or reads `Not allowed.` keeps the m
 ## Verdict guard
 
 The plugin registers a `SubagentStop` hook that refuses a review gate's first stop when its final
-message lacks the verdict block and asks it to resend once. The block is the one the five reviewer
-agent files under [`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. The hook needs
-`jq` and does nothing without it; the exact patterns are in
+message lacks the verdict block, reports a mismatched `GATE:` name for that subagent, or reports an
+inconsistent `VERDICT:`/`FINDINGS:` pair (`PASS` requires `0`, `FAIL` requires `>= 1`), and asks it
+to resend once. The block is the one the five reviewer agent files under
+[`plugins/dev-team/agents/`](plugins/dev-team/agents/) require. The hook needs `jq` and does nothing
+without it; the exact patterns are in
 [`plugins/dev-team/hooks/verdict-guard.sh`](plugins/dev-team/hooks/verdict-guard.sh).
+
+## Preflight scan
+
+`plugins/dev-team/bin/preflight-scan` runs deterministic mechanical checks (`AI001`–`AI009` AI
+tells, `CH001`–`CH006` code-health checks, `DOC001`–`DOC004` README/doc checks) over a diff
+(`--scope=diff`) or tracked tree (`--scope=full`) so implementers and review gates catch mechanical
+defects before semantic review.
 
 ## Gate ledger
 
-`plugins/dev-team/bin/gate-ledger` records each review gate's verdict per change for the merge hook
-to check; run it with no arguments for its commands and arguments. The ledger root is
+`plugins/dev-team/bin/gate-ledger` records each review gate's verdict per change with atomic locked
+writes for the merge hook to check; run it with no arguments for its commands and arguments. The
+required gate roster defaults to all five gates and can be narrowed per repository with the optional
+`gates:` frontmatter key in `DEV_PROCESS.md` (read by `check --repo-dir <dir>`). The ledger root is
 `~/.claude/gate-ledger`, or the directory `GATE_LEDGER_ROOT` names. A change's ledger is
 `<root>/<repo-slug>/<id>.json`, where the slug is the repo key with a leading `/` removed and each
 `/` or `:` replaced by `__`.

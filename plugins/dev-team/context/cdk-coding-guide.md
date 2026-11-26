@@ -30,8 +30,10 @@ Standards and rules for AWS CDK infrastructure projects written in TypeScript.
 
 ### 1.4 Documentation
 
-- JSDoc comments on exported utility functions with `@param` tags, sized to the budget in
-  `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` (Comment, docstring, and helper budget).
+- JSDoc comments on exported functions, constructs, and non-private methods with `@param` and
+  `@returns` descriptions (no `{type}` annotations; `@internal`/`@inheritdoc` exempt), enforced by
+  `eslint-plugin-jsdoc` and sized to the budget in `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md`
+  (Comment, docstring, and helper budget).
 - Inline section comments using `///` separators for visual grouping in stack files.
 
 ---
@@ -67,7 +69,9 @@ Standards and rules for AWS CDK infrastructure projects written in TypeScript.
   `AWSElasticBeanstalkWebTier` + `AWSElasticBeanstalkWorkerTier` only.
 - **Policy claims:** Check a claim that every statement of a kind carries a condition against the
   statements of a fully synthesized template, root and nested stacks, not a grep of the source; an
-  L2 construct adds statements the source never writes.
+  L2 construct adds statements the source never writes. When granting access to a KMS-encrypted S3
+  bucket, prefer `bucket.grantReadWrite` over a separate `bucket.encryptionKey!.grant(...)` only
+  after confirming the extra actions (`DeleteObjectVersion`, retention) are actually needed.
 - **Secret access:** Only the EB role and the rotation Lambda can read the RDS secret.
 - **S3 access:** Block all public access (`BlockPublicAccess.BLOCK_ALL`). CloudFront uses Origin
   Access Control (OAC), not public bucket policies.
@@ -236,25 +240,29 @@ afterEach(() => {
 
 ### 5.1 ESLint Rules
 
-| Rule                                | Setting                            |
-| ----------------------------------- | ---------------------------------- |
-| `indent`                            | 4 spaces                           |
-| `quotes`                            | Single (template literals allowed) |
-| `comma-dangle`                      | Always multiline                   |
-| `array-bracket-newline`             | Multiline, minItems: 1             |
-| `array-element-newline`             | Multiline, minItems: 1             |
-| `object-curly-newline`              | Multiline, minProperties: 1        |
-| `object-property-newline`           | Always (no same-line)              |
-| `quote-props`                       | As needed                          |
-| `@typescript-eslint/no-unused-vars` | Error (except `_` prefixed)        |
+| Rule                                | Setting                                |
+| ----------------------------------- | -------------------------------------- |
+| `indent`                            | 4 spaces                               |
+| `quotes`                            | Single (`avoidEscape: true`)           |
+| `comma-dangle`                      | Always multiline                       |
+| `array-bracket-newline`             | Multiline, minItems: 1                 |
+| `array-element-newline`             | Multiline, minItems: 1                 |
+| `object-curly-newline`              | Multiline, minProperties: 1            |
+| `object-property-newline`           | Always (no same-line)                  |
+| `quote-props`                       | As needed                              |
+| `@typescript-eslint/no-unused-vars` | Error (except `_` prefixed)            |
+| `max-depth`                         | Max 4                                  |
+| `no-warning-comments`               | `todo`, `fixme`, `xxx`, `hack` (src)   |
+| `jsdoc/*` (`eslint-plugin-jsdoc`)   | Public functions/methods, no `{types}` |
 
 ### 5.2 Running the Linter
 
 ```bash
-npm run lint
+npm run lint      # check-only (CI and pre-push)
+npm run lint:fix  # apply autofixes locally
 ```
 
-This runs ESLint with `--fix` on `lib/`, `bin/`, and `test/` directories.
+`npm run lint` must never pass `--fix` so CI and check runs stay non-mutating.
 
 ---
 
@@ -299,11 +307,15 @@ whether the package sits at the repo root or in a monorepo directory such as `pa
 ### 7.1 Files to set up
 
 - **ESLint flat config** (`eslint.config.js`) — ESLint 9 flat config: base JS recommended +
-  `@typescript-eslint` recommended + `eslint-plugin-jest` for `*.test.ts`. Key rules: `indent` 4
-  with `SwitchCase: 1`, single quotes, `comma-dangle: always-multiline`, `array-bracket-newline`
-  minItems 1, `array-element-newline` minItems 2, `object-curly-newline` minProperties 1,
-  `object-property-newline`. Lint script:
-  `eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings=0 --fix --ignore-pattern '**/*.d.ts'`.
+  `@typescript-eslint` recommended + `eslint-plugin-jsdoc` + `eslint-plugin-jest` for `*.test.ts`.
+  Key rules: `indent` 4 with `SwitchCase: 1`, single quotes (`avoidEscape: true`),
+  `quote-props: as-needed`, `comma-dangle: always-multiline`, `array-bracket-newline` minItems 1,
+  `array-element-newline` minItems 2, `object-curly-newline` minProperties 1,
+  `object-property-newline`, `@typescript-eslint/no-unused-vars` (`^_` ignored), `max-depth: 4`,
+  `no-warning-comments` (source files), and `jsdoc/require-jsdoc` + `jsdoc/require-param` +
+  `jsdoc/require-returns` + `jsdoc/no-types`. Check-only lint script:
+  `eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings=0 --ignore-pattern '**/*.d.ts'`
+  (keep `--fix` in `lint:fix`).
 - **TypeScript config** (`tsconfig.json` + `tsconfig.build.json`) — `target ES2022`,
   `module`/`moduleResolution` `NodeNext`, `strict`, `declaration`, `inlineSourceMap`. A separate
   `tsconfig.build.json` extends it with `outDir: dist`. **Gotcha:** to stop a bare `tsc` from
