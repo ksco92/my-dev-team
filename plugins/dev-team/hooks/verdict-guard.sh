@@ -22,7 +22,6 @@ case "${type#dev-team:}" in
 esac
 [[ "$active" == "true" || -z "$text" ]] && exit 0
 
-has() { grep -Eq "$1" <<<"$text"; }
 missing=()
 gate_line="$(grep -E '^GATE: [^[:space:]]+[[:space:]]*$' <<<"$text" | tail -1 || true)"
 if [[ -z "$gate_line" ]]; then
@@ -42,7 +41,7 @@ if [[ "$verdict_val" != "BLOCKED" ]]; then
   if [[ -z "$verdict_val" ]]; then
     missing+=("VERDICT: PASS|FAIL|BLOCKED")
   fi
-  has '^HEAD: [0-9a-fA-F]{7,40}[[:space:]]*$' || missing+=("HEAD: <sha>")
+  grep -Eq '^HEAD: [0-9a-fA-F]{7,40}[[:space:]]*$' <<<"$text" || missing+=("HEAD: <sha>")
   findings_line="$(grep -E '^FINDINGS: [0-9]+[[:space:]]*$' <<<"$text" | tail -1 || true)"
   if [[ -z "$findings_line" ]]; then
     missing+=("FINDINGS: <count>")

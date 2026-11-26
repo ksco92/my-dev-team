@@ -39,10 +39,11 @@ KNOWN_GATES=(pr-reviewer code-health oss-reviewer security-review readme-writer)
 usage() { sed -n '/^# Usage:/,/^[^#]/{/^#/p;}' "$0"; exit 2; }
 
 is_known_gate() {
-  case "$1" in
-    pr-reviewer|code-health|oss-reviewer|security-review|readme-writer) return 0 ;;
-    *) return 1 ;;
-  esac
+  local g
+  for g in "${KNOWN_GATES[@]}"; do
+    [[ "$g" == "$1" ]] && return 0
+  done
+  return 1
 }
 
 resolve_required_gates() {
@@ -104,8 +105,7 @@ acquire_lock() {
     if [[ -f "$lockdir/pid" ]]; then
       holder="$(cat "$lockdir/pid" 2>/dev/null || true)"
       if [[ "$holder" =~ ^[0-9]+$ ]] && ! kill -0 "$holder" 2>/dev/null; then
-        rm -f "$lockdir/pid"
-        rmdir "$lockdir" 2>/dev/null || true
+        release_lock "$lockdir"
         continue
       fi
     fi

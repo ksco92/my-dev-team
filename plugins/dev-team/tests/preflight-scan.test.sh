@@ -219,6 +219,23 @@ eval_out="$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1)"
 check "detects task-referential issue/reviewer phrasing (AI001)" "$(grep -c '\[AI001\]' <<<"$eval_out")" "1"
 check "detects status-emoji print log (AI003)" "$(grep -c '\[AI003\]' <<<"$eval_out")" "1"
 
+# Positive AI009: eslint.config.js and .prettierrc.json in a Rust-only repo do not self-exempt
+rs_repo="$TMP/rs-only"
+mkdir -p "$rs_repo/src"
+git_clean "$rs_repo" init -q -b main
+cat >"$rs_repo/LICENSE" <<'LIC'
+MIT License
+
+Copyright (c) 2026 Example
+LIC
+printf 'fn main() {}\n' >"$rs_repo/src/main.rs"
+printf 'export default [];\n' >"$rs_repo/eslint.config.js"
+printf '{}\n' >"$rs_repo/.prettierrc.json"
+git_clean "$rs_repo" add -A
+git_clean "$rs_repo" commit -q -m "rust only"
+rs_out="$("$SCAN" --scope=full --repo "$rs_repo" 2>&1)"
+check "flags eslint.config.js and .prettierrc.json in Rust-only repo (AI009)" "$(grep -c '\[AI009\]' <<<"$rs_out")" "2"
+
 # Invalid repo exits 2
 "$SCAN" --repo "$TMP/missing" >/dev/null 2>&1
 check "missing repo exits 2" "$?" "2"

@@ -55,9 +55,8 @@ CHAT_LEAK_RE = re.compile(
     r"We'?ll[ \t]+need[ \t]+to\b|Let'?s[ \t]+(?:also|now)\b|"
     r"(?:Increment|Set|Return[ \t]+the|Loop[ \t]+through|Iterate[ \t]+over|Initialize)[ \t]+\w+)",
 )
-EMOJI_LOG_RE = re.compile(
-    r"\b(?:print|console\.(?:log|info|warn|error)|logging\.(?:info|warning|error|debug))\s*\([^\n]*[✅❌🚀🎉🔧⚡🔥✨⚠️💡]",
-)
+LOG_CALL_RE = re.compile(r"\b(?:print|console\.(?:log|info|warn|error)|logging\.(?:info|warning|error|debug))[ \t]*\(")
+STATUS_EMOJI_RE = re.compile(r"[✅❌🚀🎉🔧⚡🔥✨⚠️💡]")
 SLOP_VOCAB_RE = re.compile(
     r"\b(?:delve|tapestry|landscape|testament|vibrant|pivotal|nuanced|seamless|"
     r"robust[ \t]+and|comprehensive[ \t]+and)\b",
@@ -85,7 +84,7 @@ INLINE_CODE_RE = re.compile(r"``.*?``|`[^`]*`")
 PONYTAIL_RE = re.compile(r"\bponytail:(.*)$", re.IGNORECASE)
 SPHINX_FIELD_RE = re.compile(r"^[ \t]*:(?:param|type|return|returns|rtype|yield|yields|ytype|raises|raise|ivar|cvar|var)\b")
 DOCSTRING_DELIMITER_RE = re.compile(r'^[rRuUfFbB]{0,2}(?:"""|\'\'\')$')
-BADGE_RE = re.compile(r"actions/workflows/[^\s)\"']*badge\.svg|img\.shields\.io/github/actions/workflow")
+BADGE_RE = re.compile(r"actions/workflows/[^/\s)\"']+/badge\.svg|img\.shields\.io/github/actions/workflow")
 TRANSCRIPT_PATTERNS = (
     re.compile(r"^\.specstory/history/.*\.md$"),
     re.compile(r"^\.aider\.(?:input\.history|chat\.history\.md)$"),
@@ -106,7 +105,7 @@ ARTIFACT_PATTERNS = (
     re.compile(r"(?:^|/)\.mypy_cache/"),
 )
 MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-MD_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)\s]+)\)")
+MD_LINK_RE = re.compile(r"(?<!!)\[[^\[\]]+\]\(([^)\s]+)\)")
 LICENSE_BODIES = (
     "MIT License",
     "Apache License",
@@ -169,9 +168,6 @@ def _read_repo_bytes(repo: Path, rel: str) -> bytes | None:
     full = repo / rel
 
     try:
-        if full.is_symlink():
-            return None
-
         st = full.lstat()
 
         if not stat.S_ISREG(st.st_mode) or st.st_size > MAX_FILE_BYTES:
@@ -507,6 +503,18 @@ def _has_placeholder_metadata(line: str) -> bool:
     return match is not None and META_PLACEHOLDER_VAL_RE.search(line, match.end()) is not None
 
 
+def _has_emoji_log(line: str) -> bool:
+    """
+    Return whether ``line`` logs or prints a status emoji in linear time.
+
+    :param line: single physical source line.
+    :return: True when a log/print call is followed by a status emoji on the same line.
+    """
+    match = LOG_CALL_RE.search(line)
+
+    return match is not None and STATUS_EMOJI_RE.search(line, match.end()) is not None
+
+
 def _check_source_file(rel: str, text: str, lines: list[str], findings: list[Finding]) -> None:
     """
     Run deterministic checks on a source file.
@@ -534,7 +542,7 @@ def _check_source_file(rel: str, text: str, lines: list[str], findings: list[Fin
         if not is_test and CRUMB_RE.search(line):
             findings.append(Finding(rel, idx, "AI002", "CRITICAL", f"TODO/FIXME/HACK or deferral crumb: {stripped[:80]}"))
 
-        if not is_test and (CHAT_LEAK_RE.search(line) or EMOJI_LOG_RE.search(line)):
+        if not is_test and (CHAT_LEAK_RE.search(line) or _has_emoji_log(line)):
             findings.append(Finding(rel, idx, "AI003", "HIGH", f"chat-leak, narration, or status-emoji log: {stripped[:80]}"))
 
         if not is_test and PERSONAL_PATH_RE.search(line):
@@ -587,8 +595,10 @@ def _check_repo_level(
                 break
 
     if scope == "full":
-        has_js = any(Path(p).suffix.lower() in JS_TS_EXTS for p in all_tracked)
-        has_prettier_targets = any(Path(p).suffix.lower() in PRETTIER_EXTS for p in all_tracked)
+        js_cfg_prefixes = (".eslintrc", "eslint.config.", ".prettierrc")
+        non_cfg_tracked = [p for p in all_tracked if not Path(p).name.startswith(js_cfg_prefixes)]
+        has_js = any(Path(p).suffix.lower() in JS_TS_EXTS for p in non_cfg_tracked)
+        has_prettier_targets = any(Path(p).suffix.lower() in PRETTIER_EXTS for p in non_cfg_tracked)
         has_py = any(p.endswith(".py") for p in all_tracked)
 
         for p in all_tracked:
