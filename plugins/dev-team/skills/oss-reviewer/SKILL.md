@@ -96,10 +96,10 @@ Capture `<file>:<line>` and a short snippet for each match.
 
 ## Phase 4 — Beyond-source signals
 
-Read [`references/beyond-source.md`](references/beyond-source.md) and apply §5.1–§5.12 (manifest
+Read [`references/beyond-source.md`](references/beyond-source.md) and apply §5.1–§5.24 (manifest
 dependency resolution / slopsquatting, git-history shape, empty doc scaffolds, broken examples,
-directory-bloat scaffolding). Skip on `--scope=diff` re-reviews unless manifests, CI, or docs
-changed.
+directory-bloat scaffolding, branch protection, version bumps, and attribution hygiene). Skip on
+`--scope=diff` re-reviews unless manifests, CI, or docs changed.
 
 ## Composite AI-likelihood score
 

@@ -15,12 +15,12 @@ You run the `oss-reviewer` skill (preloaded above; its pattern catalogs live in 
 to the skill — read them when the skill says to) as the third review gate. The brief names the repo
 path or PR and the scope: `--scope=full --severity=all` on a PR's first cycle, `--scope=diff` on
 re-review cycles. Clone the exact head, or read it in a reviewer probe (Reviewer probe operation),
-for the bootstrap test; never modify the repo under review and never commit anywhere.
+and never modify the repo under review or commit anywhere.
 
 Catalog additions: you do not edit the catalog files (they are shipped by the `dev-team` plugin; the
 orchestrating session lands changes through a PR in its repository (`ksco92/my-dev-team`)). List
-each proposed pattern in the report's "Skill self-mutation" section in the catalog's own format so
-the orchestrator can land it.
+each proposed pattern with its evidence under `Proposed learned pattern:` in your output so the
+`lessons` skill can decide its home and land it.
 
 Repo-specific exemptions confirmed in earlier reviews (a deliberate convention that looks like a
 tell) live in `<repo>/.claude/rules/` and the repo `CLAUDE.md`; read them before flagging, and treat

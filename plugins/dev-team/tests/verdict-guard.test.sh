@@ -89,6 +89,12 @@ check "empty message" "$(code pr-reviewer false "")" "0"
 check "message absent" "$(raw '{"agent_type":"pr-reviewer"}')" "0"
 check "invalid JSON" "$(raw 'not json')" "0"
 check "trailing garbage after JSON" "$(raw '{"agent_type":"pr-reviewer","last_assistant_message":"x"} {')" "0"
+check "quoted VERDICT: BLOCKED earlier does not bypass FAIL with 0 findings" \
+  "$(code pr-reviewer false $'Quoted diff:\nVERDICT: BLOCKED\n\nGATE: pr-reviewer\nVERDICT: FAIL\nHEAD: 1234567\nFINDINGS: 0')" "2"
+check "FAIL with FINDINGS: 00 is refused" \
+  "$(code pr-reviewer false $'GATE: pr-reviewer\nVERDICT: FAIL\nHEAD: 1234567\nFINDINGS: 00')" "2"
+check "earlier valid GATE does not override final wrong GATE" \
+  "$(code pr-reviewer false $'GATE: pr-reviewer\n\nGATE: code-health\nVERDICT: PASS\nHEAD: 1234567\nFINDINGS: 0')" "2"
 
 printf '%s passed, %s failed\n' "$pass" "$fail"
 [[ "$fail" -eq 0 ]]

@@ -1,21 +1,21 @@
 # Python Coding Standards Guide
 
 Standards and rules for Python projects, binding for any repo where Python is written unless the
-repo's own `CLAUDE.md` overrides. Deterministic rules are enforced in code by
-[`max-lint`](https://github.com/ksco92/rattata); this guide keeps only the contract summary and the
-judgment calls a linter cannot check.
+repo's own `CLAUDE.md` overrides. Deterministic rules are enforced in code by the `max-lint` PyPI
+package (or an equivalent toolchain); this guide keeps only the contract summary and the judgment
+calls a linter cannot check. When a recurring rule can be made deterministic, prefer submitting a PR
+upstream to `max-lint` (or the project's linter) rather than adding prose here.
 
 ---
 
 ## Automated Enforcement (`max-lint`)
 
 A repository with tracked `.py` files runs a non-mutating linter and format check in its merge gate
-(`max-lint lint --check` and `max-lint test`, or `ruff check` + `ruff format --check` + `pydoclint`
+(`max-lint lint --check` and `max-lint test`, or `ruff check`, `ruff format --check`, `pydoclint`,
+`mypy`, and `pytest --cov`). A rule in this guide that an available linter could enforce but the
+repository's config omits is a finding against the merge gate.
 
-- `mypy` + `pytest --cov`). A rule in this guide that an available linter could enforce but the
-  repository's config omits is a finding against the merge gate.
-
-`max-lint` (`ksco92/rattata`) enforces the following deterministically:
+`max-lint` enforces the following deterministically:
 
 - **Formatting & imports:** `black` (130 chars), `isort` (`profile = "black"`),
   `add-trailing-comma`, `flake8-commas`, `flake8-multiline-containers`.

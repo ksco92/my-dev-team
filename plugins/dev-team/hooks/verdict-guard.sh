@@ -24,27 +24,33 @@ esac
 
 has() { grep -Eq "$1" <<<"$text"; }
 missing=()
-if ! has '^GATE: [^[:space:]]+[[:space:]]*$'; then
+gate_line="$(grep -E '^GATE: [^[:space:]]+[[:space:]]*$' <<<"$text" | tail -1 || true)"
+if [[ -z "$gate_line" ]]; then
   missing+=("GATE: $expected_gate")
-elif ! has "^GATE: ${expected_gate}[[:space:]]*\$"; then
-  missing+=("GATE: $expected_gate (exact gate name)")
+else
+  gate_val="$(awk '{print $2}' <<<"$gate_line" | tr -d '\r')"
+  if [[ "$gate_val" != "$expected_gate" ]]; then
+    missing+=("GATE: $expected_gate (exact gate name)")
+  fi
 fi
 
-if ! has '^VERDICT: BLOCKED[[:space:]]*$'; then
-  verdict_line="$(grep -E '^VERDICT: (PASS|FAIL)[[:space:]]*$' <<<"$text" | tail -1 || true)"
-  if [[ -z "$verdict_line" ]]; then
+verdict_line="$(grep -E '^VERDICT: (PASS|FAIL|BLOCKED)[[:space:]]*$' <<<"$text" | tail -1 || true)"
+verdict_val=""
+[[ -n "$verdict_line" ]] && verdict_val="$(awk '{print $2}' <<<"$verdict_line" | tr -d '\r')"
+
+if [[ "$verdict_val" != "BLOCKED" ]]; then
+  if [[ -z "$verdict_val" ]]; then
     missing+=("VERDICT: PASS|FAIL|BLOCKED")
   fi
   has '^HEAD: [0-9a-fA-F]{7,40}[[:space:]]*$' || missing+=("HEAD: <sha>")
   findings_line="$(grep -E '^FINDINGS: [0-9]+[[:space:]]*$' <<<"$text" | tail -1 || true)"
   if [[ -z "$findings_line" ]]; then
     missing+=("FINDINGS: <count>")
-  elif [[ -n "$verdict_line" ]]; then
-    verdict_val="$(awk '{print $2}' <<<"$verdict_line" | tr -d '\r')"
+  elif [[ -n "$verdict_val" ]]; then
     findings_val="$(awk '{print $2}' <<<"$findings_line" | tr -d '\r')"
-    if [[ "$verdict_val" == "PASS" && "$findings_val" != "0" ]]; then
+    if [[ "$verdict_val" == "PASS" ]] && (( 10#$findings_val != 0 )); then
       missing+=("FINDINGS: 0 (PASS requires zero findings)")
-    elif [[ "$verdict_val" == "FAIL" && "$findings_val" == "0" ]]; then
+    elif [[ "$verdict_val" == "FAIL" ]] && (( 10#$findings_val == 0 )); then
       missing+=("FINDINGS: <count >= 1> (FAIL requires at least one finding)")
     fi
   fi

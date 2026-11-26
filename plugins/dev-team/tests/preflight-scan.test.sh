@@ -122,28 +122,102 @@ git_clean "$repo" add src/noisy.py
 ratio_out="$("$SCAN" --scope=diff --base main --repo "$repo" 2>&1)"
 check "detects CH001 comment ratio > 40%" "$(grep -c '\[CH001\]' <<<"$ratio_out")" "1"
 
-# Regression: backticked TODO in README and absence string in test fixtures do not false-positive
+# Regression: backticked TODO/CH004/DOC002 in README, test-file comments, unicode paths,
+# repo-root links, symlink isolation, --base injection, and eval fixture tells.
 fp_repo="$TMP/fp"
-mkdir -p "$fp_repo/tests"
+mkdir -p "$fp_repo/src" "$fp_repo/tests" "$fp_repo/docs"
 git_clean "$fp_repo" init -q -b main
+cat >"$fp_repo/LICENSE" <<'LIC'
+MIT License
+
+Copyright (c) 2026 Example
+LIC
+cat >"$fp_repo/.prettierrc.json" <<'JSON'
+{}
+JSON
+git_clean "$fp_repo" add -A
+git_clean "$fp_repo" commit -q -m "base"
+git_clean "$fp_repo" checkout -q -b feat
+
 cat >"$fp_repo/README.md" <<'MD'
 # sample
 
-Rejects source `TODO`/`FIXME`/`XXX`/`HACK` crumbs.
+Rejects source `TODO`/`FIXME`/`XXX`/`HACK` crumbs and ``[`crate::Foo`]`` or `[x](missing.md)` examples.
+See [license](/LICENSE).
 MD
 cat >"$fp_repo/tests/test_sample.py" <<'PY'
 """Fixture test."""
 
 
 def test_absence_fixture() -> None:
+    # Panics: never
+    # Certainly! I've added this for testing.
+    # This is deliberately here.
+    # ponytail: remove later
     sample = "# Panics: never\n"
     assert sample
 PY
+cat >"$fp_repo/src/clean_str.py" <<'PY'
+"""Fixture source holding a string literal."""
+
+EXAMPLE = "# Panics: never\n"
+PY
 git_clean "$fp_repo" add -A
-git_clean "$fp_repo" commit -q -m "init"
+git_clean "$fp_repo" commit -q -m "feat"
+
 fp_out="$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1)"
+fp_rc=$?
+check "clean regression branch exits 0 in diff mode" "$fp_rc" "0"
 check "backticked TODO in README does not trip AI008" "$(grep -c '\[AI008\]' <<<"$fp_out")" "0"
-check "absence string in test file does not trip CH002" "$(grep -c '\[CH002\]' <<<"$fp_out")" "0"
+check "backticked rustdoc link does not trip CH004" "$(grep -c '\[CH004\]' <<<"$fp_out")" "0"
+check "test-file absence comment and source string do not trip CH002" "$(grep -c '\[CH002\]' <<<"$fp_out")" "0"
+check "prettierrc with markdown files does not trip AI009 in full mode" \
+  "$("$SCAN" --scope=full --repo "$fp_repo" 2>&1 | grep -c '\[AI009\]')" "0"
+
+# Security: --base option injection rejected without writing output file
+inject_target="$TMP/injected_out"
+"$SCAN" --scope=diff --base="--output=$inject_target" --repo "$fp_repo" >/dev/null 2>&1
+check "--base starting with '-' exits 2" "$?" "2"
+check "--base injection creates no file" "$(find "$TMP" -maxdepth 1 -name 'injected_out*' | wc -l | tr -d ' ')" "0"
+
+# Security: escaping Markdown link triggers DOC002
+cat >"$fp_repo/docs/bad_link.md" <<'MD'
+[escape](../../../../etc/hosts)
+MD
+git_clean "$fp_repo" add docs/bad_link.md
+git_clean "$fp_repo" commit -q -m "bad link"
+check "escaping relative link triggers DOC002" \
+  "$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1 | grep -c '\[DOC002\]')" "1"
+
+# Security: symlink pointing outside repo is skipped without leaking contents
+printf '# TODO: SECRET_OUTSIDE_DATA\n' >"$TMP/outside_secret.py"
+ln -s "$TMP/outside_secret.py" "$fp_repo/src/leak.py"
+git_clean "$fp_repo" add src/leak.py
+git_clean "$fp_repo" commit -q -m "symlink"
+leak_out="$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1)"
+check "outside symlink does not leak external file contents" "$(grep -c 'SECRET_OUTSIDE_DATA' <<<"$leak_out")" "0"
+
+# Unicode filename is scanned despite core.quotePath
+printf '"""Unicode."""\n# TODO: hidden in unicode\n' >"$fp_repo/src/café.py"
+git_clean "$fp_repo" add "src/café.py"
+git_clean "$fp_repo" commit -q -m "unicode"
+check "unicode filename is scanned for AI002" \
+  "$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1 | grep -c '\[AI002\]')" "1"
+
+# Eval tells: status-emoji print and task-referential docstring
+cat >"$fp_repo/src/eval_tells.py" <<'PY'
+"""Eval tells fixture."""
+
+
+def run() -> None:
+    """Added for issue #12 per reviewer request."""
+    print("✅ done")
+PY
+git_clean "$fp_repo" add src/eval_tells.py
+git_clean "$fp_repo" commit -q -m "eval tells"
+eval_out="$("$SCAN" --scope=diff --base main --repo "$fp_repo" 2>&1)"
+check "detects task-referential issue/reviewer phrasing (AI001)" "$(grep -c '\[AI001\]' <<<"$eval_out")" "1"
+check "detects status-emoji print log (AI003)" "$(grep -c '\[AI003\]' <<<"$eval_out")" "1"
 
 # Invalid repo exits 2
 "$SCAN" --repo "$TMP/missing" >/dev/null 2>&1

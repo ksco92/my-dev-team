@@ -1,14 +1,14 @@
-# AI-generated-code tells — structural pattern catalog (Phase 4)
+# AI-generated-code tells — structural pattern catalog (Phase 3)
 
-Companion reference for the `oss-reviewer` skill. Loaded during Phase 4 **after** running
+Companion reference for the `oss-reviewer` skill. Loaded during Phase 3 **after** running
 `${CLAUDE_PLUGIN_ROOT}/bin/preflight-scan`.
 
 Deterministic/regex tells (`AI001`–`AI009`: task/PR leftovers, `TODO`/`FIXME`/`XXX`/`HACK` and
-deferral crumbs, chat-leak/narration comments, banned prose vocabulary, committed agent transcripts,
-committed build artifacts, personal machine paths, placeholder author/README metadata,
-absent-language configs; plus `CH001`–`CH006` and `DOC001`–`DOC004`) are enforced mechanically by
-`preflight-scan` and are not repeated here. Correctness bugs belong to `pr-reviewer`; comment
-ratios, doc-comment budgets, and single-use helpers belong to `code-health`.
+deferral crumbs, chat-leak/narration comments and status-emoji logs, banned prose vocabulary,
+committed agent transcripts, committed build artifacts, personal machine paths, placeholder
+author/README metadata, absent-language configs; plus `CH001`–`CH006` and `DOC001`–`DOC004`) are
+enforced mechanically by `preflight-scan` and are not repeated here. Correctness bugs belong to
+`pr-reviewer`; comment ratios, doc-comment budgets, and single-use helpers belong to `code-health`.
 
 This catalog covers only the **structural and judgment tells** a static regex cannot decide.
 
@@ -51,7 +51,7 @@ state and wrap 1–2 functions (Java-shaped boilerplate in Python/TypeScript).
 
 ### 4.6 Identical file-header docstring templates (HIGH)
 
-Every file in a package opens with the exact same multi-line boilerplate template (`Module: ...`,
+Every file in a package opens with the same multi-line boilerplate template (`Module: ...`,
 `Author: ...`, `Description: ...`, `Created: ...`) stamped by a generation prompt.
 
 ### 4.7 Hardcoded developer identity in IaC or scripts (BLOCKER)

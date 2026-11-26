@@ -258,11 +258,27 @@ if (( is_git_push )); then
 fi
 
 gate_pr() {
-  local repo="$1" pr="$2" head ledger_out checks bad
+  local repo="$1" pr="$2" head ledger_out checks bad tmp_proc origin_url repo_lc origin_lc
   head="$(gh pr view "$pr" --repo "$repo" --json headRefOid --jq .headRefOid 2>/dev/null)" \
     || deny "merge-gate: gh pr view $pr failed for $repo."
-  ledger_out="$("$LEDGER" check "$repo" "$pr" "$head" ${cwd:+--repo-dir "$cwd"} 2>&1)" \
-    || deny "merge-gate: review gates not proven at head ${head:0:12}: $ledger_out. Run every gate on this head and record verdicts with gate-ledger before merging."
+  # Read repo-specific `gates:` only from the matching repo's default branch, never from an
+  # unmerged PR working tree or an unrelated cwd.
+  tmp_proc="$(mktemp -d)"
+  if [[ -n "$cwd" && -d "$cwd" ]]; then
+    origin_url="$(git -C "$cwd" remote get-url origin 2>/dev/null || true)"
+    repo_lc="$(printf '%s' "$repo" | tr '[:upper:]' '[:lower:]')"
+    origin_lc="$(printf '%s' "$origin_url" | tr '[:upper:]' '[:lower:]')"
+    if [[ "$origin_lc" == *"/${repo_lc}" || "$origin_lc" == *"/${repo_lc}.git" || "$origin_lc" == *":${repo_lc}" || "$origin_lc" == *":${repo_lc}.git" ]]; then
+      git -C "$cwd" show origin/main:DEV_PROCESS.md >"$tmp_proc/DEV_PROCESS.md" 2>/dev/null \
+        || git -C "$cwd" show origin/master:DEV_PROCESS.md >"$tmp_proc/DEV_PROCESS.md" 2>/dev/null \
+        || rm -f "$tmp_proc/DEV_PROCESS.md"
+    fi
+  fi
+  ledger_out="$("$LEDGER" check "$repo" "$pr" "$head" --repo-dir "$tmp_proc" 2>&1)" || {
+    rm -rf "$tmp_proc"
+    deny "merge-gate: review gates not proven at head ${head:0:12}: $ledger_out. Run every gate on this head and record verdicts with gate-ledger before merging."
+  }
+  rm -rf "$tmp_proc"
   # Owner-approved: a repo with no CI configured ("no checks reported") counts as an empty, green list.
   if ! checks="$(gh pr checks "$pr" --repo "$repo" --json name,bucket 2>&1)"; then
     if grep -qi "no checks reported" <<<"$checks"; then

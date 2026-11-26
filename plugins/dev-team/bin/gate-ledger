@@ -38,13 +38,28 @@ KNOWN_GATES=(pr-reviewer code-health oss-reviewer security-review readme-writer)
 
 usage() { sed -n '/^# Usage:/,/^[^#]/{/^#/p;}' "$0"; exit 2; }
 
+is_known_gate() {
+  case "$1" in
+    pr-reviewer|code-health|oss-reviewer|security-review|readme-writer) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 resolve_required_gates() {
   local repo_dir="${1:-}" raw="" token trimmed
-  local -a parsed=()
-  if [[ -n "${GATE_LEDGER_GATES:-}" ]]; then
+  local -a tokens=() parsed=()
+  if [[ -n "$repo_dir" && ! -d "$repo_dir" ]]; then
+    echo "gate-ledger: --repo-dir does not exist: $repo_dir" >&2
+    return 2
+  fi
+  if [[ -n "${GATE_LEDGER_GATES+x}" ]]; then
     raw="$GATE_LEDGER_GATES"
+    if [[ -z "$(printf '%s' "$raw" | tr -d '[:space:]')" ]]; then
+      echo "gate-ledger: GATE_LEDGER_GATES is empty" >&2
+      return 2
+    fi
   elif [[ -x "$BIN_DIR/dev-process" ]]; then
-    if [[ -n "$repo_dir" && -d "$repo_dir" ]]; then
+    if [[ -n "$repo_dir" ]]; then
       raw="$("$BIN_DIR/dev-process" get gates --repo "$repo_dir" 2>/dev/null || true)"
     else
       raw="$("$BIN_DIR/dev-process" get gates 2>/dev/null || true)"
@@ -54,16 +69,20 @@ resolve_required_gates() {
     printf '%s\n' "${KNOWN_GATES[@]}"
     return 0
   fi
-  # Strip optional YAML list brackets [a, b] and split on commas or whitespace.
+  # Strip optional YAML list brackets [a, b] and split on commas.
   raw="${raw#[}"; raw="${raw%]}"
-  IFS=',' read -r -a tokens <<<"$raw"
-  for token in "${tokens[@]}"; do
+  if [[ -n "$raw" ]]; then
+    IFS=',' read -r -a tokens <<<"$raw"
+  fi
+  for token in "${tokens[@]+"${tokens[@]}"}"; do
     trimmed="$(printf '%s' "$token" | sed 's/^[[:space:]"'\'']*//; s/[[:space:]"'\'']*$//')"
     [[ -n "$trimmed" ]] || continue
-    case " ${KNOWN_GATES[*]} " in
-      *" $trimmed "*) parsed+=("$trimmed") ;;
-      *) echo "gate-ledger: unknown gate '$trimmed' in configured roster" >&2; return 2 ;;
-    esac
+    if is_known_gate "$trimmed"; then
+      parsed+=("$trimmed")
+    else
+      echo "gate-ledger: unknown gate '$trimmed' in configured roster" >&2
+      return 2
+    fi
   done
   if (( ${#parsed[@]} == 0 )); then
     echo "gate-ledger: configured gate roster is empty" >&2
@@ -80,8 +99,16 @@ ledger_path() {
 }
 
 acquire_lock() {
-  local lockdir="$1" attempts=0
+  local lockdir="$1" attempts=0 holder=""
   while ! mkdir "$lockdir" 2>/dev/null; do
+    if [[ -f "$lockdir/pid" ]]; then
+      holder="$(cat "$lockdir/pid" 2>/dev/null || true)"
+      if [[ "$holder" =~ ^[0-9]+$ ]] && ! kill -0 "$holder" 2>/dev/null; then
+        rm -f "$lockdir/pid"
+        rmdir "$lockdir" 2>/dev/null || true
+        continue
+      fi
+    fi
     attempts=$((attempts + 1))
     if (( attempts >= 100 )); then
       echo "gate-ledger: timed out waiting for lock $lockdir" >&2
@@ -89,20 +116,27 @@ acquire_lock() {
     fi
     sleep 0.05
   done
+  printf '%s\n' "$$" > "$lockdir/pid"
+}
+
+release_lock() {
+  local lockdir="$1"
+  rm -f "$lockdir/pid" 2>/dev/null || true
+  rmdir "$lockdir" 2>/dev/null || true
 }
 
 cmd_record() {
   [[ $# -eq 7 ]] || usage
   local repo="$1" id="$2" gate="$3" verdict="$4" findings="$5" head="$6" model="$7"
   [[ "$model" =~ ^[A-Za-z0-9._:-]+$ ]] || { echo "gate-ledger: model must be a bare alias or model name" >&2; exit 2; }
-  case " ${KNOWN_GATES[*]} " in *" $gate "*) ;; *) echo "gate-ledger: unknown gate '$gate'" >&2; exit 2 ;; esac
+  is_known_gate "$gate" || { echo "gate-ledger: unknown gate '$gate'" >&2; exit 2; }
   case "$verdict" in PASS|FAIL|BLOCKED) ;; *) echo "gate-ledger: verdict must be PASS|FAIL|BLOCKED" >&2; exit 2 ;; esac
   [[ "$findings" =~ ^[0-9]+$ ]] || { echo "gate-ledger: findings must be an integer" >&2; exit 2; }
   local path; path="$(ledger_path "$repo" "$id")"
   mkdir -p "$(dirname "$path")"
-  local lockdir="${path}.lock" tmp
+  local lockdir="${path}.lock" tmp=""
   acquire_lock "$lockdir"
-  trap 'rm -f "${tmp:-}"; rmdir "$lockdir" 2>/dev/null || true' EXIT
+  trap 'rm -f "${tmp:-}"; release_lock "$lockdir"' EXIT
   tmp="$(mktemp "${path}.tmp.XXXXXX")"
   local now; now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   if [[ -f "$path" ]] && [[ "$(jq -r .head "$path")" == "$head" ]]; then
@@ -120,7 +154,7 @@ cmd_record() {
     --argjson f "$findings" --arg m "$model" --arg t "$now" \
     '{repo: $repo, id: $id, head: $head, gate: $g, verdict: $v, findings: $f, model: $m, at: $t}' \
     >> "${path%.json}.history.jsonl" || hist_rc=$?
-  rmdir "$lockdir" 2>/dev/null || true
+  release_lock "$lockdir"
   trap - EXIT
   (( hist_rc == 0 )) || return "$hist_rc"
   echo "recorded $gate=$verdict ($findings findings, $model) for $repo#$id @ ${head:0:12}"
@@ -138,11 +172,17 @@ cmd_check() {
   done
   [[ ${#pos[@]} -eq 3 ]] || usage
   local repo="${pos[0]}" id="${pos[1]}" head="${pos[2]}"
+  local gates_out
+  gates_out="$(resolve_required_gates "$repo_dir")" || return $?
   local -a required_gates=()
   local g
   while IFS= read -r g; do
     [[ -n "$g" ]] && required_gates+=("$g")
-  done < <(resolve_required_gates "$repo_dir")
+  done <<<"$gates_out"
+  if (( ${#required_gates[@]} == 0 )); then
+    echo "gate-ledger: no required gates resolved" >&2
+    return 2
+  fi
   local path; path="$(ledger_path "$repo" "$id")"
   if [[ ! -f "$path" ]]; then
     echo "no ledger for $repo#$id (expected $path)"; return 1
@@ -172,6 +212,13 @@ cmd_show() {
 cmd_reset() {
   [[ $# -eq 2 ]] || usage
   local path; path="$(ledger_path "$1" "$2")"
+  local lockdir="${path}.lock" holder=""
+  if [[ -d "$lockdir" ]]; then
+    holder="$(cat "$lockdir/pid" 2>/dev/null || true)"
+    if [[ ! "$holder" =~ ^[0-9]+$ ]] || ! kill -0 "$holder" 2>/dev/null; then
+      release_lock "$lockdir"
+    fi
+  fi
   rm -f "$path" && echo "reset $path"
 }
 
