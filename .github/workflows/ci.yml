@@ -72,6 +72,9 @@ jobs:
       - name: Test Antigravity adapter and installer
         run: bash plugins/dev-team/tests/agy-adapter.test.sh
 
+      - name: Test Pi adapter
+        run: bash plugins/dev-team/tests/pi-adapter.test.sh
+
       - name: Test eval suite (case.yaml parsing, scaffold scripts)
         run: bash plugins/dev-team/tests/evals.test.sh
 
