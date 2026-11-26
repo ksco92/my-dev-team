@@ -146,7 +146,8 @@ ledger, the hooks, or CI configuration inside a slice; deleting outside the work
 
 ## Repository-specific constraints
 
-Every change bumps `plugins/dev-team/.claude-plugin/plugin.json` `version`; the `validate` check
-fails without it. The plugin's one-line description is one string, identical in the GitHub repo
-description, the root README, root `package.json`, both marketplace descriptions, `plugin.json`, and
-the plugin README. Local checks before opening a change are the ones listed in `CLAUDE.md`.
+Every change bumps `plugins/dev-team/.claude-plugin/plugin.json` and root `package.json` `version`
+together; the `validate` check fails without it. The plugin's one-line description is one string,
+identical in the GitHub repo description, the root README, root `package.json`, both marketplace
+descriptions, `plugin.json`, and the plugin README. Local checks before opening a change are the
+ones listed in `CLAUDE.md`.

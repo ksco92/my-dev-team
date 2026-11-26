@@ -28,7 +28,7 @@ See the root README for what this repo is.
 
 ## Local checks
 
-The checks need Node with `npx`, `python3`, `shellcheck`, `jq`, and the `claude` CLI.
+The checks need Node 22.6+ with `npx`, `python3`, `shellcheck`, `jq`, and the `claude` CLI.
 
 ```
 claude plugin validate .claude-plugin/marketplace.json --strict
@@ -54,9 +54,9 @@ Add `--write` in place of `--check` to reformat.
 
 ## Conventions
 
-Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` `version` per semver, with the
-major-zero rule: a breaking change or a feature bumps minor, everything else bumps patch. Never bump
-to `1.0.0` without the owner's explicit say-so.
+Every PR bumps `plugins/dev-team/.claude-plugin/plugin.json` and root `package.json` `version`
+together per semver, with the major-zero rule: a breaking change or a feature bumps minor,
+everything else bumps patch. Never bump to `1.0.0` without the owner's explicit say-so.
 
 Markdown prose in skills, agents, and guides states the rule, not the incident: one imperative
 sentence, two at most, no dates, no repo or PR names. Models are named by alias only (`sonnet`,

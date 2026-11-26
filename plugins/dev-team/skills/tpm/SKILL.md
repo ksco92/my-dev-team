@@ -195,7 +195,7 @@ substance before reverting it.
 **Under Pi** (`PI_CODING_AGENT=true`) use the `run_agent` tool registered by the `my-dev-team` Pi
 package instead of `Agent`. Run `implementer` and `cold-reader` with `backend: "pi"` (default) and
 optionally run review gates with `backend: "pi"` for non-authoritative pre-submission self-checks
-only — never record a `pi`-backend gate result in `gate-ledger`. For authoritative merge-blocking
+only; never record a `pi`-backend gate result in `gate-ledger`. For authoritative merge-blocking
 verdicts, run every review gate with `backend: "claude"` (alias-only models: `sonnet` for lighter
 gates, `opus` for `high` `pr-reviewer` and every `security-reviewer`) or `backend: "agy"`, confirm
 `details.verdictValid` is `true`, and record the verdict with `gate-ledger`.
