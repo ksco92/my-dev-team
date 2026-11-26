@@ -73,9 +73,7 @@ pi install git:github.com/ksco92/my-dev-team
 The package registers [`plugins/dev-team/pi/dev-team.ts`](plugins/dev-team/pi/dev-team.ts) and
 exposes [`plugins/dev-team/skills/`](plugins/dev-team/skills/). The extension delegates session
 context (`session-context.sh`) and Bash guards (`merge-gate.sh`, `attribution-guard.sh`) to the
-canonical hooks and provides the `run_agent` tool: `backend: "pi"` runs local Pi subagents and
-non-authoritative pre-submission self-checks, while `backend: "claude"` and `backend: "agy"` run
-authoritative merge-blocking review gates.
+canonical hooks and provides the `run_agent` tool (see [Usage](#usage)).
 
 ## Usage
 

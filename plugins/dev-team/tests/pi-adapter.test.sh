@@ -67,6 +67,7 @@ stdout_var="${prefix}_STUB_STDOUT"
 stderr_var="${prefix}_STUB_STDERR"
 exit_var="${prefix}_STUB_EXIT"
 marker_var="${prefix}_STUB_SLEEP_MARKER"
+trap_var="${prefix}_STUB_TRAP_TERM_LOG"
 
 out_dir="${!out_var:?}"
 printf '%s\0' "$@" >"$out_dir/args.bin"
@@ -75,6 +76,12 @@ if [[ "$name" != "agy" ]]; then
 fi
 printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
 
+trap_log="${!trap_var:-}"
+if [[ -n "$trap_log" ]]; then
+  trap 'printf "TERM\n" >>"$trap_log"; sleep 0.35; exit 0' TERM
+  sleep 5 &
+  wait
+fi
 sleep_marker="${!marker_var:-}"
 if [[ -n "$sleep_marker" ]]; then
   (sleep 1.2; touch "$sleep_marker") &
@@ -668,6 +675,40 @@ await test("run_agent mid-run abort kills background grandchild process group pr
     assert.ok(elapsed < 1000, `expected abort to settle promptly, took ${elapsed}ms`);
     await new Promise((r) => setTimeout(r, 1300));
     assert.equal(fs.existsSync(marker), false, "grandchild should be terminated with its process group");
+  });
+});
+
+await test("run_agent timeout and abort racing against a SIGTERM-trapping child honors first trigger once", async () => {
+  const timeoutFirstLog = path.join(TMP, "term-timeout-first.log");
+  await withStubEnv("PI", "stub-pi-race-timeout", { PI_STUB_TRAP_TERM_LOG: timeoutFirstLog }, async () => {
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 280);
+    try {
+      await assert.rejects(
+        () => callAgent({ agent: "implementer", backend: "pi", prompt: "Trap term", timeoutSeconds: 0.15 }, controller.signal),
+        /timed out/,
+      );
+    } finally {
+      clearTimeout(abortTimer);
+    }
+    const terms = fs.readFileSync(timeoutFirstLog, "utf8").trim().split("\n").filter(Boolean);
+    assert.equal(terms.length, 1);
+  });
+
+  const abortFirstLog = path.join(TMP, "term-abort-first.log");
+  await withStubEnv("PI", "stub-pi-race-abort", { PI_STUB_TRAP_TERM_LOG: abortFirstLog }, async () => {
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 150);
+    try {
+      await assert.rejects(
+        () => callAgent({ agent: "implementer", backend: "pi", prompt: "Trap term", timeoutSeconds: 0.28 }, controller.signal),
+        /aborted/,
+      );
+    } finally {
+      clearTimeout(abortTimer);
+    }
+    const terms = fs.readFileSync(abortFirstLog, "utf8").trim().split("\n").filter(Boolean);
+    assert.equal(terms.length, 1);
   });
 });
 

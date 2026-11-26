@@ -151,9 +151,9 @@ function isExecutableFile(filePath: string): boolean {
   }
 }
 
-function hasExecutableOnPath(binary: string, pathEnv: string | undefined): boolean {
+function hasJqOnPath(pathEnv: string | undefined): boolean {
   for (const dir of (pathEnv ?? "").split(path.delimiter)) {
-    if (dir && isExecutableFile(path.join(dir, binary))) return true;
+    if (dir && isExecutableFile(path.join(dir, "jq"))) return true;
   }
   return false;
 }
@@ -205,6 +205,9 @@ function runCommand(command: string, args: string[], options: RunCommandOptions)
     let killTimer: ReturnType<typeof setTimeout> | undefined;
 
     const terminate = (): void => {
+      if (killTimer) return;
+      clearTimeout(timeoutHandle);
+      options.signal?.removeEventListener("abort", onAbort);
       killProcessTree(child, "SIGTERM");
       killTimer = setTimeout(() => killProcessTree(child, "SIGKILL"), 2_000);
       killTimer.unref?.();
@@ -221,12 +224,14 @@ function runCommand(command: string, args: string[], options: RunCommandOptions)
     };
 
     const onAbort = (): void => {
+      if (killTimer) return;
       aborted = true;
       terminate();
     };
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
     const timeoutHandle = setTimeout(() => {
+      if (killTimer) return;
       timedOut = true;
       terminate();
     }, options.timeoutMs);
@@ -462,7 +467,7 @@ async function validateGateVerdict(
   if (!stdout.trim()) {
     return { verdictValid: false, verdictError: "verdict-guard: review gate produced empty output with no verdict block." };
   }
-  if (!hasExecutableOnPath("jq", env.PATH)) {
+  if (!hasJqOnPath(env.PATH)) {
     return { verdictValid: false, verdictError: "verdict-guard: jq is required on PATH to validate review-gate verdicts." };
   }
   const guardPath = path.join(pluginRoot, "hooks", "verdict-guard.sh");
@@ -582,7 +587,7 @@ async function runBashHooks(
     return { block: true, reason: "dev-team: unexpected non-string bash command." };
   }
   if (command === "") return undefined;
-  if (!hasExecutableOnPath("jq", process.env.PATH)) {
+  if (!hasJqOnPath(process.env.PATH)) {
     return { block: true, reason: "dev-team: jq is required on PATH to run bash security hooks." };
   }
 
