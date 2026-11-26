@@ -204,8 +204,10 @@ function runCommand(command: string, args: string[], options: RunCommandOptions)
     let settled = false;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const terminate = (): void => {
+    const terminate = (reason: "abort" | "timeout"): void => {
       if (killTimer) return;
+      if (reason === "abort") aborted = true;
+      else timedOut = true;
       clearTimeout(timeoutHandle);
       options.signal?.removeEventListener("abort", onAbort);
       killProcessTree(child, "SIGTERM");
@@ -223,18 +225,10 @@ function runCommand(command: string, args: string[], options: RunCommandOptions)
       resolve(err ? { ...base, errorCode: err.code, errorMessage: err.message } : base);
     };
 
-    const onAbort = (): void => {
-      if (killTimer) return;
-      aborted = true;
-      terminate();
-    };
+    const onAbort = (): void => terminate("abort");
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
-    const timeoutHandle = setTimeout(() => {
-      if (killTimer) return;
-      timedOut = true;
-      terminate();
-    }, options.timeoutMs);
+    const timeoutHandle = setTimeout(() => terminate("timeout"), options.timeoutMs);
     timeoutHandle.unref?.();
 
     child.on("error", (err: NodeJS.ErrnoException) => finish(null, err));

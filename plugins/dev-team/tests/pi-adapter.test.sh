@@ -78,9 +78,7 @@ printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
 
 trap_log="${!trap_var:-}"
 if [[ -n "$trap_log" ]]; then
-  trap 'printf "TERM\n" >>"$trap_log"; sleep 0.35; exit 0' TERM
-  sleep 5 &
-  wait
+  exec node -e 'const fs=require("node:fs");let t;process.on("SIGTERM",()=>{fs.appendFileSync(process.argv[1],"TERM\n");if(!t)t=setTimeout(()=>process.exit(0),350);});setTimeout(()=>process.exit(0),5000);' "$trap_log"
 fi
 sleep_marker="${!marker_var:-}"
 if [[ -n "$sleep_marker" ]]; then
