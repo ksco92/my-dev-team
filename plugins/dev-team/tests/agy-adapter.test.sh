@@ -63,11 +63,11 @@ check "attribution-guard denies commit carrying Gemini trailer" "$(jq -r .decisi
 
 gen_gem="Generated with Gem""ini"
 out="$(jq -n --arg c "git commit -m \"Msg\n\n$gen_gem\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
-check "attribution-guard denies Generated with Gemini footer" "$(jq -r .decision <<<"$out")" "deny"
+check "attribution-guard denies Gemini generated-with footer" "$(jq -r .decision <<<"$out")" "deny"
 
 gen_agy="Generated with Anti""gravity"
 out="$(jq -n --arg c "git commit -m \"Msg\n\n$gen_agy\"" --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:$c}},cwd:$d}' | "$ADAPTER" attribution-guard)"
-check "attribution-guard denies Generated with Antigravity footer" "$(jq -r .decision <<<"$out")" "deny"
+check "attribution-guard denies Antigravity generated-with footer" "$(jq -r .decision <<<"$out")" "deny"
 
 out="$(jq -n --arg d "$repo" '{toolCall:{name:"run_command",args:{CommandLine:"git commit -m \"Plain msg\""}},cwd:$d}' | "$ADAPTER" attribution-guard)"
 check "attribution-guard allows clean commit" "$(jq -r .decision <<<"$out")" "allow"
@@ -87,7 +87,7 @@ check "empty stdin on PreToolUse fails closed" "$(jq -r .decision <<<"$out")" "d
 "$ADAPTER" bogus >/dev/null 2>&1
 check "unknown adapter target exits 2" "$?" "2"
 
-# Fail-closed when jq is genuinely absent from PATH.
+# Fail-closed when jq is absent from PATH.
 no_jq_bin="$TMP/no-jq-bin"
 mkdir -p "$no_jq_bin"
 for util in bash env dirname cat rm mktemp; do
@@ -198,7 +198,6 @@ check "uninstall refuses removing target with unmanaged file" "$?" "2"
 check "unmanaged file inside target preserved on uninstall" "$(cat "$extra_file")" "preserve"
 rm -f "$extra_file"
 
-# Re-install cleanly and verify clean uninstall succeeds.
 "$INSTALLER" --source "$PLUGIN" --target "$target" >/dev/null
 check "re-install after removing unmanaged file exits 0" "$?" "0"
 "$INSTALLER" --uninstall --target "$target" >/dev/null

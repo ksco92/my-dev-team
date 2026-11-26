@@ -343,10 +343,7 @@ def install(source: Path, target: Path) -> None:
 
 def uninstall(target: Path) -> None:
     """
-    Remove an Antigravity plugin directory previously created by ``install-agy``.
-
-    Only deletes installer-managed symlinks, manifests, agent stubs, and the marker file so
-    unrelated files inside ``target`` are never removed.
+    Remove installer-managed Antigravity plugin files and the target directory.
 
     :param target: destination Antigravity plugin directory to remove.
     :raises RuntimeError: when ``target`` is a symlink, lacks the marker, or holds unmanaged files.
