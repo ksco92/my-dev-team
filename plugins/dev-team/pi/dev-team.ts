@@ -4,6 +4,7 @@
  * registers the run_agent tool over pi, claude, and agy backends.
  */
 import { spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,27 +14,19 @@ import type { TSchema } from "typebox";
 const EXTENSION_PATH = fileURLToPath(import.meta.url);
 const DEFAULT_PLUGIN_ROOT = path.resolve(path.dirname(EXTENSION_PATH), "..");
 
-const CANONICAL_AGENTS = [
-  "implementer",
+const REVIEW_GATES_LIST = [
   "pr-reviewer",
   "code-health-reviewer",
   "oss-readiness-reviewer",
   "security-reviewer",
   "readme-reviewer",
-  "cold-reader",
 ] as const;
 
+const CANONICAL_AGENTS = ["implementer", ...REVIEW_GATES_LIST, "cold-reader"] as const;
 type CanonicalAgent = (typeof CANONICAL_AGENTS)[number];
 
-const REVIEW_GATES: ReadonlySet<string> = new Set([
-  "pr-reviewer",
-  "code-health-reviewer",
-  "oss-readiness-reviewer",
-  "security-reviewer",
-  "readme-reviewer",
-]);
-
-const READ_ONLY_AGENTS: ReadonlySet<string> = new Set([...REVIEW_GATES, "cold-reader"]);
+const REVIEW_GATES: ReadonlySet<string> = new Set(REVIEW_GATES_LIST);
+const READ_ONLY_AGENTS: ReadonlySet<string> = new Set([...REVIEW_GATES_LIST, "cold-reader"]);
 
 const BACKENDS = ["pi", "claude", "agy"] as const;
 type Backend = (typeof BACKENDS)[number];
@@ -90,14 +83,13 @@ const RUN_AGENT_SCHEMA = {
     },
     timeoutSeconds: {
       type: "number",
-      description: "Execution timeout in seconds (default 600, max 3600).",
+      description: `Execution timeout in seconds (default ${DEFAULT_AGENT_TIMEOUT_SECONDS}, max ${MAX_AGENT_TIMEOUT_SECONDS}).`,
     },
   },
 } as const;
 
 interface ExtensionOptions {
   pluginRoot?: string;
-  extensionPath?: string;
 }
 
 interface CommandResult {
@@ -126,6 +118,15 @@ interface RunAgentParams {
   timeoutSeconds?: unknown;
 }
 
+interface ValidatedRunAgentParams {
+  agent: CanonicalAgent;
+  backend: Backend;
+  prompt: string;
+  workDir: string;
+  model?: string;
+  timeoutSeconds: number;
+}
+
 interface RunAgentDetails {
   agent: CanonicalAgent;
   backend: Backend;
@@ -135,71 +136,88 @@ interface RunAgentDetails {
   verdictError?: string;
 }
 
+interface VerdictResult {
+  verdictValid: boolean;
+  verdictError?: string;
+}
+
+function isExecutableFile(filePath: string): boolean {
+  try {
+    if (!fs.statSync(filePath).isFile()) return false;
+    fs.accessSync(filePath, fs.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function hasExecutableOnPath(binary: string, pathEnv: string | undefined): boolean {
   for (const dir of (pathEnv ?? "").split(path.delimiter)) {
-    if (!dir) continue;
-    const candidate = path.join(dir, binary);
-    try {
-      if (!fs.statSync(candidate).isFile()) continue;
-      fs.accessSync(candidate, fs.constants.X_OK);
-      return true;
-    } catch {
-      continue;
-    }
+    if (dir && isExecutableFile(path.join(dir, binary))) return true;
   }
   return false;
 }
 
-function runCommand(
-  command: string,
-  args: string[],
-  options: {
-    cwd?: string;
-    env: NodeJS.ProcessEnv;
-    stdin?: string;
-    timeoutMs: number;
-    signal?: AbortSignal;
-  },
-): Promise<CommandResult> {
+function collectStream(stream: NodeJS.ReadableStream | null): () => string {
+  const chunks: Buffer[] = [];
+  let bytes = 0;
+  stream?.on("data", (chunk: Buffer) => {
+    if (bytes >= MAX_OUTPUT_BYTES) return;
+    const slice = bytes + chunk.length > MAX_OUTPUT_BYTES ? chunk.subarray(0, MAX_OUTPUT_BYTES - bytes) : chunk;
+    chunks.push(slice);
+    bytes += slice.length;
+  });
+  return () => Buffer.concat(chunks).toString("utf8");
+}
+
+interface RunCommandOptions {
+  cwd?: string;
+  env: NodeJS.ProcessEnv;
+  stdin?: string;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}
+
+function killProcessTree(child: ChildProcess, sig: NodeJS.Signals): void {
+  try {
+    if (process.platform !== "win32" && child.pid) process.kill(-child.pid, sig);
+    else child.kill(sig);
+  } catch {}
+}
+
+function runCommand(command: string, args: string[], options: RunCommandOptions): Promise<CommandResult> {
   if (options.signal?.aborted) {
-    return Promise.resolve({
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      timedOut: false,
-      aborted: true,
-    });
+    return Promise.resolve({ exitCode: null, stdout: "", stderr: "", timedOut: false, aborted: true });
   }
 
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd: options.cwd,
       env: options.env,
+      detached: process.platform !== "win32",
       stdio: [options.stdin !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
     });
-
-    const outChunks: Buffer[] = [];
-    const errChunks: Buffer[] = [];
-    let outBytes = 0;
-    let errBytes = 0;
+    const readStdout = collectStream(child.stdout);
+    const readStderr = collectStream(child.stderr);
     let timedOut = false;
     let aborted = false;
     let settled = false;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const finish = (result: CommandResult): void => {
+    const terminate = (): void => {
+      killProcessTree(child, "SIGTERM");
+      killTimer = setTimeout(() => killProcessTree(child, "SIGKILL"), 2_000);
+      killTimer.unref?.();
+    };
+
+    const finish = (exitCode: number | null, err?: NodeJS.ErrnoException): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutHandle);
       if (killTimer) clearTimeout(killTimer);
       options.signal?.removeEventListener("abort", onAbort);
-      resolve(result);
-    };
-
-    const terminate = (): void => {
-      child.kill("SIGTERM");
-      killTimer = setTimeout(() => child.kill("SIGKILL"), 2_000);
-      killTimer.unref?.();
+      const base = { exitCode, stdout: readStdout(), stderr: readStderr(), timedOut, aborted };
+      resolve(err ? { ...base, errorCode: err.code, errorMessage: err.message } : base);
     };
 
     const onAbort = (): void => {
@@ -214,42 +232,8 @@ function runCommand(
     }, options.timeoutMs);
     timeoutHandle.unref?.();
 
-    child.stdout?.on("data", (chunk: Buffer) => {
-      if (outBytes >= MAX_OUTPUT_BYTES) return;
-      const slice = outBytes + chunk.length > MAX_OUTPUT_BYTES ? chunk.subarray(0, MAX_OUTPUT_BYTES - outBytes) : chunk;
-      outChunks.push(slice);
-      outBytes += slice.length;
-    });
-
-    child.stderr?.on("data", (chunk: Buffer) => {
-      if (errBytes >= MAX_OUTPUT_BYTES) return;
-      const slice = errBytes + chunk.length > MAX_OUTPUT_BYTES ? chunk.subarray(0, MAX_OUTPUT_BYTES - errBytes) : chunk;
-      errChunks.push(slice);
-      errBytes += slice.length;
-    });
-
-    child.on("error", (err: NodeJS.ErrnoException) => {
-      finish({
-        exitCode: null,
-        stdout: Buffer.concat(outChunks).toString("utf8"),
-        stderr: Buffer.concat(errChunks).toString("utf8"),
-        timedOut,
-        aborted,
-        errorCode: err.code,
-        errorMessage: err.message,
-      });
-    });
-
-    child.on("close", (code) => {
-      finish({
-        exitCode: code,
-        stdout: Buffer.concat(outChunks).toString("utf8"),
-        stderr: Buffer.concat(errChunks).toString("utf8"),
-        timedOut,
-        aborted,
-      });
-    });
-
+    child.on("error", (err: NodeJS.ErrnoException) => finish(null, err));
+    child.on("close", (code) => finish(code));
     if (options.stdin !== undefined && child.stdin) {
       child.stdin.on("error", () => {});
       child.stdin.end(options.stdin);
@@ -292,7 +276,6 @@ function parseAgentFile(raw: string, pluginRoot: string): AgentDefinition {
 
   const toolsRaw = lists.get("tools") ?? (scalars.get("tools") ? scalars.get("tools")!.split(",") : []);
   const skillsRaw = lists.get("skills") ?? (scalars.get("skills") ? scalars.get("skills")!.split(",") : []);
-
   return {
     tools: toolsRaw.map((t) => t.trim()).filter(Boolean),
     model: scalars.get("model")?.trim() || undefined,
@@ -326,24 +309,12 @@ function extractHookReason(hookName: string, result: CommandResult): string {
     };
     const reason = parsed?.hookSpecificOutput?.permissionDecisionReason;
     if (typeof reason === "string" && reason.trim()) return reason.trim();
-  } catch {
-    // Non-JSON hook output falls through to stderr/stdout.
-  }
+  } catch {}
   return result.stderr.trim() || result.stdout.trim() || `blocked by ${hookName}`;
-}
-
-interface ValidatedRunAgentParams {
-  agent: CanonicalAgent;
-  backend: Backend;
-  prompt: string;
-  workDir: string;
-  model?: string;
-  timeoutSeconds: number;
 }
 
 function validateRunAgentParams(rawParams: unknown, defaultCwd: string): ValidatedRunAgentParams {
   const params = (rawParams ?? {}) as RunAgentParams;
-
   if (typeof params.agent !== "string" || !(CANONICAL_AGENTS as readonly string[]).includes(params.agent)) {
     throw new Error(
       `run_agent: unknown agent "${String(params.agent ?? "")}". Expected one of: ${CANONICAL_AGENTS.join(", ")}.`,
@@ -373,14 +344,13 @@ function validateRunAgentParams(rawParams: unknown, defaultCwd: string): Validat
   if (typeof workDir !== "string" || !workDir.trim()) {
     throw new Error("run_agent: cwd must be an existing directory path.");
   }
+  let stat: fs.Stats;
   try {
-    if (!fs.statSync(workDir).isDirectory()) {
-      throw new Error(`run_agent: cwd is not a directory: ${workDir}`);
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message.startsWith("run_agent:")) throw err;
+    stat = fs.statSync(workDir);
+  } catch {
     throw new Error(`run_agent: cwd does not exist: ${workDir}`);
   }
+  if (!stat.isDirectory()) throw new Error(`run_agent: cwd is not a directory: ${workDir}`);
 
   let model: string | undefined;
   if (params.model !== undefined) {
@@ -395,68 +365,73 @@ function validateRunAgentParams(rawParams: unknown, defaultCwd: string): Validat
   }
 
   const timeoutSeconds = params.timeoutSeconds ?? DEFAULT_AGENT_TIMEOUT_SECONDS;
-  if (
-    typeof timeoutSeconds !== "number" ||
-    !Number.isFinite(timeoutSeconds) ||
-    timeoutSeconds <= 0 ||
-    timeoutSeconds > MAX_AGENT_TIMEOUT_SECONDS
-  ) {
+  if (typeof timeoutSeconds !== "number" || !Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MAX_AGENT_TIMEOUT_SECONDS) {
     throw new Error(`run_agent: timeoutSeconds must be a finite number > 0 and <= ${MAX_AGENT_TIMEOUT_SECONDS}.`);
   }
 
   return { agent, backend, prompt: params.prompt.trim(), workDir, model, timeoutSeconds };
 }
 
-function buildBackendInvocation(
-  agent: CanonicalAgent,
-  backend: Backend,
+function assembleAgentPrompt(pluginRoot: string, agentDef: AgentDefinition, prompt: string): string {
+  const sections = [`Plugin root (CLAUDE_PLUGIN_ROOT): ${pluginRoot}`];
+  if (agentDef.skills.length > 0) {
+    const skillPaths = agentDef.skills.map((skill) => path.join(pluginRoot, "skills", skill, "SKILL.md"));
+    sections.push(`Preloaded skill(s): read ${skillPaths.join(", ")} before starting.`);
+  }
+  sections.push(agentDef.body.trim(), `## Task\n\n${prompt}`);
+  return sections.join("\n\n");
+}
+
+function buildClaudeInvocation(
+  params: ValidatedRunAgentParams,
   agentDef: AgentDefinition,
   assembledPrompt: string,
-  model: string | undefined,
-  timeoutSeconds: number,
-  extensionPath: string,
-): { binary: string; args: string[]; stdin?: string } {
-  const isReadOnly = READ_ONLY_AGENTS.has(agent);
-
-  if (backend === "claude") {
-    const resolvedModel = model ?? agentDef.model;
-    if (!resolvedModel || !CLAUDE_MODEL_ALIASES.has(resolvedModel)) {
-      throw new Error(
-        `run_agent (claude): model must be an alias ("sonnet", "opus", or "fable"), got "${resolvedModel ?? ""}".`,
-      );
-    }
-    if (agent === "security-reviewer" && resolvedModel !== "opus") {
-      throw new Error(`run_agent (claude): security-reviewer requires model "opus" (got "${resolvedModel}").`);
-    }
-    if (agent !== "cold-reader" && resolvedModel === "fable") {
-      throw new Error(`run_agent (claude): model "fable" is only allowed for cold-reader (got "${agent}").`);
-    }
-    const claudeTools = isReadOnly
-      ? agentDef.tools.filter((t) => !WRITE_TOOLS_CLAUDE.has(t))
-      : agentDef.tools;
-    return {
-      binary: "claude",
-      args: ["-p", "--model", resolvedModel, ...(claudeTools.length > 0 ? ["--tools", claudeTools.join(",")] : [])],
-      stdin: assembledPrompt,
-    };
+): { binary: string; args: string[]; stdin: string } {
+  const resolvedModel = params.model ?? agentDef.model;
+  if (!resolvedModel || !CLAUDE_MODEL_ALIASES.has(resolvedModel)) {
+    throw new Error(
+      `run_agent (claude): model must be an alias ("sonnet", "opus", or "fable"), got "${resolvedModel ?? ""}".`,
+    );
   }
+  if (params.agent === "security-reviewer" && resolvedModel !== "opus") {
+    throw new Error(`run_agent (claude): security-reviewer requires model "opus" (got "${resolvedModel}").`);
+  }
+  if (params.agent !== "cold-reader" && resolvedModel === "fable") {
+    throw new Error(`run_agent (claude): model "fable" is only allowed for cold-reader (got "${params.agent}").`);
+  }
+  const claudeTools = READ_ONLY_AGENTS.has(params.agent)
+    ? agentDef.tools.filter((t) => !WRITE_TOOLS_CLAUDE.has(t))
+    : agentDef.tools;
+  return {
+    binary: "claude",
+    args: ["-p", "--model", resolvedModel, ...(claudeTools.length > 0 ? ["--tools", claudeTools.join(",")] : [])],
+    stdin: assembledPrompt,
+  };
+}
 
-  if (backend === "agy") {
+function buildBackendInvocation(
+  params: ValidatedRunAgentParams,
+  agentDef: AgentDefinition,
+  assembledPrompt: string,
+): { binary: string; args: string[]; stdin?: string } {
+  if (params.backend === "claude") {
+    return buildClaudeInvocation(params, agentDef, assembledPrompt);
+  }
+  if (params.backend === "agy") {
     return {
       binary: "agy",
       args: [
         "--mode",
-        isReadOnly ? "plan" : "auto",
+        READ_ONLY_AGENTS.has(params.agent) ? "plan" : "auto",
         "--disable-slash-commands",
         "--print-timeout",
-        `${Math.ceil(timeoutSeconds)}s`,
-        ...(model ? ["--model", model] : []),
+        `${Math.ceil(params.timeoutSeconds)}s`,
+        ...(params.model ? ["--model", params.model] : []),
         `--print=${assembledPrompt}`,
       ],
     };
   }
-
-  const piTools = mapPiTools(agent, agentDef.tools);
+  const piTools = mapPiTools(params.agent, agentDef.tools);
   return {
     binary: "pi",
     args: [
@@ -464,12 +439,12 @@ function buildBackendInvocation(
       "--no-session",
       "--no-extensions",
       "-e",
-      extensionPath,
+      EXTENSION_PATH,
       "--tools",
       piTools.join(","),
       "--exclude-tools",
       "run_agent",
-      ...(model ? ["--model", model] : []),
+      ...(params.model ? ["--model", params.model] : []),
       "--",
       "Follow the agent instructions and task provided on stdin.",
     ],
@@ -483,22 +458,18 @@ async function validateGateVerdict(
   pluginRoot: string,
   workDir: string,
   env: NodeJS.ProcessEnv,
-): Promise<{ verdictValid: boolean; verdictError?: string }> {
+): Promise<VerdictResult> {
   if (!stdout.trim()) {
     return { verdictValid: false, verdictError: "verdict-guard: review gate produced empty output with no verdict block." };
   }
-  if (!hasExecutableOnPath("jq", process.env.PATH)) {
+  if (!hasExecutableOnPath("jq", env.PATH)) {
     return { verdictValid: false, verdictError: "verdict-guard: jq is required on PATH to validate review-gate verdicts." };
   }
   const guardPath = path.join(pluginRoot, "hooks", "verdict-guard.sh");
   const guardRes = await runCommand(guardPath, [], {
     cwd: workDir,
     env,
-    stdin: JSON.stringify({
-      agent_type: agent,
-      stop_hook_active: false,
-      last_assistant_message: stdout,
-    }),
+    stdin: JSON.stringify({ agent_type: agent, stop_hook_active: false, last_assistant_message: stdout }),
     timeoutMs: HOOK_TIMEOUT_MS,
   });
   if (guardRes.errorCode || guardRes.timedOut) {
@@ -509,9 +480,7 @@ async function validateGateVerdict(
         : `verdict-guard failed to run: ${guardRes.errorMessage ?? guardRes.errorCode}`,
     };
   }
-  if (guardRes.exitCode === 0) {
-    return { verdictValid: true };
-  }
+  if (guardRes.exitCode === 0) return { verdictValid: true };
   return {
     verdictValid: false,
     verdictError:
@@ -519,76 +488,188 @@ async function validateGateVerdict(
   };
 }
 
+function formatRunAgentResult(
+  params: ValidatedRunAgentParams,
+  binary: string,
+  res: CommandResult,
+  verdict: VerdictResult | undefined,
+): { content: [{ type: "text"; text: string }]; details: RunAgentDetails } {
+  const exitCode = res.exitCode ?? 1;
+  const isGate = REVIEW_GATES.has(params.agent);
+  const banners: string[] = [];
+  if (isGate && params.backend === "pi") banners.push(SELF_CHECK_BANNER);
+  if (verdict && !verdict.verdictValid) {
+    banners.push(`[VERDICT GUARD FAILED: ${verdict.verdictError ?? "missing or invalid verdict block"}]`);
+  }
+
+  let body = res.stdout.trimEnd();
+  if (exitCode !== 0) {
+    const parts = [`[${binary} exited with code ${exitCode}]`];
+    if (body) parts.push(body);
+    if (res.stderr.trim()) parts.push(res.stderr.trim());
+    body = parts.join("\n\n");
+  } else if (!body && res.stderr.trim()) {
+    body = res.stderr.trim();
+  }
+
+  const details: RunAgentDetails = {
+    agent: params.agent,
+    backend: params.backend,
+    authoritative: params.backend !== "pi",
+    exitCode,
+    ...(verdict
+      ? { verdictValid: verdict.verdictValid, ...(verdict.verdictError ? { verdictError: verdict.verdictError } : {}) }
+      : {}),
+  };
+  return {
+    content: [{ type: "text", text: [...banners, body].filter(Boolean).join("\n\n") }],
+    details,
+  };
+}
+
+async function loadSessionContext(
+  pluginRoot: string,
+  cwd: string,
+  contextCache: Map<string, string>,
+  notifyWarn: (message: string) => void,
+): Promise<string | undefined> {
+  const cached = contextCache.get(cwd);
+  if (cached) return cached;
+
+  const scriptPath = path.join(pluginRoot, "hooks", "session-context.sh");
+  if (!isExecutableFile(scriptPath)) {
+    notifyWarn(`dev-team: session-context hook not executable: ${scriptPath}`);
+    return undefined;
+  }
+
+  const hookEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
+  delete hookEnv.CLAUDE_PROJECT_DIR;
+  const payload = JSON.stringify({ cwd });
+  const spawnCwd = fs.existsSync(cwd) ? cwd : undefined;
+
+  const parts: string[] = [];
+  let hadError = false;
+  for (const block of ["policy", "process"] as const) {
+    const res = await runCommand(scriptPath, [block], {
+      cwd: spawnCwd,
+      env: hookEnv,
+      stdin: payload,
+      timeoutMs: HOOK_TIMEOUT_MS,
+    });
+    if (res.errorCode || res.timedOut || res.exitCode !== 0) {
+      hadError = true;
+      const detail = res.timedOut ? "timed out" : res.errorMessage || res.stderr.trim() || `exit ${res.exitCode}`;
+      notifyWarn(`dev-team: session-context (${block}) failed: ${detail}`);
+      continue;
+    }
+    const text = res.stdout.trim();
+    if (!text) continue;
+    parts.push(block === "policy" ? `Plugin root (\`\${CLAUDE_PLUGIN_ROOT}\`): \`${pluginRoot}\`\n\n${text}` : text);
+  }
+
+  const combined = parts.join("\n\n");
+  if (!combined) return undefined;
+  if (!hadError) contextCache.set(cwd, combined);
+  return combined;
+}
+
+async function runBashHooks(
+  pluginRoot: string,
+  command: unknown,
+  cwd: string,
+): Promise<{ block: true; reason: string } | undefined> {
+  if (typeof command !== "string") {
+    return { block: true, reason: "dev-team: unexpected non-string bash command." };
+  }
+  if (command === "") return undefined;
+  if (!hasExecutableOnPath("jq", process.env.PATH)) {
+    return { block: true, reason: "dev-team: jq is required on PATH to run bash security hooks." };
+  }
+
+  const payload = JSON.stringify({ tool_input: { command }, cwd });
+  const hookEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
+  const spawnCwd = cwd && fs.existsSync(cwd) ? cwd : undefined;
+  const hooks: ReadonlyArray<readonly [string, number]> = [
+    ["merge-gate.sh", MERGE_GATE_TIMEOUT_MS],
+    ["attribution-guard.sh", HOOK_TIMEOUT_MS],
+  ];
+
+  for (const [hookFile, timeoutMs] of hooks) {
+    const scriptPath = path.join(pluginRoot, "hooks", hookFile);
+    if (!isExecutableFile(scriptPath)) {
+      return { block: true, reason: `dev-team: hook script not executable: ${scriptPath}` };
+    }
+    const res = await runCommand(scriptPath, [], { cwd: spawnCwd, env: hookEnv, stdin: payload, timeoutMs });
+    if (res.timedOut) return { block: true, reason: `dev-team: ${hookFile} timed out after ${timeoutMs / 1000}s.` };
+    if (res.errorCode) {
+      return { block: true, reason: `dev-team: failed to execute ${hookFile}: ${res.errorMessage ?? res.errorCode}` };
+    }
+    if (res.exitCode !== 0) return { block: true, reason: extractHookReason(hookFile, res) };
+  }
+  return undefined;
+}
+
+async function executeRunAgent(
+  pluginRoot: string,
+  rawParams: unknown,
+  signal: AbortSignal | undefined,
+  defaultCwd: string,
+): Promise<{ content: [{ type: "text"; text: string }]; details: RunAgentDetails }> {
+  const params = validateRunAgentParams(rawParams, defaultCwd);
+  const agentPath = path.join(pluginRoot, "agents", `${params.agent}.md`);
+  if (!fs.existsSync(agentPath)) {
+    throw new Error(`run_agent: agent definition not found: ${agentPath}`);
+  }
+  const agentDef = parseAgentFile(fs.readFileSync(agentPath, "utf8"), pluginRoot);
+  const assembledPrompt = assembleAgentPrompt(pluginRoot, agentDef, params.prompt);
+  const { binary, args, stdin } = buildBackendInvocation(params, agentDef, assembledPrompt);
+  const childEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
+
+  const res = await runCommand(binary, args, {
+    cwd: params.workDir,
+    env: childEnv,
+    stdin,
+    timeoutMs: Math.round(params.timeoutSeconds * 1000),
+    signal,
+  });
+
+  if (res.errorCode === "ENOENT") {
+    const remediation: Record<Backend, string> = {
+      claude: 'Install Claude Code ("claude") on PATH, or run with backend="agy".',
+      agy: 'Install Antigravity CLI ("agy") on PATH, or run with backend="claude".',
+      pi: 'Install Pi ("pi") and ensure it is on PATH.',
+    };
+    throw new Error(`run_agent: "${binary}" binary not found on PATH (ENOENT). ${remediation[params.backend]}`);
+  }
+  if (res.errorCode) {
+    throw new Error(`run_agent: failed to spawn "${binary}": ${res.errorMessage ?? res.errorCode}`);
+  }
+  if (res.aborted) {
+    throw new Error(`run_agent: aborted "${params.agent}" on backend "${params.backend}".`);
+  }
+  if (res.timedOut) {
+    throw new Error(`run_agent: "${params.agent}" on backend "${params.backend}" timed out after ${params.timeoutSeconds}s.`);
+  }
+
+  const verdict =
+    REVIEW_GATES.has(params.agent) && (res.exitCode ?? 1) === 0
+      ? await validateGateVerdict(params.agent, res.stdout, pluginRoot, params.workDir, childEnv)
+      : undefined;
+  return formatRunAgentResult(params, binary, res, verdict);
+}
+
 export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOptions): void {
   const pluginRoot = options?.pluginRoot ?? DEFAULT_PLUGIN_ROOT;
-  const extensionPath = options?.extensionPath ?? EXTENSION_PATH;
   const contextCache = new Map<string, string>();
 
-  const warn = (
-    ctx: { hasUI?: boolean; ui?: { notify?: (message: string, level?: string) => void } },
-    message: string,
-  ): void => {
-    if (ctx.hasUI && ctx.ui?.notify) {
-      ctx.ui.notify(message, "warning");
-    } else {
-      process.stderr.write(`${message}\n`);
-    }
-  };
-
   pi.on("before_agent_start", async (event, ctx) => {
-    const cwd = ctx.cwd || process.cwd();
-    const target = event as { systemPromptOptions?: { sections?: Record<string, string> } };
-    const cached = contextCache.get(cwd);
-    if (cached) {
-      target.systemPromptOptions ??= {};
-      target.systemPromptOptions.sections ??= {};
-      target.systemPromptOptions.sections["dev-team"] = cached;
-      return;
-    }
-
-    const scriptPath = path.join(pluginRoot, "hooks", "session-context.sh");
-    try {
-      if (!fs.statSync(scriptPath).isFile()) throw new Error("not a file");
-      fs.accessSync(scriptPath, fs.constants.X_OK);
-    } catch {
-      warn(ctx, `dev-team: session-context hook not executable: ${scriptPath}`);
-      return;
-    }
-
-    const hookEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
-    delete hookEnv.CLAUDE_PROJECT_DIR;
-    const payload = JSON.stringify({ cwd });
-    const spawnCwd = fs.existsSync(cwd) ? cwd : undefined;
-
-    const parts: string[] = [];
-    let hadError = false;
-    for (const block of ["policy", "process"] as const) {
-      const res = await runCommand(scriptPath, [block], {
-        cwd: spawnCwd,
-        env: hookEnv,
-        stdin: payload,
-        timeoutMs: HOOK_TIMEOUT_MS,
-      });
-      if (res.errorCode || res.timedOut || res.exitCode !== 0) {
-        hadError = true;
-        const detail = res.timedOut
-          ? "timed out"
-          : res.errorMessage || res.stderr.trim() || `exit ${res.exitCode}`;
-        warn(ctx, `dev-team: session-context (${block}) failed: ${detail}`);
-        continue;
-      }
-      const text = res.stdout.trim();
-      if (!text) continue;
-      if (block === "policy") {
-        parts.push(`Plugin root (\`\${CLAUDE_PLUGIN_ROOT}\`): \`${pluginRoot}\`\n\n${text}`);
-      } else {
-        parts.push(text);
-      }
-    }
-
-    const combined = parts.join("\n\n");
+    const notifyWarn = (message: string): void => {
+      if (ctx.hasUI && ctx.ui?.notify) ctx.ui.notify(message, "warning");
+      else process.stderr.write(`${message}\n`);
+    };
+    const combined = await loadSessionContext(pluginRoot, ctx.cwd || process.cwd(), contextCache, notifyWarn);
     if (!combined) return;
-    if (!hadError) contextCache.set(cwd, combined);
+    const target = event as { systemPromptOptions?: { sections?: Record<string, string> } };
     target.systemPromptOptions ??= {};
     target.systemPromptOptions.sections ??= {};
     target.systemPromptOptions.sections["dev-team"] = combined;
@@ -596,56 +677,8 @@ export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOp
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName !== "bash") return;
-
     const input = event.input as Record<string, unknown> | undefined;
-    const command = input?.command;
-    if (typeof command !== "string") {
-      return { block: true, reason: "dev-team: unexpected non-string bash command." };
-    }
-    if (command === "") return;
-
-    if (!hasExecutableOnPath("jq", process.env.PATH)) {
-      return { block: true, reason: "dev-team: jq is required on PATH to run bash security hooks." };
-    }
-
-    const payload = JSON.stringify({ tool_input: { command }, cwd: ctx.cwd });
-    const hookEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
-    const spawnCwd = ctx.cwd && fs.existsSync(ctx.cwd) ? ctx.cwd : undefined;
-
-    const hooks: ReadonlyArray<readonly [string, number]> = [
-      ["merge-gate.sh", MERGE_GATE_TIMEOUT_MS],
-      ["attribution-guard.sh", HOOK_TIMEOUT_MS],
-    ];
-
-    for (const [hookFile, timeoutMs] of hooks) {
-      const scriptPath = path.join(pluginRoot, "hooks", hookFile);
-      try {
-        if (!fs.statSync(scriptPath).isFile()) throw new Error("not a file");
-        fs.accessSync(scriptPath, fs.constants.X_OK);
-      } catch {
-        return { block: true, reason: `dev-team: hook script not executable: ${scriptPath}` };
-      }
-
-      const res = await runCommand(scriptPath, [], {
-        cwd: spawnCwd,
-        env: hookEnv,
-        stdin: payload,
-        timeoutMs,
-      });
-
-      if (res.timedOut) {
-        return { block: true, reason: `dev-team: ${hookFile} timed out after ${timeoutMs / 1000}s.` };
-      }
-      if (res.errorCode) {
-        return {
-          block: true,
-          reason: `dev-team: failed to execute ${hookFile}: ${res.errorMessage ?? res.errorCode}`,
-        };
-      }
-      if (res.exitCode !== 0) {
-        return { block: true, reason: extractHookReason(hookFile, res) };
-      }
-    }
+    return runBashHooks(pluginRoot, input?.command, ctx.cwd);
   });
 
   pi.registerTool({
@@ -654,100 +687,6 @@ export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOp
     description:
       "Run a canonical dev-team subagent (implementer, five review gates, or cold-reader) on pi, claude, or agy backends.",
     parameters: RUN_AGENT_SCHEMA as unknown as TSchema,
-    async execute(_toolCallId, rawParams, signal, _onUpdate, ctx) {
-      const { agent, backend, prompt, workDir, model, timeoutSeconds } = validateRunAgentParams(rawParams, ctx.cwd);
-      const isGate = REVIEW_GATES.has(agent);
-
-      const agentPath = path.join(pluginRoot, "agents", `${agent}.md`);
-      if (!fs.existsSync(agentPath)) {
-        throw new Error(`run_agent: agent definition not found: ${agentPath}`);
-      }
-      const agentDef = parseAgentFile(fs.readFileSync(agentPath, "utf8"), pluginRoot);
-
-      const promptSections = [`Plugin root (CLAUDE_PLUGIN_ROOT): ${pluginRoot}`];
-      if (agentDef.skills.length > 0) {
-        const skillPaths = agentDef.skills.map((skill) => path.join(pluginRoot, "skills", skill, "SKILL.md"));
-        promptSections.push(`Preloaded skill(s): read ${skillPaths.join(", ")} before starting.`);
-      }
-      promptSections.push(agentDef.body.trim());
-      promptSections.push(`## Task\n\n${prompt}`);
-      const assembledPrompt = promptSections.join("\n\n");
-
-      const { binary, args, stdin: stdinPayload } = buildBackendInvocation(
-        agent,
-        backend,
-        agentDef,
-        assembledPrompt,
-        model,
-        timeoutSeconds,
-        extensionPath,
-      );
-
-      const childEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
-      const res = await runCommand(binary, args, {
-        cwd: workDir,
-        env: childEnv,
-        stdin: stdinPayload,
-        timeoutMs: Math.round(timeoutSeconds * 1000),
-        signal,
-      });
-
-      if (res.errorCode === "ENOENT") {
-        const remediation: Record<Backend, string> = {
-          claude: 'Install Claude Code ("claude") on PATH, or run with backend="agy".',
-          agy: 'Install Antigravity CLI ("agy") on PATH, or run with backend="claude".',
-          pi: 'Install Pi ("pi") and ensure it is on PATH.',
-        };
-        throw new Error(`run_agent: "${binary}" binary not found on PATH (ENOENT). ${remediation[backend]}`);
-      }
-      if (res.errorCode) {
-        throw new Error(`run_agent: failed to spawn "${binary}": ${res.errorMessage ?? res.errorCode}`);
-      }
-      if (res.aborted) {
-        throw new Error(`run_agent: aborted "${agent}" on backend "${backend}".`);
-      }
-      if (res.timedOut) {
-        throw new Error(`run_agent: "${agent}" on backend "${backend}" timed out after ${timeoutSeconds}s.`);
-      }
-
-      const exitCode = res.exitCode ?? 1;
-      const authoritative = backend !== "pi";
-      const verdict =
-        isGate && exitCode === 0
-          ? await validateGateVerdict(agent, res.stdout, pluginRoot, workDir, childEnv)
-          : undefined;
-
-      const banners: string[] = [];
-      if (isGate && backend === "pi") banners.push(SELF_CHECK_BANNER);
-      if (verdict && !verdict.verdictValid) {
-        banners.push(`[VERDICT GUARD FAILED: ${verdict.verdictError ?? "missing or invalid verdict block"}]`);
-      }
-
-      let body = res.stdout.trimEnd();
-      if (exitCode !== 0) {
-        const parts = [`[${binary} exited with code ${exitCode}]`];
-        if (body) parts.push(body);
-        if (res.stderr.trim()) parts.push(res.stderr.trim());
-        body = parts.join("\n\n");
-      } else if (!body && res.stderr.trim()) {
-        body = res.stderr.trim();
-      }
-
-      const text = [...banners, body].filter(Boolean).join("\n\n");
-      const details: RunAgentDetails = {
-        agent,
-        backend,
-        authoritative,
-        exitCode,
-        ...(verdict
-          ? { verdictValid: verdict.verdictValid, ...(verdict.verdictError ? { verdictError: verdict.verdictError } : {}) }
-          : {}),
-      };
-
-      return {
-        content: [{ type: "text", text }],
-        details,
-      };
-    },
+    execute: (_toolCallId, rawParams, signal, _onUpdate, ctx) => executeRunAgent(pluginRoot, rawParams, signal, ctx.cwd),
   });
 }

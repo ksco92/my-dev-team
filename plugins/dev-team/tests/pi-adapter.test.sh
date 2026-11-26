@@ -3,7 +3,7 @@
 # Run: bash plugins/dev-team/tests/pi-adapter.test.sh
 set -uo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 PLUGIN="$REPO/plugins/dev-team"
 EXT="$PLUGIN/pi/dev-team.ts"
 PKG="$REPO/package.json"
@@ -57,55 +57,41 @@ git -C "$TEST_REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m 
 STUB_BIN="$TMP/stubs"
 mkdir -p "$STUB_BIN"
 
-cat >"$STUB_BIN/pi" <<'EOF'
+cat >"$STUB_BIN/agent-stub.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-out_dir="${PI_STUB_OUT:?}"
-printf '%s\0' "$@" >"$out_dir/args.bin"
-cat >"$out_dir/stdin.txt"
-printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
-if [[ -n "${PI_STUB_STDERR:-}" ]]; then
-  printf '%s\n' "$PI_STUB_STDERR" >&2
-fi
-if [[ -n "${PI_STUB_STDOUT:-}" ]]; then
-  printf '%s\n' "$PI_STUB_STDOUT"
-fi
-exit "${PI_STUB_EXIT:-0}"
-EOF
-chmod +x "$STUB_BIN/pi"
+name="${0##*/}"
+prefix="$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')"
+out_var="${prefix}_STUB_OUT"
+stdout_var="${prefix}_STUB_STDOUT"
+stderr_var="${prefix}_STUB_STDERR"
+exit_var="${prefix}_STUB_EXIT"
+marker_var="${prefix}_STUB_SLEEP_MARKER"
 
-cat >"$STUB_BIN/claude" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-out_dir="${CLAUDE_STUB_OUT:?}"
+out_dir="${!out_var:?}"
 printf '%s\0' "$@" >"$out_dir/args.bin"
-cat >"$out_dir/stdin.txt"
+if [[ "$name" != "agy" ]]; then
+  cat >"$out_dir/stdin.txt"
+fi
 printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
-if [[ -n "${CLAUDE_STUB_STDERR:-}" ]]; then
-  printf '%s\n' "$CLAUDE_STUB_STDERR" >&2
-fi
-if [[ -n "${CLAUDE_STUB_STDOUT:-}" ]]; then
-  printf '%s\n' "$CLAUDE_STUB_STDOUT"
-fi
-exit "${CLAUDE_STUB_EXIT:-0}"
-EOF
-chmod +x "$STUB_BIN/claude"
 
-cat >"$STUB_BIN/agy" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-out_dir="${AGY_STUB_OUT:?}"
-printf '%s\0' "$@" >"$out_dir/args.bin"
-printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
-if [[ -n "${AGY_STUB_STDERR:-}" ]]; then
-  printf '%s\n' "$AGY_STUB_STDERR" >&2
+sleep_marker="${!marker_var:-}"
+if [[ -n "$sleep_marker" ]]; then
+  (sleep 1.2; touch "$sleep_marker") &
+  wait
 fi
-if [[ -n "${AGY_STUB_STDOUT:-}" ]]; then
-  printf '%s\n' "$AGY_STUB_STDOUT"
+if [[ -n "${!stderr_var:-}" ]]; then
+  printf '%s\n' "${!stderr_var}" >&2
 fi
-exit "${AGY_STUB_EXIT:-0}"
+if [[ -n "${!stdout_var:-}" ]]; then
+  printf '%s\n' "${!stdout_var}"
+fi
+exit "${!exit_var:-0}"
 EOF
-chmod +x "$STUB_BIN/agy"
+chmod +x "$STUB_BIN/agent-stub.sh"
+for bin in pi claude agy; do
+  ln -s "$STUB_BIN/agent-stub.sh" "$STUB_BIN/$bin"
+done
 
 # Counting session-context wrapper for cache verification.
 CACHE_PLUGIN="$TMP/cache-plugin"
@@ -204,6 +190,21 @@ const readArgs = (dir) => {
   return raw.endsWith("\0") ? raw.slice(0, -1).split("\0") : raw.split("\0");
 };
 
+async function withStubEnv(prefix, dirName, env, fn) {
+  const outDir = path.join(TMP, dirName);
+  fs.mkdirSync(outDir, { recursive: true });
+  const keys = [`${prefix}_STUB_OUT`, ...Object.keys(env)];
+  process.env.PATH = stubPath;
+  process.env[`${prefix}_STUB_OUT`] = outDir;
+  for (const [k, v] of Object.entries(env)) process.env[k] = v;
+  try {
+    return await fn(outDir);
+  } finally {
+    for (const k of keys) delete process.env[k];
+    process.env.PATH = origPath;
+  }
+}
+
 // --- before_agent_start ---
 await test("before_agent_start injects policy and process into systemPromptOptions.sections['dev-team']", async () => {
   const { handlers } = createHarness();
@@ -229,19 +230,16 @@ await test("before_agent_start caches per cwd and refreshes for a new cwd", asyn
 
   const ev1 = { systemPromptOptions: { sections: {} } };
   await fn(ev1, { cwd: dirA, hasUI: false });
-  const callsAfter1 = fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length;
-  assert.equal(callsAfter1, 2);
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 2);
 
   const ev2 = { systemPromptOptions: { sections: {} } };
   await fn(ev2, { cwd: dirA, hasUI: false });
-  const callsAfter2 = fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length;
-  assert.equal(callsAfter2, 2);
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 2);
   assert.equal(ev2.systemPromptOptions.sections["dev-team"], ev1.systemPromptOptions.sections["dev-team"]);
 
   const ev3 = { systemPromptOptions: { sections: {} } };
   await fn(ev3, { cwd: dirB, hasUI: false });
-  const callsAfter3 = fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length;
-  assert.equal(callsAfter3, 4);
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 4);
   assert.ok(ev3.systemPromptOptions.sections["dev-team"].includes(`cwd=${dirB}`));
 });
 
@@ -482,22 +480,13 @@ await test("run_agent respects an already-aborted AbortSignal", async () => {
 
 // --- run_agent end-to-end with stubbed backends + real verdict-guard.sh ---
 await test("run_agent defaults implementer to pi backend with write tools and stdin prompt", async () => {
-  const outDir = path.join(TMP, "stub-pi-impl");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.PI_STUB_OUT = outDir;
-  process.env.PI_STUB_STDOUT = "implemented slice";
-  process.env.PI_STUB_EXIT = "0";
-  try {
+  await withStubEnv("PI", "stub-pi-impl", { PI_STUB_STDOUT: "implemented slice", PI_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({ agent: "implementer", prompt: "Build feature X" });
     const args = readArgs(outDir);
     const stdinText = fs.readFileSync(path.join(outDir, "stdin.txt"), "utf8");
-    const envRoot = fs.readFileSync(path.join(outDir, "plugin_root.txt"), "utf8");
 
-    assert.equal(envRoot, PLUGIN);
-    assert.ok(args.includes("--print"));
-    assert.ok(args.includes("--no-session"));
-    assert.ok(args.includes("--no-extensions"));
+    assert.equal(fs.readFileSync(path.join(outDir, "plugin_root.txt"), "utf8"), PLUGIN);
+    assert.ok(args.includes("--print") && args.includes("--no-session") && args.includes("--no-extensions"));
     assert.equal(args[args.indexOf("-e") + 1], EXT);
     assert.equal(args[args.indexOf("--tools") + 1], "read,write,edit,find,ls,grep,bash");
     assert.equal(args[args.indexOf("--exclude-tools") + 1], "run_agent");
@@ -509,43 +498,22 @@ await test("run_agent defaults implementer to pi backend with write tools and st
     assert.equal(res.details.exitCode, 0);
     assert.equal(res.details.verdictValid, undefined);
     assert.equal(res.content[0].text, "implemented slice");
-  } finally {
-    delete process.env.PI_STUB_OUT;
-    delete process.env.PI_STUB_STDOUT;
-    delete process.env.PI_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (pi) restricts cold-reader to read-only without bash, edit, or write", async () => {
-  const outDir = path.join(TMP, "stub-pi-cold");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.PI_STUB_OUT = outDir;
-  process.env.PI_STUB_STDOUT = "cold read report";
-  process.env.PI_STUB_EXIT = "0";
-  try {
+  await withStubEnv("PI", "stub-pi-cold", { PI_STUB_STDOUT: "cold read report", PI_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({ agent: "cold-reader", prompt: "Read README.md" });
     const args = readArgs(outDir);
     assert.equal(args[args.indexOf("--tools") + 1], "read");
     assert.equal(res.details.backend, "pi");
     assert.equal(res.details.authoritative, false);
-  } finally {
-    delete process.env.PI_STUB_OUT;
-    delete process.env.PI_STUB_STDOUT;
-    delete process.env.PI_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (pi) review gate prepends SELF-CHECK ONLY banner and runs real verdict-guard.sh", async () => {
-  const outDir = path.join(TMP, "stub-pi-gate");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.PI_STUB_OUT = outDir;
-  process.env.PI_STUB_STDOUT = "Looks good.\n\nGATE: code-health\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
-  process.env.PI_STUB_EXIT = "0";
-  try {
+  const validOut = "Looks good.\n\nGATE: code-health\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
+  await withStubEnv("PI", "stub-pi-gate", { PI_STUB_STDOUT: validOut, PI_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({ agent: "code-health-reviewer", backend: "pi", prompt: "Audit diff" });
     const args = readArgs(outDir);
     const stdinText = fs.readFileSync(path.join(outDir, "stdin.txt"), "utf8");
@@ -564,22 +532,12 @@ await test("run_agent (pi) review gate prepends SELF-CHECK ONLY banner and runs 
     assert.ok(badRes.details.verdictError.includes("verdict-guard"));
     assert.ok(badRes.content[0].text.includes("[SELF-CHECK ONLY — NON-AUTHORITATIVE:"));
     assert.ok(badRes.content[0].text.includes("[VERDICT GUARD FAILED:"));
-  } finally {
-    delete process.env.PI_STUB_OUT;
-    delete process.env.PI_STUB_STDOUT;
-    delete process.env.PI_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (claude) delivers prompt via stdin, enforces read-only tools, and validates verdict", async () => {
-  const outDir = path.join(TMP, "stub-claude-pr");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.CLAUDE_STUB_OUT = outDir;
-  process.env.CLAUDE_STUB_STDOUT = "Clean.\n\nGATE: pr-reviewer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
-  process.env.CLAUDE_STUB_EXIT = "0";
-  try {
+  const validOut = "Clean.\n\nGATE: pr-reviewer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
+  await withStubEnv("CLAUDE", "stub-claude-pr", { CLAUDE_STUB_STDOUT: validOut, CLAUDE_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({
       agent: "pr-reviewer",
       backend: "claude",
@@ -593,22 +551,12 @@ await test("run_agent (claude) delivers prompt via stdin, enforces read-only too
     assert.equal(res.details.authoritative, true);
     assert.equal(res.details.verdictValid, true);
     assert.ok(!res.content[0].text.includes("SELF-CHECK ONLY"));
-  } finally {
-    delete process.env.CLAUDE_STUB_OUT;
-    delete process.env.CLAUDE_STUB_STDOUT;
-    delete process.env.CLAUDE_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (claude) surfaces verdict-guard failure on inconsistent PASS/FINDINGS", async () => {
-  const outDir = path.join(TMP, "stub-claude-sec");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.CLAUDE_STUB_OUT = outDir;
-  process.env.CLAUDE_STUB_STDOUT = "GATE: security-review\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 2";
-  process.env.CLAUDE_STUB_EXIT = "0";
-  try {
+  const badOut = "GATE: security-review\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 2";
+  await withStubEnv("CLAUDE", "stub-claude-sec", { CLAUDE_STUB_STDOUT: badOut, CLAUDE_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({ agent: "security-reviewer", backend: "claude", prompt: "Audit security" });
     const args = readArgs(outDir);
     assert.equal(args[args.indexOf("--model") + 1], "opus");
@@ -616,44 +564,19 @@ await test("run_agent (claude) surfaces verdict-guard failure on inconsistent PA
     assert.equal(res.details.verdictValid, false);
     assert.ok(res.details.verdictError.includes("PASS requires zero findings"));
     assert.ok(res.content[0].text.includes("[VERDICT GUARD FAILED:"));
-  } finally {
-    delete process.env.CLAUDE_STUB_OUT;
-    delete process.env.CLAUDE_STUB_STDOUT;
-    delete process.env.CLAUDE_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (claude) permits fable on cold-reader", async () => {
-  const outDir = path.join(TMP, "stub-claude-cold");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.CLAUDE_STUB_OUT = outDir;
-  process.env.CLAUDE_STUB_STDOUT = "Cold read notes";
-  process.env.CLAUDE_STUB_EXIT = "0";
-  try {
+  await withStubEnv("CLAUDE", "stub-claude-cold", { CLAUDE_STUB_STDOUT: "Cold read notes", CLAUDE_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({ agent: "cold-reader", backend: "claude", prompt: "Cold read" });
-    const args = readArgs(outDir);
-    assert.deepEqual(args, ["-p", "--model", "fable", "--tools", "Read,WebFetch,WebSearch"]);
+    assert.deepEqual(readArgs(outDir), ["-p", "--model", "fable", "--tools", "Read,WebFetch,WebSearch"]);
     assert.equal(res.details.authoritative, true);
-  } finally {
-    delete process.env.CLAUDE_STUB_OUT;
-    delete process.env.CLAUDE_STUB_STDOUT;
-    delete process.env.CLAUDE_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (agy) uses --mode auto for implementer and --mode plan for gates with --print=<prompt>", async () => {
-  const implDir = path.join(TMP, "stub-agy-impl");
-  const gateDir = path.join(TMP, "stub-agy-gate");
-  fs.mkdirSync(implDir, { recursive: true });
-  fs.mkdirSync(gateDir, { recursive: true });
-  process.env.PATH = stubPath;
-  try {
-    process.env.AGY_STUB_OUT = implDir;
-    process.env.AGY_STUB_STDOUT = "agy implemented";
-    process.env.AGY_STUB_EXIT = "0";
+  await withStubEnv("AGY", "stub-agy-impl", { AGY_STUB_STDOUT: "agy implemented", AGY_STUB_EXIT: "0" }, async (outDir) => {
     const implRes = await callAgent({
       agent: "implementer",
       backend: "agy",
@@ -661,7 +584,7 @@ await test("run_agent (agy) uses --mode auto for implementer and --mode plan for
       timeoutSeconds: 120,
       prompt: "Implement widget",
     });
-    const implArgs = readArgs(implDir);
+    const implArgs = readArgs(outDir);
     assert.equal(implArgs[implArgs.indexOf("--mode") + 1], "auto");
     assert.ok(implArgs.includes("--disable-slash-commands"));
     assert.equal(implArgs[implArgs.indexOf("--print-timeout") + 1], "120s");
@@ -669,37 +592,23 @@ await test("run_agent (agy) uses --mode auto for implementer and --mode plan for
     assert.ok(!implArgs.includes("--agent"));
     assert.ok(implArgs.some((a) => a.startsWith("--print=") && a.includes("Implement widget")));
     assert.equal(implRes.details.authoritative, true);
+  });
 
-    process.env.AGY_STUB_OUT = gateDir;
-    process.env.AGY_STUB_STDOUT = "GATE: readme-writer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
-    const gateRes = await callAgent({
-      agent: "readme-reviewer",
-      backend: "agy",
-      prompt: "Check README",
-    });
-    const gateArgs = readArgs(gateDir);
+  const gateOut = "GATE: readme-writer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0";
+  await withStubEnv("AGY", "stub-agy-gate", { AGY_STUB_STDOUT: gateOut, AGY_STUB_EXIT: "0" }, async (outDir) => {
+    const gateRes = await callAgent({ agent: "readme-reviewer", backend: "agy", prompt: "Check README" });
+    const gateArgs = readArgs(outDir);
     assert.equal(gateArgs[gateArgs.indexOf("--mode") + 1], "plan");
     assert.ok(!gateArgs.includes("--agent"));
     const printArg = gateArgs.find((a) => a.startsWith("--print="));
     assert.ok(printArg && printArg.includes(path.join(PLUGIN, "skills", "readme-writer", "SKILL.md")));
     assert.equal(gateRes.details.authoritative, true);
     assert.equal(gateRes.details.verdictValid, true);
-  } finally {
-    delete process.env.AGY_STUB_OUT;
-    delete process.env.AGY_STUB_STDOUT;
-    delete process.env.AGY_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent (pi) forwards explicit --model and rejects empty review-gate output via verdict guard", async () => {
-  const outDir = path.join(TMP, "stub-pi-model-empty");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.PI_STUB_OUT = outDir;
-  process.env.PI_STUB_STDOUT = "";
-  process.env.PI_STUB_EXIT = "0";
-  try {
+  await withStubEnv("PI", "stub-pi-model-empty", { PI_STUB_STDOUT: "", PI_STUB_EXIT: "0" }, async (outDir) => {
     const res = await callAgent({
       agent: "oss-readiness-reviewer",
       backend: "pi",
@@ -713,35 +622,53 @@ await test("run_agent (pi) forwards explicit --model and rejects empty review-ga
     assert.ok(res.details.verdictError.includes("empty output"));
     assert.ok(res.content[0].text.includes("[SELF-CHECK ONLY — NON-AUTHORITATIVE:"));
     assert.ok(res.content[0].text.includes("[VERDICT GUARD FAILED:"));
-  } finally {
-    delete process.env.PI_STUB_OUT;
-    delete process.env.PI_STUB_STDOUT;
-    delete process.env.PI_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
 });
 
 await test("run_agent returns exitCode and stderr on non-zero child exit", async () => {
-  const outDir = path.join(TMP, "stub-pi-fail");
-  fs.mkdirSync(outDir, { recursive: true });
-  process.env.PATH = stubPath;
-  process.env.PI_STUB_OUT = outDir;
-  process.env.PI_STUB_STDOUT = "";
-  process.env.PI_STUB_STDERR = "boom on stderr";
-  process.env.PI_STUB_EXIT = "3";
-  try {
+  await withStubEnv("PI", "stub-pi-fail", { PI_STUB_STDOUT: "", PI_STUB_STDERR: "boom on stderr", PI_STUB_EXIT: "3" }, async () => {
     const res = await callAgent({ agent: "code-health-reviewer", backend: "pi", prompt: "Audit" });
     assert.equal(res.details.exitCode, 3);
     assert.equal(res.details.verdictValid, undefined);
     assert.ok(res.content[0].text.includes("exited with code 3"));
     assert.ok(res.content[0].text.includes("boom on stderr"));
-  } finally {
-    delete process.env.PI_STUB_OUT;
-    delete process.env.PI_STUB_STDOUT;
-    delete process.env.PI_STUB_STDERR;
-    delete process.env.PI_STUB_EXIT;
-    process.env.PATH = origPath;
-  }
+  });
+});
+
+await test("run_agent timeout kills background grandchild process group promptly", async () => {
+  const marker = path.join(TMP, "timeout-grandchild-marker");
+  await withStubEnv("PI", "stub-pi-timeout", { PI_STUB_SLEEP_MARKER: marker }, async () => {
+    const start = Date.now();
+    await assert.rejects(
+      () => callAgent({ agent: "implementer", backend: "pi", prompt: "Slow task", timeoutSeconds: 0.25 }),
+      /timed out/,
+    );
+    const elapsed = Date.now() - start;
+    assert.ok(elapsed < 1000, `expected timeout to settle promptly, took ${elapsed}ms`);
+    await new Promise((r) => setTimeout(r, 1300));
+    assert.equal(fs.existsSync(marker), false, "grandchild should be terminated with its process group");
+  });
+});
+
+await test("run_agent mid-run abort kills background grandchild process group promptly", async () => {
+  const marker = path.join(TMP, "abort-grandchild-marker");
+  await withStubEnv("PI", "stub-pi-abort", { PI_STUB_SLEEP_MARKER: marker }, async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 150);
+    const start = Date.now();
+    try {
+      await assert.rejects(
+        () => callAgent({ agent: "implementer", backend: "pi", prompt: "Abortable task" }, controller.signal),
+        /aborted/,
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+    const elapsed = Date.now() - start;
+    assert.ok(elapsed < 1000, `expected abort to settle promptly, took ${elapsed}ms`);
+    await new Promise((r) => setTimeout(r, 1300));
+    assert.equal(fs.existsSync(marker), false, "grandchild should be terminated with its process group");
+  });
 });
 
 process.stdout.write(`NODE_SUMMARY:${passed}:${failed}\n`);
