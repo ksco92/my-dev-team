@@ -173,12 +173,12 @@ text, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md`. For an experim
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`; for a batching repository or a release slice,
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/releases.md`.
 
-| Difficulty | Implementer                            | Mechanism                                                                                                                                                                                                                                                  |
-| ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trivial`  | local Pi implementer (Sonnet fallback) | `run_agent(backend="pi")` (local pre-flight per `policy.md`: commits and returns before pushing so TPM runs local `pi` self-checks first); else `Agent(subagent_type="implementer", model="sonnet", …)` (or queue `difficulty:trivial` for a local runner) |
-| `low`      | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue                                                                                                                                                                          |
-| `medium`   | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                                                                                                                                                    |
-| `high`     | `implementer` on Opus                  | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent)                                                                                                                      |
+| Difficulty | Implementer                            | Mechanism                                                                                                                                                                              |
+| ---------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trivial`  | local Pi implementer (Sonnet fallback) | `run_agent(backend="pi")` (two-step local pre-flight per `policy.md`); else `Agent(subagent_type="implementer", model="sonnet", …)` (or queue `difficulty:trivial` for a local runner) |
+| `low`      | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue                                                                                                      |
+| `medium`   | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                                                                                |
+| `high`     | `implementer` on Opus                  | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent)                                                  |
 
 Under Pi use the `run_agent` tool (`backend: "pi"` for local subagents and pre-submission
 self-checks, or `backend: "claude"` / `backend: "agy"` for authoritative review gates; see the Pi
@@ -207,13 +207,12 @@ substance before reverting it.
 **Under Pi** (`PI_CODING_AGENT=true`) use the `run_agent` tool registered by the `my-dev-team` Pi
 package instead of `Agent`. Run `implementer` and `cold-reader` with `backend: "pi"` (default), and
 run review gates with `backend: "pi"` only for non-authoritative self-checks (never record a
-`pi`-backend result in `gate-ledger`). On `trivial` local runs, the implementer runs tests, lint,
-and `preflight-scan --scope=diff` and commits without pushing; the TPM runs
-`run_agent(<gate>, backend="pi")` self-checks on that commit before resuming the implementer to push
-and open the PR for authoritative `claude` or `agy` gates. For authoritative merge-blocking
-verdicts, run every review gate with `backend: "claude"` (alias-only models: `sonnet` for lighter
-gates, `opus` for `high` `pr-reviewer` and every `security-reviewer`) or `backend: "agy"`, confirm
-`details.verdictValid` is `true`, and record the verdict with `gate-ledger`.
+`pi`-backend result in `gate-ledger`). On `trivial` local runs, follow the two-step local pre-flight
+in `policy.md` before opening the PR for authoritative `claude` or `agy` gates. For authoritative
+merge-blocking verdicts, run every review gate with `backend: "claude"` (alias-only models: `sonnet`
+for lighter gates, `opus` for `high` `pr-reviewer` and every `security-reviewer`) or
+`backend: "agy"`, confirm `details.verdictValid` is `true`, and record the verdict with
+`gate-ledger`.
 
 **Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `trivial`
 (Sonnet fallback) and `low` slices, `"pro"` for `medium` slices and lighter gates, `"inherit"` for

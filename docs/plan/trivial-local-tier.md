@@ -54,9 +54,9 @@ inversion against the five SOTA review gates.
     anti-bloat constraint (no added comments, no new helper abstractions, no guards beyond listed
     edge cases).
   - Phase 4 (Delegation): add `trivial` to the routing table (local Pi `run_agent(backend="pi")`
-    using the two-step local pre-flight in `policy.md`; Sonnet fallback when no local runner is
-    available, or `Model="flash"` under Antigravity), update `Under Pi` with the two-step handoff,
-    and update the code-economy note for `trivial`/`low`.
+    pointing to `policy.md` for the two-step local pre-flight handoff; Sonnet fallback when no local
+    runner is available, or `Model="flash"` under Antigravity), point `Under Pi` to `policy.md` for
+    that two-step handoff, and update the code-economy note for `trivial`/`low`.
   - Phase 5.1 (The five gates): update `pr-reviewer` model row to `D ∈ {trivial, low, medium}` for
     Sonnet (and Opus for `high` or any PR whose implementer ran on Opus).
   - Phase 5.2 (Fix until clean): state the 1-strike escalation rule for `trivial` local Pi runs (at
