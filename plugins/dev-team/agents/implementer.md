@@ -15,8 +15,9 @@ feature's context in one agent avoids the hand-off errors of splitting a shared-
 across role agents.
 
 The `model` above is the top of the implementer ladder (Opus, the `high` tier). The orchestrator
-steps you down per call (`model="sonnet"`) for `low` and `medium` slices; the two tags differ only
-in how fully the issue is specified.
+steps you down per call (`model="sonnet"`) for `trivial` (Sonnet fallback), `low`, and `medium`
+slices, or routes `trivial` to local Pi; `low` and `medium` differ in how fully the issue is
+specified.
 
 **Read `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` now.** It is your binding operating
 contract: autonomy and scope, first steps, code quality, testing, git workflow, PR template, the

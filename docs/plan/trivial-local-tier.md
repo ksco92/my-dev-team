@@ -21,31 +21,31 @@ inversion against the five SOTA review gates.
     `"There is no local-model tier."`): route `trivial` to a local Pi implementer when running on or
     delegating to a local-AI host, falling back to `implementer` on Sonnet (or queuing a tracked
     `difficulty:trivial` ticket for a local runner) when no local host is available.
-  - State that `trivial` local runs must pass local tests, lint, `preflight-scan --scope=diff`, and
-    a local `run_agent(backend="pi")` self-check before opening a PR for the five SOTA review gates,
-    and that authoritative merge-blocking gate verdicts remain SOTA-only (`sonnet`/`opus` via Claude
-    Code or Antigravity).
-  - Update escalation policy: `trivial` escalates to Sonnet (`low`) immediately on strike 1 if SOTA
-    gates find a logic, structural, or security defect, if one local fix pass for mechanical nits
-    does not turn clean, or if local tests fail twice before PR creation; `low`/`medium` still
-    escalate `Sonnet → Opus`.
+  - Define the two-step local pre-flight handoff: a `trivial` local implementer passes tests, lint,
+    and `preflight-scan --scope=diff`, commits locally, and returns before pushing; the TPM runs
+    `run_agent(<gate>, backend="pi")` self-checks on that commit and resumes the implementer to push
+    and open the PR for the five SOTA review gates (authoritative merge-blocking gate verdicts
+    remain SOTA-only: `sonnet`/`opus` via Claude Code or Antigravity).
+  - Update escalation policy: `trivial` local Pi runs move to Sonnet on strike 1 (re-tagged to
+    `low`; see `tpm` 5.2), and any slice at Sonnet moves `Sonnet → Opus`.
   - Keep `plugins/dev-team/context/policy.md` under 9,500 UTF-8 characters.
 - [ ] Update `plugins/dev-team/skills/tpm/SKILL.md`:
   - Frontmatter `description`: update `low/medium/high` to `trivial/low/medium/high` and note
     `trivial → local Pi (Sonnet fallback)`.
-  - Phase 2 (Decomposition): define the four-tier boundary cleanly so `trivial` does not overlap
-    `low`:
+  - Phase 2 (Decomposition): define the four-tier boundary cleanly without duplicating shared
+    lower-tier exclusions:
     - `trivial`: closed-world, zero-discovery mechanical edit (at most 3-4 files, single
       layer/module, no cross-module interface/schema changes, context small enough for 64K local
-      models, verified by a fast deterministic local check; never security, auth, billing,
-      migrations, concurrency, public-API breaks, or live external-API assumptions).
+      models, verified by a fast deterministic local check; never migrations, concurrency,
+      public-API breaks, live external-API assumptions, or the lower-tier exclusions).
     - `low`: mechanical recipe allowed to span multiple files/layers or light codebase discovery
-      (Sonnet; still never security/auth/money/data integrity).
+      (Sonnet).
     - `medium`: clear goal/files with some design/edge-case judgment (Sonnet).
     - `high`: real decisions, unclear approach, research, or correctness/security-critical surface
       (Opus).
-    - Tie-breakers: when torn between `trivial` and `low`, tag `low`; when torn between `low` and
-      `medium`, tag `low`.
+    - Shared lower-tier exclusion stated once: anything touching security, auth, money, or data
+      integrity is never `trivial` or `low`.
+    - Tie-breaker: when torn between `trivial`/`low` or `low`/`medium`, tag `low`.
     - Anti-over-slicing rule: never split a cohesive slice solely to manufacture `trivial` tickets
       (running five SOTA gates per tiny PR costs more than one clean Sonnet PR).
   - Phase 3 (Tickets): define the `trivial` ticket contract requiring four concrete elements: closed
@@ -54,18 +54,23 @@ inversion against the five SOTA review gates.
     anti-bloat constraint (no added comments, no new helper abstractions, no guards beyond listed
     edge cases).
   - Phase 4 (Delegation): add `trivial` to the routing table (local Pi `run_agent(backend="pi")`
-    with local pre-flight self-check; Sonnet fallback when no local runner is available, or
-    `Model="flash"` under Antigravity).
+    using the two-step local pre-flight in `policy.md`; Sonnet fallback when no local runner is
+    available, or `Model="flash"` under Antigravity), update `Under Pi` with the two-step handoff,
+    and update the code-economy note for `trivial`/`low`.
   - Phase 5.1 (The five gates): update `pr-reviewer` model row to `D ∈ {trivial, low, medium}` for
     Sonnet (and Opus for `high` or any PR whose implementer ran on Opus).
-  - Phase 5.2 (Fix until clean): state the 1-strike escalation rule for `trivial → Sonnet` (at most
-    one local fix pass for mechanical SOTA nits after re-passing local pre-flight; immediate
-    escalation to Sonnet on any logic/structural/security finding or on two failed local test
-    attempts before PR creation).
+  - Phase 5.2 (Fix until clean): state the 1-strike escalation rule for `trivial` local Pi runs (at
+    most one local fix pass for mechanical SOTA nits after re-passing the two-step local pre-flight;
+    strike-1 escalation to Sonnet re-tagging the ticket to `low` on any logic/structural/security
+    finding, if that single nit pass does not turn clean, or on two failed local test attempts
+    before PR creation) and that any slice at Sonnet (including `trivial` on Sonnet fallback or
+    escalated from local Pi) moves `Sonnet → Opus` after two failed fix attempts.
 - [ ] Update `plugins/dev-team/context/tpm/briefing.md` line 43-44 to carve out `trivial` local
-      implementers from `"No pre-push self-check list for implementers (owner decision)."` so
-      Sonnet/Opus implementers remain exempt while `trivial` local runs run their local pre-flight
-      before opening a PR for SOTA gates.
+      implementers from `"No pre-push self-check list for implementers (owner decision)."` by
+      pointing to the local pre-flight in `policy.md` before opening a PR for SOTA gates.
+- [ ] Sync `plugins/dev-team/agents/implementer.md` and `plugins/dev-team/agents/pr-reviewer.md`
+      ladder descriptions to include `trivial` (local Pi or Sonnet fallback for `implementer`;
+      `trivial`/`low`/`medium` PRs on Sonnet unless implemented on Opus for `pr-reviewer`).
 - [ ] Update difficulty value enumerations from `low|medium|high` to `trivial|low|medium|high` in:
   - `plugins/dev-team/context/dev-process-contract.md`
   - `plugins/dev-team/context/dev-process.default.md`

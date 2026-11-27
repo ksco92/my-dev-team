@@ -88,10 +88,10 @@ discovery the implementation needs, not by line count:
 
 - `trivial`: closed-world, zero-discovery mechanical edit (at most 3-4 files, single layer/module,
   no cross-module interface or schema changes, total read context small enough for 64K local models,
-  verified by a fast deterministic local check). Never security, auth, billing, migrations,
-  concurrency, public-API breaks, or live external-API assumptions.
+  verified by a fast deterministic local check). Never migrations, concurrency, public-API breaks,
+  live external-API assumptions, or the lower-tier exclusions below.
 - `low`: mechanical recipe allowed to span multiple files/layers or light codebase discovery
-  (Sonnet; still never security, auth, money, or data integrity).
+  (Sonnet).
 - `medium`: mostly specified (clear goal and files) with some intuition or design/edge-case judgment
   to fill small gaps (Sonnet).
 - `high`: real decisions, unclear approach, research, or correctness/security-critical surface
@@ -101,9 +101,8 @@ Decomposition is your biggest token lever: a feature that looks like one `high` 
 small `high` core plus several `trivial`/`low`/`medium` slices once you separate the decisions from
 the typing (prefer more, thinner, sharply tagged slices). Never split a cohesive slice solely to
 manufacture `trivial` tickets, since running five SOTA review gates per tiny PR costs more than one
-clean Sonnet PR. When torn between `trivial` and `low`, tag `low`; when torn between `low` and
-`medium`, tag `low` (the tighter spec costs a few lines and escalation is automatic). Anything
-touching security, auth, money, or data integrity is never `trivial` or `low`.
+clean Sonnet PR. When torn between `trivial`/`low` or `low`/`medium`, tag `low`. Anything touching
+security, auth, money, or data integrity is never `trivial` or `low`.
 
 Present the numbered slice list with dependencies (`#3 blocks #5`) and tags for approval; the user
 may re-tag.
@@ -174,12 +173,12 @@ text, also read `${CLAUDE_PLUGIN_ROOT}/context/tpm/doc-edits.md`. For an experim
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/experiment.md`; for a batching repository or a release slice,
 `${CLAUDE_PLUGIN_ROOT}/context/tpm/releases.md`.
 
-| Difficulty | Implementer                            | Mechanism                                                                                                                                                                                               |
-| ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trivial`  | local Pi implementer (Sonnet fallback) | `run_agent(backend="pi")` with mandatory local pre-flight self-check before SOTA gates; else `Agent(subagent_type="implementer", model="sonnet", …)` (or queue `difficulty:trivial` for a local runner) |
-| `low`      | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue                                                                                                                       |
-| `medium`   | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                                                                                                 |
-| `high`     | `implementer` on Opus                  | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent)                                                                   |
+| Difficulty | Implementer                            | Mechanism                                                                                                                                                                                                                                                  |
+| ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trivial`  | local Pi implementer (Sonnet fallback) | `run_agent(backend="pi")` (local pre-flight per `policy.md`: commits and returns before pushing so TPM runs local `pi` self-checks first); else `Agent(subagent_type="implementer", model="sonnet", …)` (or queue `difficulty:trivial` for a local runner) |
+| `low`      | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)` with a recipe-level issue                                                                                                                                                                          |
+| `medium`   | `implementer` on Sonnet                | `Agent(subagent_type="implementer", model="sonnet", …)`                                                                                                                                                                                                    |
+| `high`     | `implementer` on Opus                  | `Agent(subagent_type="implementer", model="opus", …)` (the agent file's frontmatter is `opus` too, so omitting `model` is equivalent)                                                                                                                      |
 
 Under Pi use the `run_agent` tool (`backend: "pi"` for local subagents and pre-submission
 self-checks, or `backend: "claude"` / `backend: "agy"` for authoritative review gates; see the Pi
@@ -206,30 +205,31 @@ subagent could have touched, the plugin's repository included, and verify an una
 substance before reverting it.
 
 **Under Pi** (`PI_CODING_AGENT=true`) use the `run_agent` tool registered by the `my-dev-team` Pi
-package instead of `Agent`. Run `implementer` and `cold-reader` with `backend: "pi"` (default) and
-run review gates with `backend: "pi"` for non-authoritative pre-submission self-checks only
-(mandatory before opening a PR on `trivial` local runs); never record a `pi`-backend gate result in
-`gate-ledger`. For authoritative merge-blocking verdicts, run every review gate with
-`backend: "claude"` (alias-only models: `sonnet` for lighter gates, `opus` for `high` `pr-reviewer`
-and every `security-reviewer`) or `backend: "agy"`, confirm `details.verdictValid` is `true`, and
-record the verdict with `gate-ledger`.
+package instead of `Agent`. Run `implementer` and `cold-reader` with `backend: "pi"` (default), and
+run review gates with `backend: "pi"` only for non-authoritative self-checks (never record a
+`pi`-backend result in `gate-ledger`). On `trivial` local runs, the implementer runs tests, lint,
+and `preflight-scan --scope=diff` and commits without pushing; the TPM runs
+`run_agent(<gate>, backend="pi")` self-checks on that commit before resuming the implementer to push
+and open the PR for authoritative `claude` or `agy` gates. For authoritative merge-blocking
+verdicts, run every review gate with `backend: "claude"` (alias-only models: `sonnet` for lighter
+gates, `opus` for `high` `pr-reviewer` and every `security-reviewer`) or `backend: "agy"`, confirm
+`details.verdictValid` is `true`, and record the verdict with `gate-ledger`.
 
-**Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `trivial` when
-no local Pi runner is delegated and for `low` slices, `"pro"` for `medium` slices and lighter gates,
-`"inherit"` for `high` slices, `high` `pr-reviewer`, and `security-review`), `send_message` for
-`SendMessage`, and the `Plugin root` injected at session start for `${CLAUDE_PLUGIN_ROOT}`. Because
-Antigravity has no `SubagentStop` hook, verify each gate's `GATE / VERDICT / HEAD / FINDINGS` block
-before calling `gate-ledger record`; because sandboxed subagents cannot run live `gh` API queries,
-fetch branch protection, repo description, and remote CI status in the orchestrator once and pass
-them in the gate briefs.
+**Under Antigravity** substitute `invoke_subagent` for `Agent` (`Model="flash"` for `trivial`
+(Sonnet fallback) and `low` slices, `"pro"` for `medium` slices and lighter gates, `"inherit"` for
+`high` slices, `high` `pr-reviewer`, and `security-review`), `send_message` for `SendMessage`, and
+the `Plugin root` injected at session start for `${CLAUDE_PLUGIN_ROOT}`. Because Antigravity has no
+`SubagentStop` hook, verify each gate's `GATE / VERDICT / HEAD / FINDINGS` block before calling
+`gate-ledger record`; because sandboxed subagents cannot run live `gh` API queries, fetch branch
+protection, repo description, and remote CI status in the orchestrator once and pass them in the
+gate briefs.
 
 Every implementer brief, at any tier, carries the comment budget from
 `${CLAUDE_PLUGIN_ROOT}/context/agent-baseline.md` in one line: doc comments sized to the item, tests
 as the only evidence, no single-use one-statement helpers, and a pre-push check that comment lines
 stay well under code lines in every touched file. A `trivial` or `low` brief also names the
-code-economy section of the baseline explicitly (and a `trivial` local brief requires tests, lint,
-`preflight-scan --scope=diff`, and a local `pi` self-check before opening a PR); a `low` slice is
-where an over-build is cheapest to prevent.
+code-economy section of the baseline explicitly; `trivial` and `low` slices are where an over-build
+is cheapest to prevent.
 
 ## Phase 5 — Gates, fix loop, merge
 
@@ -301,14 +301,15 @@ lives", and every fix brief ends with the same line: no doc-comment or comment p
 what the round removes. Fix rounds are where doc comments grow into essays, one reviewer question at
 a time, and the code-health gate counts prose added versus removed on re-review.
 
-Escalate the model before the user: on a `trivial` slice, allow at most one local fix pass for
-purely mechanical SOTA nits (re-passing local pre-flight before re-review), and escalate immediately
-to Sonnet on strike 1 if SOTA gates find a logic, structural, or security defect, if that single
-local nit pass does not turn clean, or if local tests fail twice before opening the PR. A `low`
-slice that reports ambiguity gets a fuller issue first; any `low` or `medium` slice where the same
-finding survives two fix attempts at Sonnet moves up one tier (`Sonnet → Opus`). Only when a finding
-survives three attempts at Opus, a gate returns BLOCKED, or two findings contradict, hand the PR to
-the user with the surviving findings, the tier history, and the last attempt. Do not merge.
+Escalate the model before the user: on a `trivial` local Pi run, allow at most one local fix pass
+for mechanical SOTA nits (re-passing the two-step local pre-flight before re-review), and escalate
+on strike 1 to Sonnet (re-tagging the ticket to `low`) if SOTA gates find a logic, structural, or
+security defect, if that single local nit pass does not turn clean, or if local tests fail twice
+before opening the PR. A `low` slice that reports ambiguity gets a fuller issue first; any slice at
+Sonnet (including `trivial` on Sonnet fallback or escalated from local Pi) where the same finding
+survives two fix attempts moves up one tier (`Sonnet → Opus`). Only when a finding survives three
+attempts at Opus, a gate returns BLOCKED, or two findings contradict, hand the PR to the user with
+the surviving findings, the tier history, and the last attempt. Do not merge.
 
 ### 5.3 Merge
 

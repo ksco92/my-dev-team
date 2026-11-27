@@ -34,20 +34,22 @@ implementer → PR → five review gates → fix-until-clean → merge. Procedur
 
 **Tiered delegation.** Difficulty sets spec depth and implementer tier:
 
-- `trivial` → local Pi (`run_agent(backend="pi")`) on/via a local-AI host, else Sonnet `implementer`
-  (or queue `difficulty:trivial` for a local runner). Needs a closed-world, zero-discovery ticket
-  and local pre-flight (tests, lint, `preflight-scan --scope=diff`, `pi` self-check) before PR.
+- `trivial` → local Pi (`run_agent(backend="pi")`) on/via a local-AI host; else Sonnet (or queue
+  `difficulty:trivial` for a local runner). Needs a closed-world, zero-discovery ticket and two-step
+  local pre-flight: implementer passes tests, lint, and `preflight-scan --scope=diff`, commits
+  locally, and returns before pushing; TPM runs `run_agent(<gate>, backend="pi")` self-checks on
+  that commit and resumes the implementer to push and open the PR.
 - `low` → `implementer` on Sonnet (`model="sonnet"`), recipe issue (`low`/`medium` share Sonnet; tag
   sets spec depth).
 - `medium` → `implementer` on Sonnet (`model="sonnet"`).
-- `high` → `implementer` on **Opus** (`model="opus"`, matching frontmatter).
+- `high` → `implementer` on Opus (`model="opus"`, matching frontmatter).
 - Reviewer ≥ implementer; merge gates stay SOTA-only (`sonnet`/`opus` via Claude Code/Antigravity):
   `oss-reviewer`, `readme-writer`, and (`trivial`/`low`/`medium` PRs) `code-health` and
   `pr-reviewer` run on Sonnet; `pr-reviewer` on `high` or Opus PRs runs on Opus; `security-review`
   is always Opus (never Sonnet, never Fable).
-- Auto-escalate on failure: `trivial` moves to Sonnet on strike 1 (SOTA logic/structural/security
-  defect, one local nit-fix pass fails, or two pre-PR local test failures); `low`/`medium` move
-  `Sonnet → Opus`. Misclassification is the main risk; escalation is the valve.
+- Auto-escalate on failure: `trivial` local Pi runs move to Sonnet on strike 1 (re-tagged to `low`;
+  see `tpm` 5.2), and any slice at Sonnet moves `Sonnet → Opus`. Misclassified difficulty is the
+  scheme's main risk; escalation is the valve.
 - Other subagents (explorers, planners) run on Opus.
 
 **Model policy.**
