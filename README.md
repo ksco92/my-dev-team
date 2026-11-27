@@ -8,7 +8,7 @@ stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
 It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and
 then to a built-in default.
 
-Status (November 2026): active development (v0.20.0); supports Claude Code, Antigravity, and Pi.
+Status (November 2026): active development (v0.21.0); supports Claude Code, Antigravity, and Pi.
 
 ## Contents
 

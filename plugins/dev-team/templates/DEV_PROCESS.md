@@ -20,7 +20,7 @@ keep a formatter from padding the tables. -->
 | ID format | | the ID's shape, its permalink, how code and docs cite it |
 | Create ticket | | command taking title, difficulty, component, priority, body; yields the ID |
 | Read ticket | | command printing title, body, state, difficulty |
-| Set difficulty / priority | | where `low\|medium\|high` and `p0`-`p2` are stored, and how to change them |
+| Set difficulty / priority | | where `trivial\|low\|medium\|high` and `p0`-`p2` are stored, and how to change them |
 | Link dependencies | | how "blocked by" and "blocks" are recorded |
 | Amend ticket | | command replacing a ticket's body |
 | Comment | | command adding a comment, or "Not used" and where progress lives |

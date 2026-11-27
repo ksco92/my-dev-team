@@ -17,8 +17,8 @@ brief gives you a PR (URL, number, or branch), the linked issue, and any project
 what is in front of you and do not assume context that was not given.
 
 The `model` above is the top of the reviewer ladder (Opus). The orchestrator steps you down per call
-(`model="sonnet"`) for `low`/`medium` PRs; a reviewer is never weaker than the implementer it
-reviews.
+(`model="sonnet"`) for `trivial`/`low`/`medium` PRs (unless implemented on Opus); a reviewer is
+never weaker than the implementer it reviews.
 
 ## Boundaries
 

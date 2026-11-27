@@ -7,8 +7,8 @@ merge_method: squash
 
 # Development process
 
-Example for a machine with tickets in Asana, code on GitHub, and no worktrees. Fill every `<...>`
-value, then place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
+Example for a machine with Asana tickets, GitHub code, and no worktrees. Fill every `<...>` value
+and place at a repo root or `~/.claude/DEV_PROCESS.md`.
 
 Asana is reached through its official MCP server (OAuth), added once per machine:
 
@@ -17,9 +17,8 @@ claude mcp add --transport http --client-id <client_id> --client-secret --callba
   asana https://mcp.asana.com/v2/mcp
 ```
 
-MCP tokens do not work against the REST API. The bash fallback in the tables needs a separate
-personal access token in `ASANA_ACCESS_TOKEN` and this helper (API path first); request bodies are
-wrapped in `{"data":{...}}`:
+MCP tokens do not work on the REST API. The bash fallback needs a personal access token in
+`ASANA_ACCESS_TOKEN` and this helper (API path first); bodies wrap in `{"data":{...}}`:
 
 ```bash
 asana_api() {
@@ -30,10 +29,10 @@ asana_api() {
 
 ## Tracker: Asana
 
-Project `<project_gid>`. Custom fields: difficulty `<difficulty_field_gid>` with options `low`
-`<low_option_gid>`, `medium` `<medium_option_gid>`, `high` `<high_option_gid>`; priority
-`<priority_field_gid>` with options `p0` `<p0_option_gid>`, `p1` `<p1_option_gid>`, `p2`
-`<p2_option_gid>`. Sections: in review `<in_review_section_gid>`.
+Project `<project_gid>`. Custom fields: difficulty `<difficulty_field_gid>` with options `trivial`
+`<trivial_option_gid>`, `low` `<low_option_gid>`, `medium` `<medium_option_gid>`, `high`
+`<high_option_gid>`; priority `<priority_field_gid>` with options `p0` `<p0_option_gid>`, `p1`
+`<p1_option_gid>`, `p2` `<p2_option_gid>`. Sections: in review `<in_review_section_gid>`.
 
 <!-- prettier-ignore -->
 | Operation | Command / rule |
@@ -51,7 +50,7 @@ Project `<project_gid>`. Custom fields: difficulty `<difficulty_field_gid>` with
 Ticket body template (the task's notes):
 
 ```markdown
-Difficulty: low | medium | high
+Difficulty: trivial | low | medium | high
 
 Context
 [1-2 sentences: why this exists, what need it serves]
@@ -153,4 +152,4 @@ parsing an Asana GID as an integer.
 
 ## Repository-specific constraints
 
-None at machine level. A repository states its own under this heading in its root `DEV_PROCESS.md`.
+None at machine level; a repo states its own under this heading in its root `DEV_PROCESS.md`.
