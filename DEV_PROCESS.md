@@ -18,7 +18,7 @@ How changes reach `ksco92/my-dev-team`. The format is
 | ID format | The slug of `docs/plan/<slug>.md` (lowercase, hyphenated); cite as `plan <slug>`, never an ordinal |
 | Create ticket | Write `docs/plan/<slug>.md` from the template below, `status: open`; the file stays untracked until the change that implements it commits it |
 | Read ticket | `cat docs/plan/<slug>.md`; the acceptance criteria are the implementer's contract |
-| Set difficulty / priority | Edit the frontmatter keys `difficulty` (`low\|medium\|high`) and `priority` (`p0`-`p2`) |
+| Set difficulty / priority | Edit the frontmatter keys `difficulty` (`trivial\|low\|medium\|high`) and `priority` (`p0`-`p2`) |
 | Link dependencies | `Blocked by: <slug> · Blocks: <slug>` under the ticket's Dependencies heading |
 | Amend ticket | Edit the body of `docs/plan/<slug>.md` before the implementer starts |
 | Comment | Not used; progress and evidence live in the change body and the commits |
@@ -29,7 +29,7 @@ Ticket body template:
 
 ```markdown
 ---
-difficulty: low | medium | high
+difficulty: trivial | low | medium | high
 priority: p0 | p1 | p2
 status: open
 ---

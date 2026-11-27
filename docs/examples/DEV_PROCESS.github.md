@@ -16,7 +16,7 @@ Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
 | Operation | Command / rule |
 | --- | --- |
 | ID format | `#<n>`; permalink `https://github.com/<owner>/<repo>/issues/<n>`; in code and docs cite as `issue #<n>`, never an ordinal |
-| Create ticket | `gh issue create --title "<title>" --label tpm-managed --label "difficulty:<low\|medium\|high>" --label "<component>" --label "p<0-2>" --body-file <file>`; the body follows the template below |
+| Create ticket | `gh issue create --title "<title>" --label tpm-managed --label "difficulty:<trivial\|low\|medium\|high>" --label "<component>" --label "p<0-2>" --body-file <file>`; the body follows the template below |
 | Read ticket | `gh issue view <n>` (add `--json title,body,labels,state` for fields); the acceptance criteria are the implementer's contract |
 | Set difficulty / priority | Labels `difficulty:<tag>` and `p0`–`p2`; change with `gh issue edit <n> --add-label … --remove-label …` |
 | Link dependencies | `Blocked by: #XX · Blocks: #YY` under the ticket's Dependencies heading |
@@ -28,7 +28,7 @@ Place the file at a repository root or at `~/.claude/DEV_PROCESS.md`.
 Ticket body template:
 
 ```markdown
-**Difficulty:** low | medium | high
+**Difficulty:** trivial | low | medium | high
 
 ## Context
 [1-2 sentences: why this exists, what need it serves]

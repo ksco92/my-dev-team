@@ -29,25 +29,25 @@ resolved `DEV_PROCESS.md`; the plugin default is tracker-less and merges a local
 
 ## Agentic dev workflow & merge policy
 
-Pipeline: `/tpm` intake → plan → vertical slices tagged `low`/`medium`/`high` → each slice to an
-implementer at the matching tier → PR → five review gates → fix-until-clean → merge. The `tpm` skill
-holds the procedure; this section holds the policy.
+Pipeline: `/tpm` intake → plan → slices tagged `trivial`/`low`/`medium`/`high` → matching
+implementer → PR → five review gates → fix-until-clean → merge. Procedure: `tpm`; policy: here.
 
-**Tiered delegation.** Difficulty sets both how completely an issue is spelled out and which model
-implements it (jr / mid / sr):
+**Tiered delegation.** Difficulty sets spec depth and implementer tier:
 
-- `low` → `implementer` subagent on Sonnet (per-call `model="sonnet"`), briefed with a recipe-level
-  issue. `low` and `medium` share a model; the tag sets specification depth. There is no local-model
-  tier.
-- `medium` → `implementer` subagent on Sonnet (per-call `model="sonnet"`).
-- `high` → `implementer` subagent on **Opus** (per-call `model="opus"`, which also matches the agent
-  file's frontmatter).
-- Reviewer capability ≥ implementer capability for every merge-blocking gate. `oss-reviewer`,
-  `readme-writer`, and, on a `low`/`medium` PR, `code-health` and `pr-reviewer` run on Sonnet;
-  `pr-reviewer` on a `high` PR runs on Opus; `security-review` runs on Opus at every tier. Security
-  review is never Sonnet, never Fable.
-- Auto-escalate on failure: a slice stuck at its tier moves up one (`Sonnet → Opus`). Misclassified
-  difficulty is the scheme's main risk; escalation is the valve.
+- `trivial` → local Pi (`run_agent(backend="pi")`) on/via a local-AI host, else Sonnet `implementer`
+  (or queue `difficulty:trivial` for a local runner). Needs a closed-world, zero-discovery ticket
+  and local pre-flight (tests, lint, `preflight-scan --scope=diff`, `pi` self-check) before PR.
+- `low` → `implementer` on Sonnet (`model="sonnet"`), recipe issue (`low`/`medium` share Sonnet; tag
+  sets spec depth).
+- `medium` → `implementer` on Sonnet (`model="sonnet"`).
+- `high` → `implementer` on **Opus** (`model="opus"`, matching frontmatter).
+- Reviewer ≥ implementer; merge gates stay SOTA-only (`sonnet`/`opus` via Claude Code/Antigravity):
+  `oss-reviewer`, `readme-writer`, and (`trivial`/`low`/`medium` PRs) `code-health` and
+  `pr-reviewer` run on Sonnet; `pr-reviewer` on `high` or Opus PRs runs on Opus; `security-review`
+  is always Opus (never Sonnet, never Fable).
+- Auto-escalate on failure: `trivial` moves to Sonnet on strike 1 (SOTA logic/structural/security
+  defect, one local nit-fix pass fails, or two pre-PR local test failures); `low`/`medium` move
+  `Sonnet → Opus`. Misclassification is the main risk; escalation is the valve.
 - Other subagents (explorers, planners) run on Opus.
 
 **Model policy.**
