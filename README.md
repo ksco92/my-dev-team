@@ -8,7 +8,7 @@ stack guides; tracker, host, and workspace commands read from DEV_PROCESS.md
 It reads `DEV_PROCESS.md` from the repository root, falling back to `~/.claude/DEV_PROCESS.md` and
 then to a built-in default.
 
-Status (November 2026): active development (v0.21.0); supports Claude Code, Antigravity, and Pi.
+Status (November 2026): active development (v0.22.0); supports Claude Code, Antigravity, and Pi.
 
 ## Contents
 
@@ -95,7 +95,10 @@ In Pi, invoke the TPM skill with `/skill:tpm` or delegate a canonical agent thro
 
 Use `backend: "pi"` for local subagents (`implementer`, `cold-reader`) and non-authoritative
 pre-submission self-checks; use `backend: "claude"` or `backend: "agy"` for authoritative
-merge-blocking review gates.
+merge-blocking review gates. Paid cloud backends (`claude`, `agy`) and matching `bash` CLI
+invocations default to `ask` mode (requiring interactive confirmation and failing closed headless);
+configure with `DEV_TEAM_CLOUD_MODE` or `/cloud [off|ask|once|on|status]`, with child `pi` subagents
+locked to `off`.
 
 ## DEV_PROCESS.md
 
