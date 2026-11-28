@@ -75,6 +75,7 @@ if [[ "$name" != "agy" ]]; then
   cat >"$out_dir/stdin.txt"
 fi
 printf '%s' "${CLAUDE_PLUGIN_ROOT:-}" >"$out_dir/plugin_root.txt"
+printf '%s' "${DEV_TEAM_CLOUD_MODE:-}" >"$out_dir/cloud_mode.txt"
 
 trap_log="${!trap_var:-}"
 if [[ -n "$trap_log" ]]; then
@@ -161,9 +162,10 @@ const {
 
 const { default: devTeamExtension } = await import(pathToFileURL(EXT).href);
 
-function createHarness(options) {
+function createHarness(options, cloudModeEnv) {
   const handlers = new Map();
   const tools = new Map();
+  const commands = new Map();
   const api = {
     on(event, fn) {
       handlers.set(event, fn);
@@ -171,9 +173,20 @@ function createHarness(options) {
     registerTool(def) {
       tools.set(def.name, def);
     },
+    registerCommand(name, def) {
+      commands.set(name, def);
+    },
   };
-  devTeamExtension(api, options);
-  return { handlers, tools };
+  const prevCloudMode = process.env.DEV_TEAM_CLOUD_MODE;
+  if (cloudModeEnv === undefined) delete process.env.DEV_TEAM_CLOUD_MODE;
+  else process.env.DEV_TEAM_CLOUD_MODE = cloudModeEnv;
+  try {
+    devTeamExtension(api, options);
+  } finally {
+    if (prevCloudMode === undefined) delete process.env.DEV_TEAM_CLOUD_MODE;
+    else process.env.DEV_TEAM_CLOUD_MODE = prevCloudMode;
+  }
+  return { handlers, tools, commands };
 }
 
 let passed = 0;
@@ -249,37 +262,49 @@ await test("before_agent_start caches per cwd and refreshes for a new cwd", asyn
 });
 
 await test("before_agent_start degrades gracefully when session-context hook fails", async () => {
-  const { handlers } = createHarness({ pluginRoot: BROKEN_PLUGIN });
+  const { handlers, commands } = createHarness({ pluginRoot: BROKEN_PLUGIN });
   const fn = handlers.get("before_agent_start");
   const warnings = [];
-  const event = { systemPromptOptions: { sections: {} } };
-  await fn(event, {
+  const uiCtx = {
     cwd: TEST_REPO,
     hasUI: true,
     ui: { notify: (msg, level) => warnings.push({ msg, level }) },
-  });
-  assert.equal(event.systemPromptOptions.sections["dev-team"], undefined);
+  };
+  const event = { systemPromptOptions: { sections: {} } };
+  await fn(event, uiCtx);
+  assert.ok(event.systemPromptOptions.sections["dev-team"].includes("require explicit user approval"));
   assert.equal(warnings.length, 2);
   assert.equal(warnings[0].level, "warning");
+
+  await commands.get("cloud").handler("on", { ui: { notify: () => {} } });
+  const onEvent = { systemPromptOptions: { sections: {} } };
+  await fn(onEvent, uiCtx);
+  assert.equal(onEvent.systemPromptOptions.sections["dev-team"], undefined);
 });
 
 await test("before_agent_start degrades gracefully when session-context hook is missing", async () => {
-  const { handlers } = createHarness({ pluginRoot: MISSING_HOOK_PLUGIN });
+  const { handlers, commands } = createHarness({ pluginRoot: MISSING_HOOK_PLUGIN });
   const fn = handlers.get("before_agent_start");
   const warnings = [];
-  const event = { systemPromptOptions: { sections: {} } };
-  await fn(event, {
+  const uiCtx = {
     cwd: TEST_REPO,
     hasUI: true,
     ui: { notify: (msg, level) => warnings.push({ msg, level }) },
-  });
-  assert.equal(event.systemPromptOptions.sections["dev-team"], undefined);
+  };
+  const event = { systemPromptOptions: { sections: {} } };
+  await fn(event, uiCtx);
+  assert.ok(event.systemPromptOptions.sections["dev-team"].includes("require explicit user approval"));
   assert.equal(warnings.length, 1);
   assert.ok(warnings[0].msg.includes("not executable"));
+
+  await commands.get("cloud").handler("on", { ui: { notify: () => {} } });
+  const onEvent = { systemPromptOptions: { sections: {} } };
+  await fn(onEvent, uiCtx);
+  assert.equal(onEvent.systemPromptOptions.sections["dev-team"], undefined);
 });
 
 // --- tool_call ---
-const { handlers: realHandlers, tools: realTools } = createHarness();
+const { handlers: realHandlers, tools: realTools } = createHarness(undefined, "on");
 const onToolCall = realHandlers.get("tool_call");
 const runAgent = realTools.get("run_agent");
 
@@ -708,6 +733,459 @@ await test("run_agent timeout and abort racing against a SIGTERM-trapping child 
     const terms = fs.readFileSync(abortFirstLog, "utf8").trim().split("\n").filter(Boolean);
     assert.equal(terms.length, 1);
   });
+});
+
+// --- cloud backend gate (/cloud, ask/off/once/on, bash detector, session_start, child pi env) ---
+await test("default ask mode fails closed without UI on run_agent(claude/agy) and bash cloud CLIs", async () => {
+  const { handlers, tools } = createHarness();
+  const gatedToolCall = handlers.get("tool_call");
+  const gatedRunAgent = tools.get("run_agent");
+  const noUiCtx = { cwd: TEST_REPO, hasUI: false };
+
+  await assert.rejects(
+    () => gatedRunAgent.execute("c1", { agent: "pr-reviewer", backend: "claude", prompt: "review" }, undefined, undefined, noUiCtx),
+    /requires interactive approval/,
+  );
+  await assert.rejects(
+    () => gatedRunAgent.execute("c2", { agent: "pr-reviewer", backend: "agy", prompt: "review" }, undefined, undefined, noUiCtx),
+    /requires interactive approval/,
+  );
+
+  const cloudBashCommands = [
+    ["claude", "claude -p hi"],
+    ["agy", "agy --print=hi"],
+    ["claude", "/opt/homebrew/bin/claude -p hi"],
+    ["agy", "FOO=1 env -u X /usr/local/bin/AGY --print=hi"],
+    ["claude", "echo ok && claude -p hi"],
+    ["claude", "echo $(claude -p hi)"],
+    ["claude", 'echo "$(claude -p hi)"'],
+    ["agy", "echo `agy --print=hi`"],
+    ["agy", 'echo "`agy --print=hi`"'],
+    ["claude", "npx -y @anthropic-ai/claude-code -p hi"],
+    ["claude", "bunx @anthropic-ai/claude-code@latest -p hi"],
+    ["claude", "pnpm dlx @anthropic-ai/claude-code -p hi"],
+    ["claude", "yarn exec claude -p hi"],
+    ["claude", 'bash -lc "claude -p hi"'],
+    ["agy", "sh -c 'echo ok; agy --print=hi'"],
+    ["claude", "> /dev/null claude -p hi"],
+    ["claude", "2>&1 claude -p hi"],
+    ["claude", "command -p claude -p hi"],
+    ["claude", "exec -a fake claude -p hi"],
+    ["claude", "nohup claude -p hi &"],
+    ["claude", "time -p claude -p hi"],
+    ["claude", "nice -n 5 claude -p hi"],
+    ["claude", "sudo -u root FOO=1 claude -p hi"],
+    ["claude", "timeout -k 5 30 claude -p hi"],
+    ["claude", "echo hi | xargs -I {} claude -p {}"],
+    ["claude", 'env -S "claude -p hi"'],
+    ["claude", "(claude -p hi)"],
+    ["claude", "echo ok |& claude -p hi"],
+    ["claude", "\\claude -p hi"],
+    ["claude", "CLAUDE -p hi"],
+    ["claude", "cat <(claude -p hi)"],
+  ];
+  for (const [cli, cmd] of cloudBashCommands) {
+    const res = await gatedToolCall({ toolName: "bash", input: { command: cmd } }, noUiCtx);
+    assert.equal(res?.block, true, `expected block for: ${cmd}`);
+    assert.ok(res.reason.includes(`"${cli}"`), `expected CLI "${cli}" in reason for ${cmd}, got: ${res.reason}`);
+    assert.ok(res.reason.includes("requires interactive approval"), `unexpected reason for ${cmd}: ${res.reason}`);
+  }
+});
+
+await test("run_agent runs validation and model policy before cloud gate authorization", async () => {
+  let confirmCalls = 0;
+  const { tools } = createHarness(undefined, "off");
+  const gatedRunAgent = tools.get("run_agent");
+  const uiCtx = {
+    cwd: TEST_REPO,
+    hasUI: true,
+    ui: {
+      confirm: async () => {
+        confirmCalls += 1;
+        return true;
+      },
+    },
+  };
+  await assert.rejects(
+    () =>
+      gatedRunAgent.execute(
+        "v1",
+        { agent: "security-reviewer", backend: "claude", model: "sonnet", prompt: "audit" },
+        undefined,
+        undefined,
+        uiCtx,
+      ),
+    /security-reviewer requires model "opus"/,
+  );
+  assert.equal(confirmCalls, 0);
+});
+
+await test("default ask mode allows run_agent(pi) without prompting and sets DEV_TEAM_CLOUD_MODE=off for child pi", async () => {
+  let confirmCalls = 0;
+  const { tools } = createHarness();
+  const gatedRunAgent = tools.get("run_agent");
+  const uiCtx = {
+    cwd: TEST_REPO,
+    hasUI: true,
+    ui: {
+      confirm: async () => {
+        confirmCalls += 1;
+        return false;
+      },
+    },
+  };
+  await withStubEnv("PI", "stub-pi-cloud-ask", { PI_STUB_STDOUT: "local ok", PI_STUB_EXIT: "0" }, async (outDir) => {
+    const res = await gatedRunAgent.execute("p1", { agent: "implementer", backend: "pi", prompt: "do work" }, undefined, undefined, uiCtx);
+    assert.equal(res.content[0].text, "local ok");
+    assert.equal(confirmCalls, 0);
+    assert.equal(fs.readFileSync(path.join(outDir, "cloud_mode.txt"), "utf8"), "off");
+  });
+
+  const { tools: onTools } = createHarness(undefined, "on");
+  await withStubEnv(
+    "PI",
+    "stub-pi-cloud-parent-on",
+    { PI_STUB_STDOUT: "local ok", PI_STUB_EXIT: "0", DEV_TEAM_CLOUD_MODE: "on" },
+    async (outDir) => {
+      await onTools.get("run_agent").execute("p2", { agent: "implementer", backend: "pi", prompt: "do work" }, undefined, undefined, { cwd: TEST_REPO });
+      assert.equal(fs.readFileSync(path.join(outDir, "cloud_mode.txt"), "utf8"), "off");
+    },
+  );
+});
+
+await test("benign bash commands pass without prompting in both ask and off modes", async () => {
+  const benignCommands = [
+    "cat .claude/settings.json",
+    "cat CLAUDE.md",
+    "grep claude README.md",
+    "which claude",
+    "command -v claude",
+    "command -V agy",
+    'echo "foo; claude -p hi"',
+    "echo 'agy --print=hi'",
+    "echo '$(claude -p hi)'",
+    "echo '`agy --print=hi`'",
+    'echo "\\$(claude -p hi)"',
+    'git commit -m "Use claude and agy"',
+    "echo hi > claude",
+    "echo hi >claude",
+    "CLAUDE_CODE=1 git status",
+    "# claude -p hi",
+    "bash script.sh",
+  ];
+  for (const mode of ["ask", "off"]) {
+    let confirmCalls = 0;
+    const { handlers } = createHarness(undefined, mode);
+    const gatedToolCall = handlers.get("tool_call");
+    const uiCtx = {
+      cwd: TEST_REPO,
+      hasUI: true,
+      ui: {
+        confirm: async () => {
+          confirmCalls += 1;
+          return false;
+        },
+      },
+    };
+    for (const cmd of benignCommands) {
+      const res = await gatedToolCall({ toolName: "bash", input: { command: cmd } }, uiCtx);
+      assert.equal(res, undefined, `unexpected block in mode=${mode} for benign command: ${cmd} (${res?.reason})`);
+    }
+    assert.equal(confirmCalls, 0);
+  }
+});
+
+await test("ask mode with UI prompts via ctx.ui.confirm and honors allow, deny, undefined, and rejection", async () => {
+  const { handlers, tools } = createHarness();
+  const gatedToolCall = handlers.get("tool_call");
+  const gatedRunAgent = tools.get("run_agent");
+  const prompts = [];
+
+  await withStubEnv("CLAUDE", "stub-claude-ask-allow", { CLAUDE_STUB_STDOUT: "ok\n\nGATE: pr-reviewer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0", CLAUDE_STUB_EXIT: "0" }, async () => {
+    const res = await gatedRunAgent.execute(
+      "a1",
+      { agent: "pr-reviewer", backend: "claude", model: "sonnet", prompt: "review" },
+      undefined,
+      undefined,
+      {
+        cwd: TEST_REPO,
+        hasUI: true,
+        ui: {
+          confirm: async (title, detail) => {
+            prompts.push({ title, detail });
+            return true;
+          },
+        },
+      },
+    );
+    assert.equal(res.details.authoritative, true);
+    assert.equal(prompts.length, 1);
+    assert.ok(prompts[0].title.includes("claude"));
+    assert.ok(prompts[0].detail.includes("pr-reviewer") && prompts[0].detail.includes("claude") && prompts[0].detail.includes("sonnet"));
+  });
+
+  await assert.rejects(
+    () =>
+      gatedRunAgent.execute(
+        "a2",
+        { agent: "implementer", backend: "agy", prompt: "build" },
+        undefined,
+        undefined,
+        {
+          cwd: TEST_REPO,
+          hasUI: true,
+          ui: {
+            confirm: async (title, detail) => {
+              prompts.push({ title, detail });
+              return false;
+            },
+          },
+        },
+      ),
+    /denied by user/,
+  );
+  assert.ok(prompts[1].detail.includes("implementer") && prompts[1].detail.includes("agy") && prompts[1].detail.includes("default"));
+
+  const denyUndef = await gatedToolCall(
+    { toolName: "bash", input: { command: "claude -p hi" } },
+    { cwd: TEST_REPO, hasUI: true, ui: { confirm: async () => undefined } },
+  );
+  assert.equal(denyUndef?.block, true);
+  assert.ok(denyUndef.reason.includes("denied by user"));
+
+  const longCmd = `claude -p "${"x".repeat(260)}"`;
+  let seenBashDetail = "";
+  const allowBash = await gatedToolCall(
+    { toolName: "bash", input: { command: longCmd } },
+    {
+      cwd: TEST_REPO,
+      hasUI: true,
+      ui: {
+        confirm: async (title, detail) => {
+          assert.ok(title.includes("claude"));
+          seenBashDetail = detail;
+          return true;
+        },
+      },
+    },
+  );
+  assert.equal(allowBash, undefined);
+  assert.equal(seenBashDetail.length, 203);
+  assert.ok(seenBashDetail.endsWith("..."));
+
+  const denyThrow = await gatedToolCall(
+    { toolName: "bash", input: { command: "agy --print=hi" } },
+    {
+      cwd: TEST_REPO,
+      hasUI: true,
+      ui: {
+        confirm: async () => {
+          throw new Error("dialog closed");
+        },
+      },
+    },
+  );
+  assert.equal(denyThrow?.block, true);
+  assert.ok(denyThrow.reason.includes("dialog closed"));
+});
+
+await test("/cloud command toggles off/ask/once/on, reports status/usage, and session_start resets state", async () => {
+  const { handlers, commands } = createHarness();
+  const cloudCmd = commands.get("cloud");
+  const gatedToolCall = handlers.get("tool_call");
+  const onSessionStart = handlers.get("session_start");
+  assert.equal(typeof cloudCmd?.handler, "function");
+  assert.equal(typeof onSessionStart, "function");
+
+  const notes = [];
+  const cmdCtx = { ui: { notify: (msg, level) => notes.push({ msg, level }) } };
+
+  await cloudCmd.handler("", cmdCtx);
+  assert.equal(notes.at(-1).msg, "Cloud backend mode: `ask`");
+  assert.equal(notes.at(-1).level, "info");
+
+  await cloudCmd.handler("status", cmdCtx);
+  assert.equal(notes.at(-1).msg, "Cloud backend mode: `ask`");
+
+  await cloudCmd.handler("bogus", cmdCtx);
+  assert.equal(notes.at(-1).msg, "Usage: /cloud [off|ask|once|on|status]");
+  assert.equal(notes.at(-1).level, "warning");
+
+  // /cloud off hard-denies without invoking confirm
+  let confirmCalls = 0;
+  const uiCtx = {
+    cwd: TEST_REPO,
+    hasUI: true,
+    ui: {
+      confirm: async () => {
+        confirmCalls += 1;
+        return true;
+      },
+    },
+  };
+  await cloudCmd.handler("off", cmdCtx);
+  assert.equal(notes.at(-1).msg, "Cloud backend mode set to `off`.");
+  const offRes = await gatedToolCall({ toolName: "bash", input: { command: "claude -p hi" } }, uiCtx);
+  assert.equal(offRes?.block, true);
+  assert.ok(offRes.reason.includes('cloud mode is "off"'));
+  assert.equal(confirmCalls, 0);
+
+  // /cloud once from baseMode=off allows 1 call, reverts to off, and blocks 2nd call without prompting
+  await cloudCmd.handler("once", cmdCtx);
+  assert.equal(await gatedToolCall({ toolName: "bash", input: { command: "claude -p hi" } }, uiCtx), undefined);
+  const secondFromOff = await gatedToolCall({ toolName: "bash", input: { command: "claude -p hi" } }, uiCtx);
+  assert.equal(secondFromOff?.block, true);
+  assert.ok(secondFromOff.reason.includes('cloud mode is "off"'));
+  assert.equal(confirmCalls, 0);
+
+  // /cloud once from baseMode=ask allows exactly 1 call under concurrency, reverts to ask, and blocks the other
+  await cloudCmd.handler("ask", cmdCtx);
+  await cloudCmd.handler("once", cmdCtx);
+  const concurrentResults = await Promise.all([
+    gatedToolCall({ toolName: "bash", input: { command: "agy --print=hi" } }, { cwd: TEST_REPO, hasUI: false }),
+    gatedToolCall({ toolName: "bash", input: { command: "agy --print=hi" } }, { cwd: TEST_REPO, hasUI: false }),
+  ]);
+  assert.equal(concurrentResults.filter((r) => r === undefined).length, 1);
+  const blockedConcurrent = concurrentResults.filter((r) => r?.block === true);
+  assert.equal(blockedConcurrent.length, 1);
+  assert.ok(blockedConcurrent[0].reason.includes("requires interactive approval"));
+
+  // /cloud without ctx.ui.notify falls back to stderr
+  let stderrOut = "";
+  const origWrite = process.stderr.write.bind(process.stderr);
+  process.stderr.write = (chunk) => {
+    stderrOut += String(chunk);
+    return true;
+  };
+  try {
+    await cloudCmd.handler("status", {});
+  } finally {
+    process.stderr.write = origWrite;
+  }
+  assert.ok(stderrOut.includes("Cloud backend mode: `ask`"));
+
+  // merge-gate.sh blocks before cloud confirm is invoked
+  let mergeGateConfirms = 0;
+  const mgRes = await gatedToolCall(
+    { toolName: "bash", input: { command: "git push --force origin main && claude -p hi" } },
+    {
+      cwd: TEST_REPO,
+      hasUI: true,
+      ui: {
+        confirm: async () => {
+          mergeGateConfirms += 1;
+          return true;
+        },
+      },
+    },
+  );
+  assert.equal(mgRes?.block, true);
+  assert.ok(mgRes.reason.includes("merge-gate"));
+  assert.equal(mergeGateConfirms, 0);
+
+  // /cloud on allows multiple calls without prompting
+  await cloudCmd.handler("on", cmdCtx);
+  assert.equal(await gatedToolCall({ toolName: "bash", input: { command: "claude -p 1" } }, { cwd: TEST_REPO, hasUI: false }), undefined);
+  assert.equal(await gatedToolCall({ toolName: "bash", input: { command: "agy --print=2" } }, { cwd: TEST_REPO, hasUI: false }), undefined);
+
+  // session_start resets mode and baseMode from DEV_TEAM_CLOUD_MODE (default ask)
+  delete process.env.DEV_TEAM_CLOUD_MODE;
+  await onSessionStart({}, { cwd: TEST_REPO });
+  await cloudCmd.handler("status", cmdCtx);
+  assert.equal(notes.at(-1).msg, "Cloud backend mode: `ask`");
+
+  process.env.DEV_TEAM_CLOUD_MODE = " OFF ";
+  try {
+    await onSessionStart({}, { cwd: TEST_REPO });
+    await cloudCmd.handler("status", cmdCtx);
+    assert.equal(notes.at(-1).msg, "Cloud backend mode: `off`");
+  } finally {
+    delete process.env.DEV_TEAM_CLOUD_MODE;
+  }
+});
+
+await test("before_agent_start dynamically reflects /cloud mode without stale contextCache", async () => {
+  fs.writeFileSync(COUNT_FILE, "");
+  const { handlers, commands } = createHarness({ pluginRoot: CACHE_PLUGIN });
+  const beforeStart = handlers.get("before_agent_start");
+  const cloudCmd = commands.get("cloud");
+  const dir = path.join(TMP, "cwd-cloud-notice");
+  fs.mkdirSync(dir, { recursive: true });
+  const cmdCtx = { ui: { notify: () => {} } };
+
+  const evAsk = { systemPromptOptions: { sections: {} } };
+  await beforeStart(evAsk, { cwd: dir, hasUI: false });
+  assert.ok(evAsk.systemPromptOptions.sections["dev-team"].includes("require explicit user approval"));
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 2);
+
+  await cloudCmd.handler("off", cmdCtx);
+  const evOff = { systemPromptOptions: { sections: {} } };
+  await beforeStart(evOff, { cwd: dir, hasUI: false });
+  assert.ok(evOff.systemPromptOptions.sections["dev-team"].includes("DISABLED"));
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 2);
+
+  await cloudCmd.handler("on", cmdCtx);
+  const evOn = { systemPromptOptions: { sections: {} } };
+  await beforeStart(evOn, { cwd: dir, hasUI: false });
+  assert.ok(!evOn.systemPromptOptions.sections["dev-team"].includes("DISABLED"));
+  assert.ok(!evOn.systemPromptOptions.sections["dev-team"].includes("require explicit user approval"));
+  assert.equal(fs.readFileSync(COUNT_FILE, "utf8").trim().split("\n").filter(Boolean).length, 2);
+
+  await cloudCmd.handler("once", cmdCtx);
+  const evOnce = { systemPromptOptions: { sections: {} } };
+  await beforeStart(evOnce, { cwd: dir, hasUI: false });
+  assert.ok(!evOnce.systemPromptOptions.sections["dev-team"].includes("DISABLED"));
+  assert.ok(!evOnce.systemPromptOptions.sections["dev-team"].includes("require explicit user approval"));
+});
+
+await test("run_agent enforces /cloud off and /cloud once and bash detector bounds recursion depth", async () => {
+  const { handlers, tools, commands } = createHarness(undefined, "off");
+  const cloudCmd = commands.get("cloud");
+  const gatedRunAgent = tools.get("run_agent");
+  const gatedToolCall = handlers.get("tool_call");
+  const cmdCtx = { ui: { notify: () => {} } };
+  let confirmCalls = 0;
+  const uiCtx = {
+    cwd: TEST_REPO,
+    hasUI: true,
+    ui: {
+      confirm: async () => {
+        confirmCalls += 1;
+        return true;
+      },
+    },
+  };
+
+  await assert.rejects(
+    () => gatedRunAgent.execute("r1", { agent: "pr-reviewer", backend: "claude", prompt: "review" }, undefined, undefined, uiCtx),
+    /cloud mode is "off"/,
+  );
+  assert.equal(confirmCalls, 0);
+
+  await cloudCmd.handler("once", cmdCtx);
+  await withStubEnv("CLAUDE", "stub-claude-once", { CLAUDE_STUB_STDOUT: "ok\n\nGATE: pr-reviewer\nVERDICT: PASS\nHEAD: 8e6c495\nFINDINGS: 0", CLAUDE_STUB_EXIT: "0" }, async () => {
+    const okRes = await gatedRunAgent.execute("r2", { agent: "pr-reviewer", backend: "claude", prompt: "review" }, undefined, undefined, uiCtx);
+    assert.equal(okRes.details.verdictValid, true);
+    await assert.rejects(
+      () => gatedRunAgent.execute("r3", { agent: "pr-reviewer", backend: "claude", prompt: "review" }, undefined, undefined, uiCtx),
+      /cloud mode is "off"/,
+    );
+  });
+  assert.equal(confirmCalls, 0);
+
+  let deep = "echo ok";
+  for (let i = 0; i < 12; i += 1) deep = `$(${deep})`;
+  const deepRes = await gatedToolCall({ toolName: "bash", input: { command: `echo ${deep}` } }, uiCtx);
+  assert.equal(deepRes, undefined);
+});
+
+await test("invalid DEV_TEAM_CLOUD_MODE falls back safely to ask", async () => {
+  for (const badMode of ["always", "yes", "", "   "]) {
+    const { commands } = createHarness(undefined, badMode);
+    const notes = [];
+    await commands.get("cloud").handler("status", { ui: { notify: (msg) => notes.push(msg) } });
+    assert.equal(notes[0], "Cloud backend mode: `ask`", `expected fallback to ask for ${JSON.stringify(badMode)}`);
+  }
 });
 
 process.stdout.write(`NODE_SUMMARY:${passed}:${failed}\n`);
