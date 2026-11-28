@@ -27,7 +27,6 @@ export const CLOUD_MODE_NOTICES: Readonly<Partial<Record<CloudMode, string>>> = 
 };
 
 const MAX_SHELL_PARSE_DEPTH = 8;
-const REDIR_PREFIX_RE = /^(?:&>>|&>|(?:[0-9]+)?(?:<<<|<<-|<<|>>|<>|>\||>&|<&|[<>]))/;
 const ENV_ASSIGN_RE = /^[A-Za-z_][A-Za-z0-9_]*\+?=/;
 const SHELL_PREFIX_KEYWORDS: ReadonlySet<string> = new Set([
   "!",
@@ -41,8 +40,14 @@ const SHELL_PREFIX_KEYWORDS: ReadonlySet<string> = new Set([
   "until",
   "coproc",
 ]);
+const CMD_POS_KEYWORDS: ReadonlySet<string> = new Set([...SHELL_PREFIX_KEYWORDS, "time"]);
 const SHELL_BINARIES: ReadonlySet<string> = new Set(["sh", "bash", "zsh", "dash", "ksh", "csh", "tcsh"]);
 const SHELL_LONG_ARG_FLAGS: ReadonlySet<string> = new Set(["--rcfile", "--init-file"]);
+
+interface ParseContext {
+  substitutions?: string[];
+  depthExceeded: boolean;
+}
 
 interface PendingHeredoc {
   delimiter: string;
@@ -59,6 +64,7 @@ interface CommandSegment {
 interface TokenizedShell {
   segments: CommandSegment[];
   substitutions: string[];
+  depthExceeded: boolean;
 }
 
 interface WrapperSpec {
@@ -67,6 +73,7 @@ interface WrapperSpec {
   shortScriptFlags?: ReadonlySet<string>;
   longScriptFlags?: ReadonlySet<string>;
   scriptPrefix?: string;
+  decodeEnvS?: boolean;
   allowEnvAssign?: boolean;
   allowBareDash?: boolean;
   skipPositional?: number;
@@ -93,6 +100,7 @@ const WRAPPERS: Readonly<Record<string, WrapperSpec>> = {
     shortScriptFlags: new Set(["S"]),
     longScriptFlags: new Set(["--split-string"]),
     scriptPrefix: "env ",
+    decodeEnvS: true,
     allowEnvAssign: true,
     allowBareDash: true,
   },
@@ -133,6 +141,17 @@ const ANSI_C_SIMPLE: Readonly<Record<string, string>> = {
   "\\": "\\",
   "'": "'",
   '"': '"',
+};
+
+const ENV_S_ESCAPES: Readonly<Record<string, string>> = {
+  _: " ",
+  t: "\t",
+  n: "\n",
+  r: "\r",
+  f: "\f",
+  v: "\v",
+  "#": "#",
+  "\\": "\\",
 };
 
 function parseCloudMode(raw: string | undefined): CloudMode | undefined {
@@ -214,6 +233,23 @@ function nextNonContIdx(input: string, idx: number): number {
   return i;
 }
 
+function skipHorizontalSpace(input: string, start: number): number {
+  let i = start;
+  while (i < input.length) {
+    const cont = lineContinuationLen(input, i);
+    if (cont > 0) {
+      i += cont;
+      continue;
+    }
+    if (input[i] === " " || input[i] === "\t") {
+      i += 1;
+      continue;
+    }
+    break;
+  }
+  return i;
+}
+
 function decodeAnsiCEscape(raw: string, slashIdx: number): { ch: string; end: number } {
   const next = raw[slashIdx + 1];
   if (next === undefined) return { ch: "\\", end: slashIdx + 1 };
@@ -232,10 +268,15 @@ function decodeAnsiCEscape(raw: string, slashIdx: number): { ch: string; end: nu
   return { ch: `\\${next}`, end: slashIdx + 2 };
 }
 
-function skipSingleQuoted(input: string, openQuoteIdx: number, ansiC: boolean): number {
+function skipSingleQuoted(input: string, openQuoteIdx: number): number {
+  const close = input.indexOf("'", openQuoteIdx + 1);
+  return close === -1 ? input.length : close + 1;
+}
+
+function skipAnsiCSingleQuoted(input: string, openQuoteIdx: number): number {
   let i = openQuoteIdx + 1;
   while (i < input.length) {
-    if (ansiC && input[i] === "\\" && i + 1 < input.length) {
+    if (input[i] === "\\" && i + 1 < input.length) {
       i += 2;
       continue;
     }
@@ -251,7 +292,7 @@ function stripLineContinuations(raw: string): string {
   while (i < raw.length) {
     const ch = raw[i];
     if (ch === "'") {
-      const end = skipSingleQuoted(raw, i, false);
+      const end = skipSingleQuoted(raw, i);
       out += raw.slice(i, end);
       i = end;
       continue;
@@ -269,7 +310,7 @@ function stripLineContinuations(raw: string): string {
     if (ch === "$") {
       const next = nextNonContIdx(raw, i + 1);
       if (raw[next] === "'") {
-        const end = skipSingleQuoted(raw, next, true);
+        const end = skipAnsiCSingleQuoted(raw, next);
         out += `$${raw.slice(next, end)}`;
         i = end;
         continue;
@@ -322,7 +363,7 @@ function unquoteWord(raw: string): string {
       continue;
     }
     if (ch === "'") {
-      const end = skipSingleQuoted(raw, i, false);
+      const end = skipSingleQuoted(raw, i);
       out += raw.slice(i + 1, end > i + 1 && raw[end - 1] === "'" ? end - 1 : end);
       i = end;
     } else if (ch === "$" && (raw[nextNonContIdx(raw, i + 1)] === "'" || raw[nextNonContIdx(raw, i + 1)] === '"')) {
@@ -373,24 +414,119 @@ function readBacktick(input: string, openTickIdx: number, inDoubleQuote: boolean
   return { content, end: i };
 }
 
+function matchRedirOp(input: string, start: number, allowFdPrefix: boolean): { op: string; end: number } | null {
+  let p = start;
+  let hasDigits = false;
+  if (allowFdPrefix) {
+    while (p < input.length && input[p] >= "0" && input[p] <= "9") {
+      hasDigits = true;
+      p += 1;
+    }
+    if (hasDigits) p = nextNonContIdx(input, p);
+  }
+  const c0 = input[p];
+  if (c0 !== "<" && c0 !== ">" && c0 !== "&") return null;
+  const p1 = nextNonContIdx(input, p + 1);
+  const c1 = input[p1];
+  const p2 = nextNonContIdx(input, p1 + 1);
+  const c2 = input[p2];
+  if (c0 === "&") {
+    if (hasDigits || c1 !== ">") return null;
+    return c2 === ">" ? { op: "&>>", end: p2 + 1 } : { op: "&>", end: p1 + 1 };
+  }
+  if (c0 === "<") {
+    if (c1 === "(") return null;
+    if (c1 === "<") {
+      if (c2 === "<") return { op: "<<<", end: p2 + 1 };
+      if (c2 === "-") return { op: "<<-", end: p2 + 1 };
+      return { op: "<<", end: p1 + 1 };
+    }
+    return c1 === ">" || c1 === "&" ? { op: `<${c1}`, end: p1 + 1 } : { op: "<", end: p + 1 };
+  }
+  if (c1 === "(") return null;
+  return c1 === ">" || c1 === "|" || c1 === "&" ? { op: `>${c1}`, end: p1 + 1 } : { op: ">", end: p + 1 };
+}
+
+function skipArithExpr(
+  input: string,
+  secondOpenIdx: number,
+  ctx: ParseContext,
+  nestedDepth: number,
+): { closed: boolean; end: number } {
+  let parenDepth = 0;
+  let inDouble = false;
+  let i = secondOpenIdx + 1;
+  while (i < input.length) {
+    const cont = lineContinuationLen(input, i);
+    if (cont > 0) {
+      i += cont;
+      continue;
+    }
+    const ch = input[i];
+    if (ch === "\\" && i + 1 < input.length) {
+      i += 2;
+    } else if (ch === "$") {
+      const step = stepDollar(input, i, inDouble, ctx, nestedDepth);
+      if (step.enteredDouble) inDouble = true;
+      i = step.end;
+    } else if (ch === "`") {
+      const sub = readBacktick(input, i, inDouble);
+      ctx.substitutions?.push(sub.content);
+      i = sub.end;
+    } else if (inDouble) {
+      if (ch === '"') inDouble = false;
+      i += 1;
+    } else if (ch === "'") {
+      i = skipSingleQuoted(input, i);
+    } else if (ch === '"') {
+      inDouble = true;
+      i += 1;
+    } else if (ch === "(") {
+      parenDepth += 1;
+      i += 1;
+    } else if (ch === ")") {
+      if (parenDepth > 0) {
+        parenDepth -= 1;
+        i += 1;
+      } else {
+        const next = nextNonContIdx(input, i + 1);
+        if (input[next] === ")") return { closed: true, end: next + 1 };
+        return { closed: false, end: i };
+      }
+    } else {
+      i += 1;
+    }
+  }
+  return { closed: false, end: i };
+}
+
 function stepDollar(
   input: string,
   dollarIdx: number,
   inDouble: boolean,
-  substitutions: string[] | undefined,
+  ctx: ParseContext,
   nestedDepth: number,
 ): { end: number; enteredDouble: boolean } {
   const next = nextNonContIdx(input, dollarIdx + 1);
-  if (input[next] === "(" && nestedDepth < MAX_SHELL_PARSE_DEPTH + 2) {
-    const sub = readCommandSubst(input, next, nestedDepth + 1);
-    substitutions?.push(sub.content);
-    return { end: sub.end, enteredDouble: false };
-  }
-  if (input[next] === "{" && nestedDepth < MAX_SHELL_PARSE_DEPTH + 2) {
-    return { end: skipParamExpansion(input, next, substitutions, nestedDepth + 1), enteredDouble: false };
+  if (input[next] === "(" || input[next] === "{") {
+    if (nestedDepth >= MAX_SHELL_PARSE_DEPTH) {
+      ctx.depthExceeded = true;
+      return { end: input.length, enteredDouble: false };
+    }
+    if (input[next] === "(") {
+      const next2 = nextNonContIdx(input, next + 1);
+      if (input[next2] === "(") {
+        const arith = skipArithExpr(input, next2, ctx, nestedDepth + 1);
+        if (arith.closed) return { end: arith.end, enteredDouble: false };
+      }
+      const sub = readCommandSubst(input, next, ctx, nestedDepth + 1);
+      ctx.substitutions?.push(sub.content);
+      return { end: sub.end, enteredDouble: false };
+    }
+    return { end: skipParamExpansion(input, next, inDouble, ctx, nestedDepth + 1), enteredDouble: false };
   }
   if (!inDouble && input[next] === "'") {
-    return { end: skipSingleQuoted(input, next, true), enteredDouble: false };
+    return { end: skipAnsiCSingleQuoted(input, next), enteredDouble: false };
   }
   if (!inDouble && input[next] === '"') {
     return { end: next + 1, enteredDouble: true };
@@ -401,13 +537,13 @@ function stepDollar(
 function skipParamExpansion(
   input: string,
   openBraceIdx: number,
-  substitutions: string[] | undefined,
-  nestedDepth = 0,
+  outerDouble: boolean,
+  ctx: ParseContext,
+  nestedDepth: number,
 ): number {
-  let depth = 1;
   let inDouble = false;
   let i = openBraceIdx + 1;
-  while (i < input.length && depth > 0) {
+  while (i < input.length) {
     const cont = lineContinuationLen(input, i);
     if (cont > 0) {
       i += cont;
@@ -417,24 +553,24 @@ function skipParamExpansion(
     if (ch === "\\" && i + 1 < input.length) {
       i += 2;
     } else if (ch === "$") {
-      const step = stepDollar(input, i, inDouble, substitutions, nestedDepth);
+      const step = stepDollar(input, i, outerDouble || inDouble, ctx, nestedDepth);
       if (step.enteredDouble) inDouble = true;
       i = step.end;
     } else if (ch === "`") {
-      const sub = readBacktick(input, i, inDouble);
-      substitutions?.push(sub.content);
+      const sub = readBacktick(input, i, outerDouble || inDouble);
+      ctx.substitutions?.push(sub.content);
       i = sub.end;
     } else if (inDouble) {
       if (ch === '"') inDouble = false;
       i += 1;
-    } else if (ch === "'") {
-      i = skipSingleQuoted(input, i, false);
+    } else if (!outerDouble && ch === "'") {
+      i = skipSingleQuoted(input, i);
     } else if (ch === '"') {
       inDouble = true;
       i += 1;
+    } else if (ch === "}") {
+      return i + 1;
     } else {
-      if (ch === "{") depth += 1;
-      else if (ch === "}") depth -= 1;
       i += 1;
     }
   }
@@ -443,13 +579,14 @@ function skipParamExpansion(
 
 interface CaseFrame {
   depth: number;
-  seenIn: boolean;
-  inPattern: boolean;
+  stage: "word" | "in" | "pattern" | "body";
 }
 
 interface SubstState {
   depth: number;
   curWord: string;
+  curWordQuoted: boolean;
+  inCmdPos: boolean;
   caseStack: CaseFrame[];
   pendingHeredocs: PendingHeredoc[];
 }
@@ -461,63 +598,114 @@ function queueHeredoc(
   pendingHeredocs: PendingHeredoc[],
   targetScripts: string[],
 ): number {
-  let i = afterOpIdx;
-  while (i < input.length && (input[i] === " " || input[i] === "\t")) i += 1;
-  const delimWord = readShellWord(input, i, []);
-  const cleanRaw = stripLineContinuations(delimWord.raw);
-  const delimiter = unquoteWord(cleanRaw);
-  if (delimiter) {
+  const i = skipHorizontalSpace(input, afterOpIdx);
+  const delimWord = readShellWord(input, i, { depthExceeded: false });
+  if (delimWord.raw.length > 0) {
+    const cleanRaw = stripLineContinuations(delimWord.raw);
+    const delimiter = unquoteWord(cleanRaw);
     pendingHeredocs.push({ delimiter, quoted: /['"\\]/.test(cleanRaw), stripTabs, targetScripts });
   }
   return delimWord.end;
 }
 
-function stepSubstOperator(input: string, i: number, state: SubstState): number {
-  const { curWord, caseStack } = state;
-  if (curWord === "case") {
-    caseStack.push({ depth: state.depth, seenIn: false, inPattern: false });
-  } else if (curWord === "in" && caseStack.length > 0 && !caseStack[caseStack.length - 1].seenIn) {
-    caseStack[caseStack.length - 1].seenIn = true;
-    caseStack[caseStack.length - 1].inPattern = true;
-  } else if (curWord === "esac" && caseStack.length > 0 && caseStack[caseStack.length - 1].depth === state.depth) {
-    caseStack.pop();
-  }
+function finishSubstWord(state: SubstState): void {
+  const hasWord = state.curWord.length > 0 || state.curWordQuoted;
+  const word = state.curWordQuoted ? "" : state.curWord;
   state.curWord = "";
+  state.curWordQuoted = false;
+  if (!hasWord) return;
+  const top = state.caseStack[state.caseStack.length - 1];
+  if (top && top.depth === state.depth && top.stage === "word") {
+    top.stage = "in";
+    state.inCmdPos = false;
+    return;
+  }
+  if (top && top.depth === state.depth && top.stage === "in") {
+    if (word === "in") top.stage = "pattern";
+    else state.caseStack.pop();
+    state.inCmdPos = false;
+    return;
+  }
+  if (state.inCmdPos && word === "case") {
+    state.caseStack.push({ depth: state.depth, stage: "word" });
+    state.inCmdPos = false;
+    return;
+  }
+  if (top && top.depth === state.depth && word === "esac" && (state.inCmdPos || top.stage === "pattern")) {
+    state.caseStack.pop();
+    state.inCmdPos = false;
+    return;
+  }
+  if (state.inCmdPos && (CMD_POS_KEYWORDS.has(word) || ENV_ASSIGN_RE.test(word))) return;
+  state.inCmdPos = false;
+}
+
+function trySkipArithCompound(input: string, openParenIdx: number, ctx: ParseContext, nestedDepth: number): number {
+  const next = nextNonContIdx(input, openParenIdx + 1);
+  if (input[next] !== "(") return -1;
+  const arith = skipArithExpr(input, next, ctx, nestedDepth);
+  return arith.closed ? arith.end : -1;
+}
+
+function stepSubstOperator(input: string, i: number, state: SubstState, ctx: ParseContext, nestedDepth: number): number {
+  finishSubstWord(state);
   const ch = input[i];
-  if (ch === "\n" && state.pendingHeredocs.length > 0) {
-    const end = consumeHeredocs(input, i + 1, state.pendingHeredocs, []);
+  if (ch === " " || ch === "\t" || ch === "\r") return i + 1;
+  if (ch === "\n") {
+    state.inCmdPos = true;
+    if (state.pendingHeredocs.length === 0) return i + 1;
+    const end = consumeHeredocs(input, i + 1, state.pendingHeredocs, { depthExceeded: false });
     state.pendingHeredocs.length = 0;
     return end;
   }
-  if (ch === "<" && input[i + 1] === "<" && input[i + 2] !== "<") {
-    const stripTabs = input[i + 2] === "-";
-    return queueHeredoc(input, i + (stripTabs ? 3 : 2), stripTabs, state.pendingHeredocs, []);
+  if (ch === "<" || ch === ">") {
+    const redir = matchRedirOp(input, i, false);
+    if (redir) {
+      return redir.op === "<<" || redir.op === "<<-"
+        ? queueHeredoc(input, redir.end, redir.op.endsWith("-"), state.pendingHeredocs, [])
+        : redir.end;
+    }
   }
-  const top = caseStack[caseStack.length - 1];
+  const top = state.caseStack[state.caseStack.length - 1];
   if (ch === ";" && top && top.depth === state.depth) {
-    if (input.slice(i, i + 3) === ";;&") {
-      top.inPattern = true;
-      return i + 3;
+    const step = input.slice(i, i + 3) === ";;&" ? 3 : input[i + 1] === ";" || input[i + 1] === "&" ? 2 : 0;
+    if (step > 0) {
+      top.stage = "pattern";
+      state.inCmdPos = true;
+      return i + step;
     }
-    if (input[i + 1] === ";" || input[i + 1] === "&") {
-      top.inPattern = true;
-      return i + 2;
-    }
+  }
+  if (ch === ";" || ch === "|" || ch === "&") {
+    state.inCmdPos = true;
+    return i + 1;
   }
   if (ch === "(") {
-    state.depth += 1;
-  } else if (ch === ")") {
-    if (top && top.inPattern && top.depth === state.depth) top.inPattern = false;
-    else {
-      state.depth -= 1;
-      if (top && top.inPattern && top.depth === state.depth) top.inPattern = false;
+    const arithEnd = trySkipArithCompound(input, i, ctx, nestedDepth);
+    if (arithEnd >= 0) {
+      state.inCmdPos = false;
+      return arithEnd;
     }
+    state.depth += 1;
+    state.inCmdPos = true;
+    return i + 1;
+  }
+  if (ch === ")") {
+    if (!(top && top.stage === "pattern" && top.depth === state.depth)) state.depth -= 1;
+    const closedPattern = Boolean(top && top.stage === "pattern" && top.depth === state.depth);
+    if (closedPattern) top.stage = "body";
+    state.inCmdPos = closedPattern;
   }
   return i + 1;
 }
 
-function readCommandSubst(input: string, openParenIdx: number, nestedDepth = 0): { content: string; end: number } {
-  const state: SubstState = { depth: 1, curWord: "", caseStack: [], pendingHeredocs: [] };
+function readCommandSubst(
+  input: string,
+  openParenIdx: number,
+  outerCtx: ParseContext,
+  nestedDepth = 0,
+): { content: string; end: number } {
+  const innerCtx: ParseContext = { depthExceeded: false };
+  const state: SubstState = { depth: 1, curWord: "", curWordQuoted: false, inCmdPos: true, caseStack: [], pendingHeredocs: [] };
   let inDouble = false;
   let atWordStart = true;
   let i = openParenIdx + 1;
@@ -530,18 +718,18 @@ function readCommandSubst(input: string, openParenIdx: number, nestedDepth = 0):
     const ch = input[i];
     if (ch === "\\" && i + 1 < input.length) {
       atWordStart = false;
-      state.curWord = "";
+      state.curWordQuoted = true;
       i += 2;
     } else if (ch === "$") {
-      const step = stepDollar(input, i, inDouble, undefined, nestedDepth);
+      const step = stepDollar(input, i, inDouble, innerCtx, nestedDepth);
       if (step.enteredDouble) inDouble = true;
       atWordStart = false;
-      state.curWord = "";
+      state.curWordQuoted = true;
       i = step.end;
     } else if (ch === "`") {
       i = readBacktick(input, i, inDouble).end;
       atWordStart = false;
-      state.curWord = "";
+      state.curWordQuoted = true;
     } else if (inDouble) {
       if (ch === '"') inDouble = false;
       i += 1;
@@ -549,23 +737,24 @@ function readCommandSubst(input: string, openParenIdx: number, nestedDepth = 0):
       const nl = input.indexOf("\n", i);
       i = nl === -1 ? input.length : nl;
     } else if (ch === "'" || ch === '"') {
-      i = ch === "'" ? skipSingleQuoted(input, i, false) : i + 1;
+      i = ch === "'" ? skipSingleQuoted(input, i) : i + 1;
       if (ch === '"') inDouble = true;
       atWordStart = false;
-      state.curWord = "";
+      state.curWordQuoted = true;
     } else if (/[ \t\r\n;|&()<>]/.test(ch)) {
       atWordStart = true;
-      i = stepSubstOperator(input, i, state);
+      i = stepSubstOperator(input, i, state, innerCtx, nestedDepth);
     } else {
       state.curWord += ch;
       atWordStart = false;
       i += 1;
     }
   }
+  if (innerCtx.depthExceeded) outerCtx.depthExceeded = true;
   return { content: input.slice(openParenIdx + 1, state.depth === 0 ? i - 1 : i), end: i };
 }
 
-function readShellWord(input: string, start: number, substitutions: string[]): { raw: string; end: number } {
+function readShellWord(input: string, start: number, ctx: ParseContext): { raw: string; end: number } {
   let inDouble = false;
   let i = start;
   while (i < input.length) {
@@ -578,22 +767,22 @@ function readShellWord(input: string, start: number, substitutions: string[]): {
     if (ch === "\\" && i + 1 < input.length) {
       i += 2;
     } else if (ch === "$") {
-      const step = stepDollar(input, i, inDouble, substitutions, 0);
+      const step = stepDollar(input, i, inDouble, ctx, 0);
       if (step.enteredDouble) inDouble = true;
       i = step.end;
     } else if (ch === "`") {
       const sub = readBacktick(input, i, inDouble);
-      substitutions.push(sub.content);
+      ctx.substitutions?.push(sub.content);
       i = sub.end;
     } else if (inDouble) {
       if (ch === '"') inDouble = false;
       i += 1;
     } else if ((ch === "<" || ch === ">") && input[i + 1] === "(") {
-      const sub = readCommandSubst(input, i + 1);
-      substitutions.push(sub.content);
+      const sub = readCommandSubst(input, i + 1, ctx);
+      ctx.substitutions?.push(sub.content);
       i = sub.end;
     } else if (ch === "'") {
-      i = skipSingleQuoted(input, i, false);
+      i = skipSingleQuoted(input, i);
     } else if (ch === '"') {
       inDouble = true;
       i += 1;
@@ -606,7 +795,7 @@ function readShellWord(input: string, start: number, substitutions: string[]): {
   return { raw: input.slice(start, i), end: i };
 }
 
-function scanHeredocSubstitutions(body: string, substitutions: string[]): void {
+function scanHeredocSubstitutions(body: string, ctx: ParseContext): void {
   let i = 0;
   while (i < body.length) {
     const cont = lineContinuationLen(body, i);
@@ -620,21 +809,12 @@ function scanHeredocSubstitutions(body: string, substitutions: string[]): void {
       continue;
     }
     if (ch === "$") {
-      const next = nextNonContIdx(body, i + 1);
-      if (body[next] === "(") {
-        const sub = readCommandSubst(body, next);
-        substitutions.push(sub.content);
-        i = sub.end;
-        continue;
-      }
-      if (body[next] === "{") {
-        i = skipParamExpansion(body, next, substitutions);
-        continue;
-      }
+      i = stepDollar(body, i, true, ctx, 0).end;
+      continue;
     }
     if (ch === "`") {
       const sub = readBacktick(body, i, false);
-      substitutions.push(sub.content);
+      ctx.substitutions?.push(sub.content);
       i = sub.end;
       continue;
     }
@@ -642,12 +822,27 @@ function scanHeredocSubstitutions(body: string, substitutions: string[]): void {
   }
 }
 
-function consumeHeredocs(
-  input: string,
-  start: number,
-  queue: PendingHeredoc[],
-  substitutions: string[],
-): number {
+function expandUnquotedHeredoc(body: string): string {
+  let out = "";
+  let i = 0;
+  while (i < body.length) {
+    const cont = lineContinuationLen(body, i);
+    if (cont > 0) {
+      i += cont;
+      continue;
+    }
+    if (body[i] === "\\" && i + 1 < body.length && "$`\\".includes(body[i + 1])) {
+      out += body[i + 1];
+      i += 2;
+      continue;
+    }
+    out += body[i];
+    i += 1;
+  }
+  return out;
+}
+
+function consumeHeredocs(input: string, start: number, queue: PendingHeredoc[], ctx: ParseContext): number {
   let i = start;
   for (const hd of queue) {
     const bodyStart = i;
@@ -663,8 +858,8 @@ function consumeHeredocs(
     }
     if (bodyEnd > bodyStart) {
       const body = input.slice(bodyStart, bodyEnd);
-      hd.targetScripts.push(body);
-      if (!hd.quoted) scanHeredocSubstitutions(body, substitutions);
+      hd.targetScripts.push(hd.quoted ? body : expandUnquotedHeredoc(body));
+      if (!hd.quoted) scanHeredocSubstitutions(body, ctx);
     }
   }
   return i;
@@ -676,27 +871,15 @@ function consumeRedirection(
   op: string,
   currentSeg: CommandSegment,
   pendingHeredocs: PendingHeredoc[],
-  substitutions: string[],
+  ctx: ParseContext,
 ): number {
-  if (!op.endsWith("<<<") && (op.endsWith("<<") || op.endsWith("<<-"))) {
+  if (op === "<<" || op === "<<-") {
     return queueHeredoc(input, afterOpIdx, op.endsWith("-"), pendingHeredocs, currentSeg.stdinScripts);
   }
-  let i = afterOpIdx;
-  while (i < input.length) {
-    const cont = lineContinuationLen(input, i);
-    if (cont > 0) {
-      i += cont;
-      continue;
-    }
-    if (input[i] === " " || input[i] === "\t") {
-      i += 1;
-      continue;
-    }
-    break;
-  }
+  const i = skipHorizontalSpace(input, afterOpIdx);
   if (i >= input.length || /[ \t\r\n;|&()]/.test(input[i])) return i;
-  const target = readShellWord(input, i, substitutions);
-  if (op.endsWith("<<<") && target.raw) {
+  const target = readShellWord(input, i, ctx);
+  if (op === "<<<" && target.raw) {
     currentSeg.stdinScripts.push(unquoteWord(target.raw));
   }
   return target.end;
@@ -704,7 +887,7 @@ function consumeRedirection(
 
 function tokenizeShell(input: string): TokenizedShell {
   const segments: CommandSegment[] = [];
-  const substitutions: string[] = [];
+  const ctx: ParseContext = { substitutions: [], depthExceeded: false };
   const pendingHeredocs: PendingHeredoc[] = [];
   let current: CommandSegment = { words: [], stdinScripts: [] };
   const flush = (): void => {
@@ -713,52 +896,69 @@ function tokenizeShell(input: string): TokenizedShell {
   };
   let i = 0;
   while (i < input.length) {
-    const cont = lineContinuationLen(input, i);
-    if (cont > 0) {
-      i += cont;
-      continue;
-    }
+    i = skipHorizontalSpace(input, i);
+    if (i >= input.length) break;
     const ch = input[i];
-    if (ch === " " || ch === "\t" || ch === "\r") {
+    if (ch === "\r") {
       i += 1;
-      continue;
-    }
-    if (ch === "#") {
+    } else if (ch === "#") {
       const nl = input.indexOf("\n", i);
       i = nl === -1 ? input.length : nl;
-      continue;
-    }
-    if (ch === "\n") {
+    } else if (ch === "\n") {
       flush();
       i += 1;
       if (pendingHeredocs.length > 0) {
-        i = consumeHeredocs(input, i, pendingHeredocs, substitutions);
+        i = consumeHeredocs(input, i, pendingHeredocs, ctx);
         pendingHeredocs.length = 0;
       }
-      continue;
-    }
-    const two = input.slice(i, i + 2);
-    if (two === "&&" || two === "||" || two === "|&") {
+    } else if (input.slice(i, i + 2) === "&&" || input.slice(i, i + 2) === "||" || input.slice(i, i + 2) === "|&") {
       flush();
       i += 2;
-      continue;
+    } else {
+      const arithEnd = ch === "(" ? trySkipArithCompound(input, i, ctx, 0) : -1;
+      const redir = arithEnd >= 0 ? null : matchRedirOp(input, i, true);
+      if (arithEnd >= 0) {
+        flush();
+        i = arithEnd;
+      } else if (redir) {
+        i = consumeRedirection(input, redir.end, redir.op, current, pendingHeredocs, ctx);
+      } else if (ch === ";" || ch === "(" || ch === ")" || ch === "|" || ch === "&") {
+        flush();
+        i += 1;
+      } else {
+        const word = readShellWord(input, i, ctx);
+        if (word.raw) current.words.push(word.raw);
+        i = word.end > i ? word.end : i + 1;
+      }
     }
-    const redir = two !== "<(" && two !== ">(" ? REDIR_PREFIX_RE.exec(input.slice(i)) : null;
-    if (redir) {
-      i = consumeRedirection(input, i + redir[0].length, redir[0], current, pendingHeredocs, substitutions);
-      continue;
-    }
-    if (ch === ";" || ch === "(" || ch === ")" || ch === "|" || ch === "&") {
-      flush();
-      i += 1;
-      continue;
-    }
-    const word = readShellWord(input, i, substitutions);
-    if (word.raw) current.words.push(word.raw);
-    i = word.end > i ? word.end : i + 1;
   }
   flush();
-  return { segments, substitutions };
+  return { segments, substitutions: ctx.substitutions!, depthExceeded: ctx.depthExceeded };
+}
+
+function decodeEnvSplitString(raw: string): string {
+  let out = "";
+  let i = 0;
+  while (i < raw.length) {
+    if (raw[i] === "\\" && i + 1 < raw.length) {
+      const next = raw[i + 1];
+      if (next === "c") break;
+      if (next in ENV_S_ESCAPES) {
+        out += ENV_S_ESCAPES[next];
+        i += 2;
+        continue;
+      }
+    }
+    out += raw[i];
+    i += 1;
+  }
+  return out;
+}
+
+function inspectScriptPayload(script: string, spec: WrapperSpec, depth: number): CloudDetection {
+  const body = spec.decodeEnvS ? decodeEnvSplitString(script) : script;
+  const payload = spec.scriptPrefix ? `${spec.scriptPrefix}${body}` : body;
+  return payload ? detectCloudCliInvocation(payload, depth + 1) : null;
 }
 
 function scanShortCluster(
@@ -774,8 +974,7 @@ function scanShortCluster(
       const rest = w.slice(k + 1);
       const rawScript = rest || (idx + 1 < words.length ? unquoteWord(words[idx + 1]) : "");
       if (rawScript) {
-        const payload = spec.scriptPrefix ? `${spec.scriptPrefix}${rawScript}` : rawScript;
-        const hit = detectCloudCliInvocation(payload, depth + 1);
+        const hit = inspectScriptPayload(rawScript, spec, depth);
         if (hit) return { detected: hit, advance: words.length };
       }
       return { advance: rest ? 1 : 2 };
@@ -811,8 +1010,7 @@ function unwrapWrapper(
       const flag = eq >= 0 ? w.slice(0, eq) : w;
       if (spec.longScriptFlags?.has(flag)) {
         const script = eq >= 0 ? w.slice(eq + 1) : i + 1 < words.length ? unquoteWord(words[i + 1]) : "";
-        const payload = script && spec.scriptPrefix ? `${spec.scriptPrefix}${script}` : script;
-        const hit = payload ? detectCloudCliInvocation(payload, depth + 1) : null;
+        const hit = script ? inspectScriptPayload(script, spec, depth) : null;
         if (hit) return { detected: hit, nextIdx: words.length };
         i += eq >= 0 ? 1 : 2;
         continue;
@@ -878,18 +1076,20 @@ function inspectShellInvocation(
       continue;
     }
     if ((w.startsWith("-") || w.startsWith("+")) && w.length > 1) {
-      let advance = 1;
+      const isMinus = w[0] === "-";
+      let extraArgs = 0;
       for (let k = 1; k < w.length; k += 1) {
         const ch = w[k];
-        if (w[0] === "-" && ch === "c") hasDashC = true;
-        else if (w[0] === "-" && ch === "n") hasDashN = true;
-        else if (w[0] === "-" && ch === "s") hasDashS = true;
+        if (isMinus && ch === "c") hasDashC = true;
+        else if (ch === "n") hasDashN = isMinus;
+        else if (isMinus && ch === "s") hasDashS = true;
         else if (ch === "o" || ch === "O") {
-          advance = k + 1 < w.length ? 1 : 2;
-          break;
+          extraArgs += 1;
+          const opt = ch === "o" && i + extraArgs < words.length ? unquoteWord(words[i + extraArgs]) : "";
+          if (opt === "noexec") hasDashN = isMinus;
         }
       }
-      i += advance;
+      i += 1 + extraArgs;
       continue;
     }
     break;
@@ -946,7 +1146,8 @@ function inspectCommandSegment(segment: CommandSegment, depth: number): CloudDet
 export function detectCloudCliInvocation(command: string, depth = 0): CloudDetection {
   if (depth > MAX_SHELL_PARSE_DEPTH) return { kind: "depth-exceeded" };
   if (!command.trim()) return null;
-  const { segments, substitutions } = tokenizeShell(command);
+  const { segments, substitutions, depthExceeded } = tokenizeShell(command);
+  if (depthExceeded) return { kind: "depth-exceeded" };
   for (const segment of segments) {
     const hit = inspectCommandSegment(segment, depth);
     if (hit) return hit;

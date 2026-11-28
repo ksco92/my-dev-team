@@ -861,6 +861,30 @@ await test("default ask mode fails closed without UI on run_agent(claude/agy) an
     ["claude", 'csh -c "claude -p hi"'],
     ["claude", 'tcsh -c "claude -p hi"'],
     ["claude", 'coproc claude -p hi; read -p x; echo "$x"'],
+    ["claude", 'echo "${x:-{}" ; claude'],
+    ["claude", "echo ${x:-{} ; claude"],
+    ["claude", 'echo "${x:-\'}" ; claude'],
+    ["claude", 'echo "${x:-\'$(claude)}"'],
+    ["claude", "zsh -c 'echo \"${x:-'\\''}\" && claude -p hi'"],
+    ["claude", "(( 1 << 2 ))\nclaude -p hi"],
+    ["claude", "if (( 1 << 2 )); then\nclaude -p hi\nfi"],
+    ["claude", 'echo "$(if (( 1 << 2 )); then\nclaude -p hi\nfi)"'],
+    ["claude", 'echo "$(cat <<< EOF\n)" ; claude'],
+    ["claude", 'echo "$(echo case; echo in)" ; claude'],
+    ["claude", 'echo "$(echo case in)" && claude -p hi'],
+    ["claude", 'echo "$(grep case in /dev/null)" ; claude -p hi'],
+    ["claude", 'bash -n +n -c "claude -p hi"'],
+    ["claude", 'sh -n +n -c "claude -p hi"'],
+    ["claude", 'bash -n +o noexec -c "claude -p hi"'],
+    ["claude", 'bash -oc errexit "claude"'],
+    ["claude", 'sh -oc errexit "claude"'],
+    ["claude", "sh <<EOF\n\\\\claude\nEOF"],
+    ["claude", "cat <<''\n\"\n\nclaude"],
+    ["claude", "cat <<\\\n 'EOF'\n\"\nEOF\nclaude"],
+    ["claude", 'sh <<\\\n< "claude"'],
+    ["claude", 'sh <\\\n<< "claude"'],
+    ["claude", "env -S 'FOO=1\\_claude'"],
+    ["claude", "env -S 'env\\_claude'"],
   ];
   for (const [cli, cmd] of cloudBashCommands) {
     const res = await gatedToolCall({ toolName: "bash", input: { command: cmd } }, noUiCtx);
@@ -949,6 +973,7 @@ await test("benign bash commands and heredocs pass without prompting in both ask
     "cat <<< claude",
     'bash - -c "claude -p hi"',
     "bash -n <<'EOF'\nclaude -p hi\nEOF",
+    'bash -o noexec -c "claude -p hi"',
   ];
   for (const mode of ["ask", "off"]) {
     const { handlers } = createHarness(undefined, mode);
@@ -1209,6 +1234,18 @@ await test("run_agent enforces /cloud off and /cloud once and bash detector fail
   const deepAskApproved = await gatedToolCall({ toolName: "bash", input: { command: `echo ${deep}` } }, ui.ctx);
   assert.equal(deepAskApproved, undefined);
   assert.equal(ui.getCalls(), 1);
+
+  const deepParam = 'echo "${a:-${a:-${a:-${a:-${a:-${a:-${a:-${a:-${a:-${a:-$(claude)}}}}}}}}}}"';
+  const deepParamAsk = await gatedToolCall({ toolName: "bash", input: { command: deepParam } }, { cwd: TEST_REPO, hasUI: false });
+  assert.equal(deepParamAsk?.block, true);
+  assert.ok(deepParamAsk.reason.includes("parse depth limit"));
+  assert.ok(deepParamAsk.reason.includes("requires interactive approval"));
+
+  await cloudCmd.handler("off", cmdCtx);
+  const deepParamOff = await gatedToolCall({ toolName: "bash", input: { command: deepParam } }, ui.ctx);
+  assert.equal(deepParamOff?.block, true);
+  assert.ok(deepParamOff.reason.includes("parse depth limit"));
+  assert.ok(deepParamOff.reason.includes('cloud mode is "off"'));
 });
 
 await test("invalid DEV_TEAM_CLOUD_MODE falls back safely to ask", async () => {
