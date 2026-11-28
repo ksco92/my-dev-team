@@ -10,6 +10,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
+import {
+  CLOUD_MODE_NOTICES,
+  authorizeCloudCall,
+  detectCloudCliInvocation,
+  handleCloudCommand,
+  resetCloudState,
+} from "./cloud-gate.ts";
+import type { CloudGateState, CloudUiContext } from "./cloud-gate.ts";
 
 const EXTENSION_PATH = fileURLToPath(import.meta.url);
 const DEFAULT_PLUGIN_ROOT = path.resolve(path.dirname(EXTENSION_PATH), "..");
@@ -31,72 +39,7 @@ const READ_ONLY_AGENTS: ReadonlySet<string> = new Set([...REVIEW_GATES_LIST, "co
 const BACKENDS = ["pi", "claude", "agy"] as const;
 type Backend = (typeof BACKENDS)[number];
 
-const CLOUD_MODES = ["off", "ask", "once", "on"] as const;
-type CloudMode = (typeof CLOUD_MODES)[number];
-type CloudBaseMode = "off" | "ask";
-type CloudCli = "claude" | "agy";
-
-const CLOUD_MODE_NOTICES: Readonly<Partial<Record<CloudMode, string>>> = {
-  off: 'Cloud backends (claude, agy) are DISABLED in this session. Stay local on backend="pi" and never invoke claude or agy via run_agent or bash.',
-  ask: 'Cloud backends (claude, agy) require explicit user approval. Stay local on backend="pi" and do NOT call backend="claude", backend="agy", or the claude/agy CLIs unless the user explicitly asks you to.',
-};
-
-const MAX_SHELL_PARSE_DEPTH = 8;
 const MAX_BASH_SNIPPET_CHARS = 200;
-const REDIR_PREFIX_RE = /^(?:&>>|&>|(?:[0-9]+)?(?:<<<|<<-|<<|>>|<>|>\||>&|<&|[<>]))/;
-const ENV_ASSIGN_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
-const SHELL_PREFIX_KEYWORDS: ReadonlySet<string> = new Set([
-  "!",
-  "{",
-  "if",
-  "then",
-  "else",
-  "elif",
-  "do",
-  "while",
-  "until",
-]);
-const SHELL_BINARIES: ReadonlySet<string> = new Set(["sh", "bash", "zsh", "dash"]);
-const ENV_ARG_FLAGS: ReadonlySet<string> = new Set([
-  "-u",
-  "--unset",
-  "-C",
-  "--chdir",
-  "-P",
-  "--default-signal",
-  "--ignore-signal",
-  "--block-signal",
-]);
-
-interface WrapperSpec {
-  argFlags: ReadonlySet<string>;
-  allowEnvAssign?: boolean;
-  skipPositional?: number;
-}
-
-const SIMPLE_WRAPPERS: Readonly<Record<string, WrapperSpec>> = {
-  exec: { argFlags: new Set(["-a"]) },
-  nohup: { argFlags: new Set() },
-  time: { argFlags: new Set() },
-  nice: { argFlags: new Set(["-n", "--adjustment"]) },
-  sudo: {
-    argFlags: new Set([
-      "-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "-D", "-R", "-T",
-      "--user", "--group", "--chdir", "--host", "--prompt", "--role", "--type", "--other-user",
-    ]),
-    allowEnvAssign: true,
-  },
-  timeout: {
-    argFlags: new Set(["-k", "-s", "--kill-after", "--signal"]),
-    skipPositional: 1,
-  },
-  xargs: {
-    argFlags: new Set([
-      "-I", "-L", "-n", "-P", "-s", "-E", "-d", "-a", "-J", "-R",
-      "--max-args", "--max-procs", "--replace", "--eof", "--delimiter", "--arg-file",
-    ]),
-  },
-};
 
 const CLAUDE_MODEL_ALIASES: ReadonlySet<string> = new Set(["sonnet", "opus", "fable"]);
 const WRITE_TOOLS_CLAUDE: ReadonlySet<string> = new Set(["Edit", "MultiEdit", "Write"]);
@@ -212,29 +155,6 @@ interface RunAgentDetails {
 interface VerdictResult {
   verdictValid: boolean;
   verdictError?: string;
-}
-
-interface CloudGateState {
-  mode: CloudMode;
-  baseMode: CloudBaseMode;
-}
-
-interface CloudUiContext {
-  hasUI?: boolean;
-  ui?: {
-    confirm?: (title: string, message: string) => Promise<boolean>;
-    notify?: (message: string, type?: "info" | "warning" | "error") => void;
-  };
-}
-
-interface ShellToken {
-  kind: "word" | "sep" | "redir";
-  raw: string;
-}
-
-interface TokenizedShell {
-  tokens: ShellToken[];
-  substitutions: string[];
 }
 
 function isExecutableFile(filePath: string): boolean {
@@ -670,13 +590,9 @@ async function loadSessionContext(
 
 async function runBashHooks(
   pluginRoot: string,
-  command: unknown,
+  command: string,
   cwd: string,
 ): Promise<{ block: true; reason: string } | undefined> {
-  if (typeof command !== "string") {
-    return { block: true, reason: "dev-team: unexpected non-string bash command." };
-  }
-  if (command === "") return undefined;
   if (!hasJqOnPath(process.env.PATH)) {
     return { block: true, reason: "dev-team: jq is required on PATH to run bash security hooks." };
   }
@@ -704,464 +620,6 @@ async function runBashHooks(
   return undefined;
 }
 
-function parseCloudMode(raw: string | undefined): CloudMode {
-  const normalized = raw?.trim().toLowerCase();
-  if (normalized && (CLOUD_MODES as readonly string[]).includes(normalized)) {
-    return normalized as CloudMode;
-  }
-  return "ask";
-}
-
-function resetCloudState(state: CloudGateState): void {
-  const initial = parseCloudMode(process.env.DEV_TEAM_CLOUD_MODE);
-  state.mode = initial;
-  state.baseMode = initial === "off" ? "off" : "ask";
-}
-
-async function authorizeCloudCall(
-  state: CloudGateState,
-  uiCtx: CloudUiContext,
-  subject: string,
-  title: string,
-  detail: string,
-): Promise<{ allowed: true } | { allowed: false; reason: string }> {
-  if (state.mode === "on") return { allowed: true };
-  if (state.mode === "once") {
-    state.mode = state.baseMode;
-    return { allowed: true };
-  }
-  if (state.mode === "off") {
-    return {
-      allowed: false,
-      reason: `${subject} disabled (cloud mode is "off"; run /cloud ask, /cloud once, or /cloud on to allow).`,
-    };
-  }
-  if (!uiCtx.hasUI || !uiCtx.ui?.confirm) {
-    return {
-      allowed: false,
-      reason: `${subject} requires interactive approval (no UI available); run /cloud on or stay on backend="pi".`,
-    };
-  }
-  try {
-    const approved = await uiCtx.ui.confirm(title, detail);
-    if (approved === true) return { allowed: true };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { allowed: false, reason: `${subject} denied (confirmation failed: ${msg}).` };
-  }
-  return { allowed: false, reason: `${subject} denied by user.` };
-}
-
-function handleCloudCommand(state: CloudGateState, rawArgs: string | undefined, ctx: CloudUiContext): void {
-  const notify = (message: string, level: "info" | "warning"): void => {
-    if (ctx.ui?.notify) ctx.ui.notify(message, level);
-    else process.stderr.write(`${message}\n`);
-  };
-  const arg = (rawArgs ?? "").trim().toLowerCase();
-  if (!arg || arg === "status") {
-    notify(`Cloud backend mode: \`${state.mode}\``, "info");
-    return;
-  }
-  if ((CLOUD_MODES as readonly string[]).includes(arg)) {
-    const next = arg as CloudMode;
-    state.mode = next;
-    if (next === "off" || next === "ask") state.baseMode = next;
-    notify(`Cloud backend mode set to \`${state.mode}\`.`, "info");
-    return;
-  }
-  notify("Usage: /cloud [off|ask|once|on|status]", "warning");
-}
-
-function unquoteWord(raw: string): string {
-  let out = "";
-  let quote: "'" | '"' | null = null;
-  for (let i = 0; i < raw.length; i += 1) {
-    const ch = raw[i];
-    if (quote === "'") {
-      if (ch === "'") quote = null;
-      else out += ch;
-      continue;
-    }
-    if (ch === "\\" && i + 1 < raw.length) {
-      i += 1;
-      out += raw[i];
-      continue;
-    }
-    if (quote === '"') {
-      if (ch === '"') quote = null;
-      else out += ch;
-      continue;
-    }
-    if (ch === "'" || ch === '"') quote = ch;
-    else out += ch;
-  }
-  return out;
-}
-
-function readCommandSubst(input: string, openParenIdx: number): { content: string; end: number } {
-  let depth = 1;
-  let quote: "'" | '"' | null = null;
-  let i = openParenIdx + 1;
-  while (i < input.length && depth > 0) {
-    const ch = input[i];
-    if (quote === "'") {
-      if (ch === "'") quote = null;
-      i += 1;
-      continue;
-    }
-    if (ch === "\\" && i + 1 < input.length) {
-      i += 2;
-      continue;
-    }
-    if (quote === '"') {
-      if (ch === '"') quote = null;
-      i += 1;
-      continue;
-    }
-    if (ch === "'" || ch === '"') quote = ch;
-    else if (ch === "(") depth += 1;
-    else if (ch === ")") depth -= 1;
-    i += 1;
-  }
-  const contentEnd = depth === 0 ? i - 1 : i;
-  return { content: input.slice(openParenIdx + 1, contentEnd), end: i };
-}
-
-function readBacktick(input: string, openTickIdx: number): { content: string; end: number } {
-  let content = "";
-  let i = openTickIdx + 1;
-  while (i < input.length) {
-    const ch = input[i];
-    if (ch === "\\" && i + 1 < input.length) {
-      const next = input[i + 1];
-      content += next === "`" || next === "\\" || next === "$" ? next : `\\${next}`;
-      i += 2;
-      continue;
-    }
-    if (ch === "`") return { content, end: i + 1 };
-    content += ch;
-    i += 1;
-  }
-  return { content, end: i };
-}
-
-function readShellWord(input: string, start: number, substitutions: string[]): { raw: string; end: number } {
-  let quote: "'" | '"' | null = null;
-  let i = start;
-  while (i < input.length) {
-    const ch = input[i];
-    if (quote === "'") {
-      if (ch === "'") quote = null;
-      i += 1;
-      continue;
-    }
-    if (ch === "\\" && i + 1 < input.length) {
-      i += 2;
-      continue;
-    }
-    if (ch === "$" && input[i + 1] === "(") {
-      const sub = readCommandSubst(input, i + 1);
-      substitutions.push(sub.content);
-      i = sub.end;
-      continue;
-    }
-    if (ch === "`") {
-      const sub = readBacktick(input, i);
-      substitutions.push(sub.content);
-      i = sub.end;
-      continue;
-    }
-    if (quote === '"') {
-      if (ch === '"') quote = null;
-      i += 1;
-      continue;
-    }
-    if ((ch === "<" || ch === ">") && input[i + 1] === "(") {
-      const sub = readCommandSubst(input, i + 1);
-      substitutions.push(sub.content);
-      i = sub.end;
-      continue;
-    }
-    if (ch === "'" || ch === '"') {
-      quote = ch;
-      i += 1;
-      continue;
-    }
-    if (/[ \t\r\n;|&()<>]/.test(ch)) break;
-    i += 1;
-  }
-  return { raw: input.slice(start, i), end: i };
-}
-
-function tokenizeShell(input: string): TokenizedShell {
-  const tokens: ShellToken[] = [];
-  const substitutions: string[] = [];
-  let i = 0;
-  while (i < input.length) {
-    const ch = input[i];
-    if (ch === " " || ch === "\t" || ch === "\r") {
-      i += 1;
-      continue;
-    }
-    if (ch === "#") {
-      const nl = input.indexOf("\n", i);
-      i = nl === -1 ? input.length : nl;
-      continue;
-    }
-    if (ch === "\n" || ch === ";" || ch === "(" || ch === ")") {
-      tokens.push({ kind: "sep", raw: ch });
-      i += 1;
-      continue;
-    }
-    const two = input.slice(i, i + 2);
-    if (two === "&&" || two === "||" || two === "|&") {
-      tokens.push({ kind: "sep", raw: two });
-      i += 2;
-      continue;
-    }
-    const redir = two !== "<(" && two !== ">(" ? REDIR_PREFIX_RE.exec(input.slice(i)) : null;
-    if (redir) {
-      i += redir[0].length;
-      if (i < input.length && !/[ \t\r\n;|&()]/.test(input[i])) {
-        i = readShellWord(input, i, substitutions).end;
-      } else {
-        tokens.push({ kind: "redir", raw: redir[0] });
-      }
-      continue;
-    }
-    if (ch === "|" || ch === "&") {
-      tokens.push({ kind: "sep", raw: ch });
-      i += 1;
-      continue;
-    }
-    const word = readShellWord(input, i, substitutions);
-    if (word.raw) tokens.push({ kind: "word", raw: word.raw });
-    i = word.end > i ? word.end : i + 1;
-  }
-  return { tokens, substitutions };
-}
-
-function extractCommandSegments(tokens: ShellToken[]): string[][] {
-  const segments: string[][] = [];
-  let current: string[] = [];
-  let skipNextWord = false;
-  for (const tok of tokens) {
-    if (tok.kind === "sep") {
-      if (current.length > 0) segments.push(current);
-      current = [];
-      skipNextWord = false;
-      continue;
-    }
-    if (tok.kind === "redir") {
-      skipNextWord = true;
-      continue;
-    }
-    if (skipNextWord) {
-      skipNextWord = false;
-      continue;
-    }
-    current.push(tok.raw);
-  }
-  if (current.length > 0) segments.push(current);
-  return segments;
-}
-
-function skipSimpleWrapperArgs(words: string[], start: number, spec: WrapperSpec): number {
-  let i = start;
-  let stopFlags = false;
-  while (i < words.length) {
-    const raw = words[i];
-    const unquoted = unquoteWord(raw);
-    if (!stopFlags && unquoted === "--") {
-      i += 1;
-      stopFlags = true;
-      continue;
-    }
-    if (!stopFlags && unquoted.startsWith("-") && unquoted.length > 1) {
-      i += spec.argFlags.has(unquoted) ? 2 : 1;
-      continue;
-    }
-    if (spec.allowEnvAssign && ENV_ASSIGN_RE.test(raw)) {
-      i += 1;
-      continue;
-    }
-    break;
-  }
-  return i + (spec.skipPositional ?? 0);
-}
-
-function unwrapEnv(words: string[], start: number, depth: number): { matched?: CloudCli; nextIdx: number } {
-  let i = start;
-  let stopFlags = false;
-  while (i < words.length) {
-    const raw = words[i];
-    const w = unquoteWord(raw);
-    if (!stopFlags && w === "--") {
-      i += 1;
-      stopFlags = true;
-      continue;
-    }
-    if (!stopFlags && (w === "-S" || w === "--split-string") && i + 1 < words.length) {
-      const hit = detectCloudCliInvocation(unquoteWord(words[i + 1]), depth + 1);
-      if (hit) return { matched: hit, nextIdx: words.length };
-      i += 2;
-      continue;
-    }
-    if (!stopFlags && w.startsWith("--split-string=")) {
-      const hit = detectCloudCliInvocation(w.slice("--split-string=".length), depth + 1);
-      if (hit) return { matched: hit, nextIdx: words.length };
-      i += 1;
-      continue;
-    }
-    if (!stopFlags && w.startsWith("-") && w.length > 1) {
-      i += ENV_ARG_FLAGS.has(w) ? 2 : 1;
-      continue;
-    }
-    if (ENV_ASSIGN_RE.test(raw)) {
-      i += 1;
-      continue;
-    }
-    break;
-  }
-  return { nextIdx: i };
-}
-
-function unwrapCommandBuiltin(words: string[], start: number): number | null {
-  let i = start;
-  while (i < words.length) {
-    const w = unquoteWord(words[i]);
-    if (w === "--") return i + 1;
-    if (/^-[A-Za-z]*[vV][A-Za-z]*$/.test(w)) return null;
-    if (w.startsWith("-") && w.length > 1) {
-      i += 1;
-      continue;
-    }
-    break;
-  }
-  return i;
-}
-
-function unwrapNpx(words: string[], start: number, depth: number): { matched?: CloudCli; nextIdx: number } {
-  let i = start;
-  let stopFlags = false;
-  while (i < words.length) {
-    const w = unquoteWord(words[i]);
-    if (!stopFlags && w === "--") {
-      i += 1;
-      stopFlags = true;
-      continue;
-    }
-    if (!stopFlags && (w === "-c" || w === "--call") && i + 1 < words.length) {
-      const hit = detectCloudCliInvocation(unquoteWord(words[i + 1]), depth + 1);
-      if (hit) return { matched: hit, nextIdx: words.length };
-      i += 2;
-      continue;
-    }
-    if (!stopFlags && w.startsWith("--call=")) {
-      const hit = detectCloudCliInvocation(w.slice("--call=".length), depth + 1);
-      if (hit) return { matched: hit, nextIdx: words.length };
-      i += 1;
-      continue;
-    }
-    if (!stopFlags && w.startsWith("-") && w.length > 1) {
-      i += w === "-p" || w === "--package" ? 2 : 1;
-      continue;
-    }
-    break;
-  }
-  const pkg = i < words.length ? unquoteWord(words[i]) : "";
-  if (pkg === "@anthropic-ai/claude-code" || pkg.startsWith("@anthropic-ai/claude-code@")) {
-    return { matched: "claude", nextIdx: words.length };
-  }
-  return { nextIdx: i };
-}
-
-function unwrapShellDashC(words: string[], start: number, depth: number): CloudCli | null {
-  let i = start;
-  let hasDashC = false;
-  while (i < words.length) {
-    const w = unquoteWord(words[i]);
-    if (w === "--") {
-      i += 1;
-      break;
-    }
-    if (w === "-o" || w === "+o") {
-      i += 2;
-      continue;
-    }
-    if (/^-[A-Za-z]*c[A-Za-z]*$/.test(w)) {
-      hasDashC = true;
-      i += 1;
-      continue;
-    }
-    if ((w.startsWith("-") || w.startsWith("+")) && w.length > 1) {
-      i += 1;
-      continue;
-    }
-    break;
-  }
-  if (!hasDashC || i >= words.length) return null;
-  return detectCloudCliInvocation(unquoteWord(words[i]), depth + 1);
-}
-
-function inspectCommandSegment(words: string[], depth: number): CloudCli | null {
-  let i = 0;
-  while (i < words.length) {
-    const raw = words[i];
-    if (ENV_ASSIGN_RE.test(raw) || SHELL_PREFIX_KEYWORDS.has(raw)) {
-      i += 1;
-      continue;
-    }
-    const unquoted = unquoteWord(raw);
-    const slash = unquoted.lastIndexOf("/");
-    const base = (slash >= 0 ? unquoted.slice(slash + 1) : unquoted).toLowerCase();
-    if (base === "claude" || base === "agy") return base;
-    if (base === "env") {
-      const res = unwrapEnv(words, i + 1, depth);
-      if (res.matched) return res.matched;
-      i = res.nextIdx;
-      continue;
-    }
-    if (base === "command") {
-      const next = unwrapCommandBuiltin(words, i + 1);
-      if (next === null) return null;
-      i = next;
-      continue;
-    }
-    if (SHELL_BINARIES.has(base)) return unwrapShellDashC(words, i + 1, depth);
-    if (base === "npx" || base === "bunx" || base === "pnpm" || base === "yarn") {
-      let startIdx = i + 1;
-      if (base === "pnpm" || base === "yarn") {
-        const sub = startIdx < words.length ? unquoteWord(words[startIdx]) : "";
-        if (sub !== "exec" && sub !== "dlx") return null;
-        startIdx += 1;
-      }
-      const res = unwrapNpx(words, startIdx, depth);
-      if (res.matched) return res.matched;
-      i = res.nextIdx;
-      continue;
-    }
-    const spec = SIMPLE_WRAPPERS[base];
-    if (!spec) return null;
-    i = skipSimpleWrapperArgs(words, i + 1, spec);
-  }
-  return null;
-}
-
-function detectCloudCliInvocation(command: string, depth = 0): CloudCli | null {
-  if (depth > MAX_SHELL_PARSE_DEPTH || !command.trim()) return null;
-  const { tokens, substitutions } = tokenizeShell(command);
-  for (const segment of extractCommandSegments(tokens)) {
-    const hit = inspectCommandSegment(segment, depth);
-    if (hit) return hit;
-  }
-  for (const sub of substitutions) {
-    const hit = detectCloudCliInvocation(sub, depth + 1);
-    if (hit) return hit;
-  }
-  return null;
-}
-
 async function executeRunAgent(
   pluginRoot: string,
   cloudState: CloudGateState,
@@ -1178,16 +636,15 @@ async function executeRunAgent(
   const assembledPrompt = assembleAgentPrompt(pluginRoot, agentDef, params.prompt);
   const { binary, args, stdin } = buildBackendInvocation(params, agentDef, assembledPrompt);
   if (params.backend === "claude" || params.backend === "agy") {
-    const resolvedModel =
-      params.backend === "claude" ? (params.model ?? agentDef.model ?? "default") : (params.model ?? "default");
-    const auth = await authorizeCloudCall(
+    const resolvedModel = params.model ?? (params.backend === "claude" ? agentDef.model : undefined) ?? "default";
+    const denyReason = await authorizeCloudCall(
       cloudState,
       ctx,
       `cloud backend "${params.backend}" for agent "${params.agent}"`,
       `Allow cloud run_agent (${params.backend})?`,
       `Agent: ${params.agent}\nBackend: ${params.backend}\nModel: ${resolvedModel}`,
     );
-    if (!auth.allowed) throw new Error(`run_agent: ${auth.reason}`);
+    if (denyReason) throw new Error(`run_agent: ${denyReason}`);
   }
 
   const childEnv: NodeJS.ProcessEnv = {
@@ -1225,20 +682,23 @@ async function guardBashToolCall(
   command: unknown,
   ctx: CloudUiContext & { cwd: string },
 ): Promise<{ block: true; reason: string } | undefined> {
+  if (typeof command !== "string") {
+    return { block: true, reason: "dev-team: unexpected non-string bash command." };
+  }
+  if (command === "") return undefined;
   const hookRes = await runBashHooks(pluginRoot, command, ctx.cwd);
   if (hookRes) return hookRes;
-  if (typeof command !== "string" || command === "") return undefined;
-  const detectedCli = detectCloudCliInvocation(command);
-  if (!detectedCli) return undefined;
+  const detected = detectCloudCliInvocation(command);
+  if (!detected) return undefined;
   const snippet = command.length > MAX_BASH_SNIPPET_CHARS ? `${command.slice(0, MAX_BASH_SNIPPET_CHARS)}...` : command;
-  const auth = await authorizeCloudCall(
-    cloudState,
-    ctx,
-    `dev-team: bash invocation of cloud CLI "${detectedCli}"`,
-    `Allow cloud CLI (${detectedCli}) in bash?`,
-    snippet,
-  );
-  return auth.allowed ? undefined : { block: true, reason: auth.reason };
+  const subject =
+    detected.kind === "cli"
+      ? `dev-team: bash invocation of cloud CLI "${detected.cli}"`
+      : "dev-team: bash command exceeded static shell parse depth limit";
+  const title =
+    detected.kind === "cli" ? `Allow cloud CLI (${detected.cli}) in bash?` : "Allow deeply nested bash command?";
+  const denyReason = await authorizeCloudCall(cloudState, ctx, subject, title, snippet);
+  return denyReason ? { block: true, reason: denyReason } : undefined;
 }
 
 export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOptions): void {

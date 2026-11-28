@@ -52,7 +52,7 @@ out to `claude` / `agy` via `bash`. Adding a human-only `/cloud` session toggle 
       variants (`CLAUDE`, `Agy`). - Must NOT false-match `.claude/` paths, `CLAUDE.md`,
       `grep claude ...`, `which claude`, `command -v claude`, redirection targets
       (`echo hi > claude`), or quoted arguments/commit messages (`echo "foo; claude -p hi"`,
-      `git commit -m "Use claude"`). - Apply the exact same cloud-mode gate returning
+      `git commit -m "Use claude"`). - Apply the same cloud-mode gate returning
       `{ block: true, reason }` when denied.
 - [ ] Append the live cloud-mode notice dynamically on `before_agent_start` (outside `contextCache`
       so `/cloud` toggles take effect on the next turn without stale cache, and injected even if
