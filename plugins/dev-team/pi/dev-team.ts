@@ -1,7 +1,7 @@
 /**
  * Pi extension adapter for the dev-team plugin.
- * Delegates session context and bash guards to plugins/dev-team/hooks/*.sh and
- * registers the run_agent tool over pi, claude, and agy backends.
+ * Delegates session context and bash guards to plugins/dev-team/hooks/*.sh,
+ * gates paid cloud backends via /cloud, and registers run_agent over pi, claude, and agy.
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
@@ -10,6 +10,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
+import {
+  CLOUD_MODE_NOTICES,
+  authorizeCloudCall,
+  detectCloudCliInvocation,
+  handleCloudCommand,
+  resetCloudState,
+} from "./cloud-gate.ts";
+import type { CloudGateState, CloudUiContext } from "./cloud-gate.ts";
 
 const EXTENSION_PATH = fileURLToPath(import.meta.url);
 const DEFAULT_PLUGIN_ROOT = path.resolve(path.dirname(EXTENSION_PATH), "..");
@@ -30,6 +38,8 @@ const READ_ONLY_AGENTS: ReadonlySet<string> = new Set([...REVIEW_GATES_LIST, "co
 
 const BACKENDS = ["pi", "claude", "agy"] as const;
 type Backend = (typeof BACKENDS)[number];
+
+const MAX_BASH_SNIPPET_CHARS = 200;
 
 const CLAUDE_MODEL_ALIASES: ReadonlySet<string> = new Set(["sonnet", "opus", "fable"]);
 const WRITE_TOOLS_CLAUDE: ReadonlySet<string> = new Set(["Edit", "MultiEdit", "Write"]);
@@ -52,6 +62,12 @@ const MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 
 const SELF_CHECK_BANNER =
   '[SELF-CHECK ONLY — NON-AUTHORITATIVE: ran via local pi backend. Do NOT record in gate-ledger; re-run with backend="claude" or backend="agy" for authoritative merge-gate verdicts.]';
+
+const ENOENT_REMEDIATION: Readonly<Record<Backend, string>> = {
+  claude: 'Install Claude Code ("claude") on PATH, or run with backend="agy".',
+  agy: 'Install Antigravity CLI ("agy") on PATH, or run with backend="claude".',
+  pi: 'Install Pi ("pi") and ensure it is on PATH.',
+};
 
 const RUN_AGENT_SCHEMA = {
   type: "object",
@@ -574,13 +590,9 @@ async function loadSessionContext(
 
 async function runBashHooks(
   pluginRoot: string,
-  command: unknown,
+  command: string,
   cwd: string,
 ): Promise<{ block: true; reason: string } | undefined> {
-  if (typeof command !== "string") {
-    return { block: true, reason: "dev-team: unexpected non-string bash command." };
-  }
-  if (command === "") return undefined;
   if (!hasJqOnPath(process.env.PATH)) {
     return { block: true, reason: "dev-team: jq is required on PATH to run bash security hooks." };
   }
@@ -610,11 +622,12 @@ async function runBashHooks(
 
 async function executeRunAgent(
   pluginRoot: string,
+  cloudState: CloudGateState,
   rawParams: unknown,
   signal: AbortSignal | undefined,
-  defaultCwd: string,
+  ctx: CloudUiContext & { cwd: string },
 ): Promise<{ content: [{ type: "text"; text: string }]; details: RunAgentDetails }> {
-  const params = validateRunAgentParams(rawParams, defaultCwd);
+  const params = validateRunAgentParams(rawParams, ctx.cwd);
   const agentPath = path.join(pluginRoot, "agents", `${params.agent}.md`);
   if (!fs.existsSync(agentPath)) {
     throw new Error(`run_agent: agent definition not found: ${agentPath}`);
@@ -622,8 +635,23 @@ async function executeRunAgent(
   const agentDef = parseAgentFile(fs.readFileSync(agentPath, "utf8"), pluginRoot);
   const assembledPrompt = assembleAgentPrompt(pluginRoot, agentDef, params.prompt);
   const { binary, args, stdin } = buildBackendInvocation(params, agentDef, assembledPrompt);
-  const childEnv: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot };
+  if (params.backend === "claude" || params.backend === "agy") {
+    const resolvedModel = params.model ?? (params.backend === "claude" ? agentDef.model : undefined) ?? "default";
+    const denyReason = await authorizeCloudCall(
+      cloudState,
+      ctx,
+      `cloud backend "${params.backend}" for agent "${params.agent}"`,
+      `Allow cloud run_agent (${params.backend})?`,
+      `Agent: ${params.agent}\nBackend: ${params.backend}\nModel: ${resolvedModel}`,
+    );
+    if (denyReason) throw new Error(`run_agent: ${denyReason}`);
+  }
 
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    CLAUDE_PLUGIN_ROOT: pluginRoot,
+    ...(params.backend === "pi" ? { DEV_TEAM_CLOUD_MODE: "off" } : {}),
+  };
   const res = await runCommand(binary, args, {
     cwd: params.workDir,
     env: childEnv,
@@ -633,19 +661,10 @@ async function executeRunAgent(
   });
 
   if (res.errorCode === "ENOENT") {
-    const remediation: Record<Backend, string> = {
-      claude: 'Install Claude Code ("claude") on PATH, or run with backend="agy".',
-      agy: 'Install Antigravity CLI ("agy") on PATH, or run with backend="claude".',
-      pi: 'Install Pi ("pi") and ensure it is on PATH.',
-    };
-    throw new Error(`run_agent: "${binary}" binary not found on PATH (ENOENT). ${remediation[params.backend]}`);
+    throw new Error(`run_agent: "${binary}" binary not found on PATH (ENOENT). ${ENOENT_REMEDIATION[params.backend]}`);
   }
-  if (res.errorCode) {
-    throw new Error(`run_agent: failed to spawn "${binary}": ${res.errorMessage ?? res.errorCode}`);
-  }
-  if (res.aborted) {
-    throw new Error(`run_agent: aborted "${params.agent}" on backend "${params.backend}".`);
-  }
+  if (res.errorCode) throw new Error(`run_agent: failed to spawn "${binary}": ${res.errorMessage ?? res.errorCode}`);
+  if (res.aborted) throw new Error(`run_agent: aborted "${params.agent}" on backend "${params.backend}".`);
   if (res.timedOut) {
     throw new Error(`run_agent: "${params.agent}" on backend "${params.backend}" timed out after ${params.timeoutSeconds}s.`);
   }
@@ -657,9 +676,43 @@ async function executeRunAgent(
   return formatRunAgentResult(params, binary, res, verdict);
 }
 
+async function guardBashToolCall(
+  pluginRoot: string,
+  cloudState: CloudGateState,
+  command: unknown,
+  ctx: CloudUiContext & { cwd: string },
+): Promise<{ block: true; reason: string } | undefined> {
+  if (typeof command !== "string") {
+    return { block: true, reason: "dev-team: unexpected non-string bash command." };
+  }
+  if (command === "") return undefined;
+  const hookRes = await runBashHooks(pluginRoot, command, ctx.cwd);
+  if (hookRes) return hookRes;
+  const detected = detectCloudCliInvocation(command);
+  if (!detected) return undefined;
+  const snippet = command.length > MAX_BASH_SNIPPET_CHARS ? `${command.slice(0, MAX_BASH_SNIPPET_CHARS)}...` : command;
+  const subject =
+    detected.kind === "cli"
+      ? `dev-team: bash invocation of cloud CLI "${detected.cli}"`
+      : "dev-team: bash command exceeded static shell parse depth limit";
+  const title =
+    detected.kind === "cli" ? `Allow cloud CLI (${detected.cli}) in bash?` : "Allow deeply nested bash command?";
+  const denyReason = await authorizeCloudCall(cloudState, ctx, subject, title, snippet);
+  return denyReason ? { block: true, reason: denyReason } : undefined;
+}
+
 export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOptions): void {
   const pluginRoot = options?.pluginRoot ?? DEFAULT_PLUGIN_ROOT;
   const contextCache = new Map<string, string>();
+  const cloudState: CloudGateState = { mode: "ask", baseMode: "ask" };
+  resetCloudState(cloudState);
+
+  pi.on("session_start", () => resetCloudState(cloudState));
+
+  pi.registerCommand("cloud", {
+    description: "Control paid cloud backends (claude, agy): /cloud [off|ask|once|on|status]",
+    handler: async (args, ctx) => handleCloudCommand(cloudState, args, ctx),
+  });
 
   pi.on("before_agent_start", async (event, ctx) => {
     const notifyWarn = (message: string): void => {
@@ -667,17 +720,18 @@ export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOp
       else process.stderr.write(`${message}\n`);
     };
     const combined = await loadSessionContext(pluginRoot, ctx.cwd || process.cwd(), contextCache, notifyWarn);
-    if (!combined) return;
+    const section = [combined, CLOUD_MODE_NOTICES[cloudState.mode]].filter(Boolean).join("\n\n");
+    if (!section) return;
     const target = event as { systemPromptOptions?: { sections?: Record<string, string> } };
     target.systemPromptOptions ??= {};
     target.systemPromptOptions.sections ??= {};
-    target.systemPromptOptions.sections["dev-team"] = combined;
+    target.systemPromptOptions.sections["dev-team"] = section;
   });
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName !== "bash") return;
     const input = event.input as Record<string, unknown> | undefined;
-    return runBashHooks(pluginRoot, input?.command, ctx.cwd);
+    return guardBashToolCall(pluginRoot, cloudState, input?.command, ctx);
   });
 
   pi.registerTool({
@@ -686,6 +740,7 @@ export default function devTeamExtension(pi: ExtensionAPI, options?: ExtensionOp
     description:
       "Run a canonical dev-team subagent (implementer, five review gates, or cold-reader) on pi, claude, or agy backends.",
     parameters: RUN_AGENT_SCHEMA as unknown as TSchema,
-    execute: (_toolCallId, rawParams, signal, _onUpdate, ctx) => executeRunAgent(pluginRoot, rawParams, signal, ctx.cwd),
+    execute: (_toolCallId, rawParams, signal, _onUpdate, ctx) =>
+      executeRunAgent(pluginRoot, cloudState, rawParams, signal, ctx),
   });
 }
